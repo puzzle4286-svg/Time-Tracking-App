@@ -44,8 +44,6 @@ void main() {
 
   test('move to another activity', () async {
     await activities.delete(f.gaming, history: MoveToActivity(f.study));
-    final s = await spans(f);
-    expect(s[1], (f.study, mon(10), mon(12)));
     expect(await activities.entryCount(f.gaming), 0);
   });
 
@@ -116,5 +114,15 @@ void main() {
     await activities.delete(f.gaming, history: const MarkUnavailable());
     final again = await activities.create(position: 2, name: 'New', color: 0);
     expect(activities.atPosition(2)!.id, again.id);
+  });
+
+  test('moving history merges with adjacent entries of the target', () async {
+    // Gaming 10–12 moved to Study: Study 10–13 becomes one entry.
+    await activities.delete(f.gaming, history: MoveToActivity(f.study));
+    expect(await spans(f), [
+      (f.freeTime, mon(9), mon(10)),
+      (f.study, mon(10), mon(13)),
+      (f.freeTime, mon(13), null),
+    ]);
   });
 }

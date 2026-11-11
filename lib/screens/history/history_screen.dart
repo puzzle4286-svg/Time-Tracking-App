@@ -6,12 +6,10 @@ import '../../repositories/ui_state_store.dart';
 import '../../services/activities/activity_service.dart';
 import '../../services/history/entry_edit_service.dart';
 import '../../services/history/history_service.dart';
-import '../../services/tracking/durations.dart';
 import '../../services/tracking/time_range.dart';
 import '../../services/tracking/tracking_service.dart';
 import '../../util/clock.dart';
 import '../../util/date_format.dart';
-import '../../util/duration_format.dart';
 import '../../util/timestamps.dart';
 import '../../widgets/entries/entry_editor_sheet.dart';
 import '../../widgets/timeline/day_timeline.dart';
@@ -422,9 +420,6 @@ class _DaySection extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     final list = entries;
-    final total = list == null
-        ? null
-        : trackedInRange(list.map((e) => e.entry), day, now);
 
     return Padding(
       key: sectionKey,
@@ -438,12 +433,21 @@ class _DaySection extends StatelessWidget {
               color: scheme.surfaceContainer,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.centerLeft,
-              child: Text(
-                total == null
-                    ? formatDayLabel(day.start, now)
-                    : '${formatDayLabel(day.start, now)} · '
-                          '${formatTotal(total)} tracked',
-                style: text.titleSmall,
+              // "Info" will later open this day's Insights; text only for now.
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      formatDayLabel(day.start, now),
+                      style: text.titleSmall,
+                    ),
+                  ),
+                  Text(
+                    'Info',
+                    style: text.labelLarge?.copyWith(color: scheme.primary),
+                  ),
+                  Icon(Icons.chevron_right, size: 18, color: scheme.primary),
+                ],
               ),
             ),
           ),

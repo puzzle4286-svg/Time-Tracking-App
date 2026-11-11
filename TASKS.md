@@ -64,10 +64,13 @@ A phase is only checked off once its functionality is tested.
 - [x] Delete activity: keep under new name / move to another / mark Unavailable;
       successor required if running (D29)
 - [x] History: tap an entry to change activity, change start/end (with
-      confirmation of affected entries), split, delete with fill options (D30)
+      confirmation of affected entries), delete with fill options (D30)
+- [x] Split removed (developer request); same-activity neighbours merged
+      except at midnight (D31); day header "Info" placeholder (D32)
 - [x] Edits re-split at midnight; header, History refresh after every edit
 - [x] Tests: 24 service tests for edits/deletion, 6 widget tests for the flows
-- [x] Emulator: dialogs checked (cancelled; no data changed)
+- [x] Emulator: real delete (merged Free Time neighbours) and real end change
+      with confirmation (removed + shortened, then Gaming merged)
 
 ## Phase 5 – Goals
 - [ ] Goal model + repository (schema v3)
@@ -92,6 +95,9 @@ A phase is only checked off once its functionality is tested.
 - [ ] Documentation and changelog update
 
 ## Known issues
+- Day header "Info ›" has no action yet (D32).
+- Time pickers have minute precision; a shortened entry with seconds can be
+  described as e.g. "23:32 – 23:32" in the confirmation.
 - Grid tiles show no names for now (D23); identify by colour.
 - Very short entries are stretched to label height on the timeline, so the
   scale is locally non-linear around them (D24).

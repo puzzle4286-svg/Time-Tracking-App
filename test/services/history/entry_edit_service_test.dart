@@ -37,20 +37,20 @@ void main() {
 
   group('change activity', () {
     test('reassigns one entry and keeps its times', () async {
-      final study = await entryOf(f.study, mon(12));
-      await edits.changeActivity(study.id, f.gaming);
+      final first = await entryOf(f.freeTime, mon(9));
+      await edits.changeActivity(first.id, f.study);
       expect(await spans(f), [
-        (f.freeTime, mon(9), mon(10)),
+        (f.study, mon(9), mon(10)),
         (f.gaming, mon(10), mon(12)),
-        (f.gaming, mon(12), mon(13)),
+        (f.study, mon(12), mon(13)),
         (f.freeTime, mon(13), null),
       ]);
     });
 
     test('changing the running entry changes the current activity', () async {
       final open = await entryOf(f.freeTime, mon(13));
-      await edits.changeActivity(open.id, f.study);
-      expect(f.service.current.activity.id, f.study);
+      await edits.changeActivity(open.id, f.gaming);
+      expect(f.service.current.activity.id, f.gaming);
       expect(f.service.current.entry.start, isMoment(open.start));
     });
 
@@ -305,32 +305,75 @@ void main() {
     });
   });
 
-  group('split', () {
-    test('splits a closed entry into two of the same activity', () async {
-      final gaming = await entryOf(f.gaming, mon(10));
-      await edits.split(gaming.id, mon(11, 15));
-      expect((await spans(f)).sublist(1, 3), [
-        (f.gaming, mon(10), mon(11, 15)),
-        (f.gaming, mon(11, 15), mon(12)),
+  group('same activity only follows itself at midnight', () {
+    test('changing an activity merges it with matching neighbours', () async {
+      // Study 12–13 becomes Gaming: Gaming 10–13 as one entry.
+      final study = await entryOf(f.study, mon(12));
+      await edits.changeActivity(study.id, f.gaming);
+      expect(await spans(f), [
+        (f.freeTime, mon(9), mon(10)),
+        (f.gaming, mon(10), mon(13)),
+        (f.freeTime, mon(13), null),
       ]);
-      await expectConsistent();
     });
 
-    test('splitting the running entry keeps it running', () async {
-      final open = await entryOf(f.freeTime, mon(13));
-      await edits.split(open.id, mon(14));
-      expect((await spans(f)).last, (f.freeTime, mon(14), null));
-      await expectConsistent();
-    });
+    test(
+      'changing the running entry can merge into the previous one',
+      () async {
+        final open = await entryOf(f.freeTime, mon(13));
+        await edits.changeActivity(open.id, f.study);
+        expect((await spans(f)).last, (f.study, mon(12), null));
+        expect(f.service.current.entry.start, isMoment(mon(12)));
+      },
+    );
 
-    test('the split point must lie inside the entry', () async {
+    test('filling a gap between the same activity gives one entry', () async {
+      final study = await entryOf(f.study, mon(12));
+      await edits.changeActivity(study.id, f.freeTime); // FT 12–now merged
       final gaming = await entryOf(f.gaming, mon(10));
-      for (final at in [mon(10), mon(12), mon(9)]) {
-        await expectLater(
-          edits.split(gaming.id, at),
-          throwsA(isA<EditException>()),
-        );
-      }
+      final o = await edits.deleteOptions(gaming.id);
+      expect(o.available, [DeleteFill.previous]); // both sides Free Time
+      await edits.delete(gaming.id, DeleteFill.previous);
+      expect(await spans(f), [(f.freeTime, mon(9), null)]);
+    });
+
+    test('retiming next to the same activity merges', () async {
+      // Move Study to start right where the earlier Free Time ends? Use a
+      // shrink: Gaming 10–12 -> 11–12, Free Time 09–10 extends to 11 (no
+      // merge, different activities); then Study changed to Gaming merges.
+      final gaming = await entryOf(f.gaming, mon(10));
+      await edits.retime(gaming.id, start: mon(11), end: mon(12), apply: true);
+      final study = await entryOf(f.study, mon(12));
+      await edits.retime(study.id, start: mon(12), end: mon(14), apply: true);
+      expect(await spans(f), [
+        (f.freeTime, mon(9), mon(11)),
+        (f.gaming, mon(11), mon(12)),
+        (f.study, mon(12), mon(14)),
+        (f.freeTime, mon(14), null),
+      ]);
+      // Extending Free Time 09–11 over Gaming merges nothing yet, but
+      // changing Gaming to Free Time joins all three.
+      final g = await entryOf(f.gaming, mon(11));
+      await edits.changeActivity(g.id, f.freeTime);
+      expect((await spans(f)).first, (f.freeTime, mon(9), mon(12)));
+    });
+
+    test('entries meeting at midnight stay separate', () async {
+      f.clock.set(DateTime(2026, 11, 10, 9));
+      await f.service.reconcile(); // Free Time 13:00 -> 24:00 | 00:00 -> now
+      final s = await spans(f);
+      expect(s.sublist(s.length - 2), [
+        (f.freeTime, mon(13), DateTime(2026, 11, 10)),
+        (f.freeTime, DateTime(2026, 11, 10), null),
+      ]);
+      // An edit nearby must not merge across midnight.
+      final study = await entryOf(f.study, mon(12));
+      await edits.changeActivity(study.id, f.freeTime);
+      final after = await spans(f);
+      expect(after.sublist(after.length - 2), [
+        (f.freeTime, mon(12), DateTime(2026, 11, 10)),
+        (f.freeTime, DateTime(2026, 11, 10), null),
+      ]);
     });
   });
 
@@ -338,8 +381,8 @@ void main() {
     var notified = 0;
     edits.addListener(() => notified++);
     final gaming = await entryOf(f.gaming, mon(10));
-    await edits.split(gaming.id, mon(11));
     await edits.changeActivity(gaming.id, f.study);
+    await edits.retime(gaming.id, start: mon(10), end: mon(11), apply: true);
     expect(notified, 2);
   });
 }

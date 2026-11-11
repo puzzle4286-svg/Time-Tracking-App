@@ -34,8 +34,14 @@ explicitly under **Database**.
   move them to another activity, or mark them "Unavailable"; a running
   activity hands over to a chosen successor.
 - Edit history from the History tab: change activity, change start/end (with
-  a confirmation listing every affected entry), split, or delete and fill the
-  time with the previous/following activity or split it between them.
+  a confirmation listing every affected entry), or delete and fill the time
+  with the previous/following activity or split it between them.
+- Back-to-back entries of the same activity are merged after edits (except at
+  midnight).
+
+### Removed
+- Splitting an entry into two of the same activity.
+- "N tracked" day total in History headers (replaced by an "Info" placeholder).
 
 ### Changed
 - Activity grid is now 2 rows × 4 columns of compact buttons filled with the

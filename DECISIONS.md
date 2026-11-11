@@ -244,7 +244,22 @@ tracking reconcile so the header, History and future statistics follow.
   the entry exactly. Deleting the running entry offers "resume the previous
   activity". "Leave empty" appears only when no neighbour is adjacent (and
   never for the running entry).
-- **Split** (from the original spec, kept as a fourth action): one entry
-  becomes two of the same activity at a chosen time.
+- **Split** was briefly offered and then removed at the developer's request
+  (2026-11-12): splitting one activity into two of its own makes no sense for
+  this app. This deliberately drops the original spec's "split an entry".
 - Time pickers have minute precision; an unchanged field keeps its exact
   original timestamp (seconds included).
+
+## D31 – An activity only follows itself at midnight
+Back-to-back entries of the same activity are merged after every history
+edit (change activity, retime, delete-fill) and after moving a deleted
+activity's history (`mergeSameActivityNeighbours`). Pairs that meet exactly
+at a local midnight stay separate, because each day keeps its own entries.
+Consequence for delete: when both neighbours are the same activity, the three
+fill options would give the same result, so only "Fill with <activity>" is
+offered.
+
+## D32 – Day header shows "Info" instead of a tracked total
+Every day is fully tracked by design, so "N tracked" would read ~24 h. The
+header now shows the day label and an "Info ›" placeholder (no action yet),
+intended to open that day's Insights later.

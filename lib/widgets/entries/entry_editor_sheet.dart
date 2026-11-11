@@ -11,7 +11,7 @@ import '../../util/duration_format.dart';
 import '../common/date_time_picker.dart';
 
 /// Opens the actions for one history entry: change activity, change start /
-/// end, split, delete. Every change that affects other entries is confirmed
+/// end, delete. Every change that affects other entries is confirmed
 /// first.
 Future<void> showEntryEditor(
   BuildContext context, {
@@ -38,12 +38,11 @@ Future<void> showEntryEditor(
   await switch (action) {
     _Action.activity => flow.changeActivity(),
     _Action.times => flow.changeTimes(),
-    _Action.split => flow.split(),
     _Action.delete => flow.delete(),
   };
 }
 
-enum _Action { activity, times, split, delete }
+enum _Action { activity, times, delete }
 
 String _span(TimeEntry e) =>
     '${formatMoment(e.start)} – ${e.end == null ? 'now' : formatTimeOfDay(e.end!)}';
@@ -82,7 +81,6 @@ class _EntrySheet extends StatelessWidget {
             const Divider(),
             tile(_Action.activity, Icons.swap_horiz, 'Change activity'),
             tile(_Action.times, Icons.schedule, 'Change start / end'),
-            tile(_Action.split, Icons.call_split, 'Split'),
             tile(_Action.delete, Icons.delete_outline, 'Delete'),
             const SizedBox(height: 8),
           ],
@@ -214,20 +212,6 @@ class _EntryFlow {
     };
   }
 
-  Future<void> split() async {
-    final now = clock.now();
-    final end = entry.end ?? now;
-    final middle = entry.start.add(end.difference(entry.start) ~/ 2);
-    final at = await pickDateTime(
-      context,
-      middle,
-      first: entry.start,
-      last: end,
-    );
-    if (at == null) return;
-    await _run(() => edits.split(entry.id, at));
-  }
-
   Future<void> delete() async {
     final options = await edits.deleteOptions(entry.id);
     if (!context.mounted) return;
@@ -337,10 +321,15 @@ class _DeleteDialogState extends State<_DeleteDialog> {
   String _label(DeleteFill f) {
     final prev = widget.options.previous?.activity.name;
     final next = widget.options.following?.activity.name;
+    final sameBoth =
+        widget.options.following?.activity.id ==
+        widget.options.previous?.activity.id;
     return switch (f) {
       DeleteFill.previous =>
         widget.entry.isOpen
             ? 'Resume the previous activity ($prev)'
+            : sameBoth
+            ? 'Fill with $prev'
             : 'Fill with the previous activity ($prev)',
       DeleteFill.following => 'Fill with the following activity ($next)',
       DeleteFill.split => 'Split evenly between $prev and $next',

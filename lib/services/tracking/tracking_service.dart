@@ -6,8 +6,8 @@ import '../../models/time_entry.dart';
 import '../../repositories/activity_repository.dart';
 import '../../repositories/time_entry_repository.dart';
 import '../../util/clock.dart';
-import 'day_split.dart';
 import 'durations.dart';
+import 'entry_normalization.dart';
 import 'time_range.dart';
 
 /// Snapshot of what is being tracked right now.

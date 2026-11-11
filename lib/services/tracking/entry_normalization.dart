@@ -38,3 +38,35 @@ Future<TimeEntry> splitAtLocalMidnights(
     );
   }
 }
+
+/// Merges back-to-back entries of the same activity that overlap
+/// [from]–[to] into one. The only place an activity may follow itself is a
+/// local midnight (each day keeps its own entries), so pairs meeting exactly
+/// at a local midnight are left alone.
+Future<void> mergeSameActivityNeighbours(
+  TimeEntryRepository entries,
+  DateTime from,
+  DateTime to,
+) async {
+  TimeEntry? prev;
+  for (final e in await entries.overlapping(from, to)) {
+    final p = prev;
+    if (p != null &&
+        p.end != null &&
+        p.activityId == e.activityId &&
+        p.end!.isAtSameMomentAs(e.start) &&
+        !startOfLocalDay(e.start).isAtSameMomentAs(e.start)) {
+      // Delete first: if `e` is open, `p` may only become open afterwards.
+      await entries.delete(e.id);
+      await entries.setBounds(p.id, p.start, e.end);
+      prev = TimeEntry(
+        id: p.id,
+        activityId: p.activityId,
+        start: p.start,
+        end: e.end,
+      );
+      continue;
+    }
+    prev = e;
+  }
+}

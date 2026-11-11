@@ -229,3 +229,22 @@ following / split evenly. Split-into-two kept from the original spec.
 
 **Next steps**
 - Developer review, then Phase 5 (goals).
+
+## 2026-11-12 – Phase 4 review
+
+**Requested**: remove split; an activity may only follow itself at midnight;
+replace the day total with an "Info" placeholder; real edits on the emulator
+allowed.
+
+**Work completed**: split removed from service, UI and tests;
+`mergeSameActivityNeighbours` applied after every edit and after moving a
+deleted activity's history; delete offers a single option when both
+neighbours match; History day header shows "Info ›".
+
+**Testing performed**
+- 151 tests pass in all seven timezones (new: merge after change / delete /
+  retime / move-to, no merge across midnight, single delete option, header).
+- Emulator, real edits: deleted a 3 s Gaming between two Free Time entries →
+  one Free Time 23:26:45–23:26:56; moved a Gaming end to 23:32 → confirmation
+  listed "Free Time … removed" and "Gaming … shortened", result one Gaming
+  entry 23:27:03–23:32:57.

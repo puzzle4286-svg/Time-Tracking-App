@@ -6,7 +6,7 @@ import '../../models/time_entry.dart';
 import '../../repositories/activity_repository.dart';
 import '../../repositories/time_entry_repository.dart';
 import '../../util/clock.dart';
-import '../tracking/day_split.dart';
+import '../tracking/entry_normalization.dart';
 import '../tracking/tracking_service.dart';
 
 /// An edit that cannot be applied, with a message for the user.
@@ -71,8 +71,9 @@ class DeleteOptions {
 }
 
 /// Edits of historical time entries. Every edit is one transaction; entries
-/// are re-split at local midnights afterwards, and tracking is reconciled so
-/// the current session and all statistics follow.
+/// are re-split at local midnights and same-activity neighbours merged
+/// afterwards (an activity only follows itself at midnight), and tracking is
+/// reconciled so the current session and all statistics follow.
 class EntryEditService extends ChangeNotifier {
   EntryEditService(this._db, this._clock, this._tracking);
 
@@ -88,8 +89,10 @@ class EntryEditService extends ChangeNotifier {
       if (target == null || target.isDeleted || target.isSystem) {
         throw const EditException('Choose an activity from the grid.');
       }
-      await _entry(txn, entryId);
-      await TimeEntryRepository(txn).setActivity(entryId, activityId);
+      final e = await _entry(txn, entryId);
+      final entries = TimeEntryRepository(txn);
+      await entries.setActivity(entryId, activityId);
+      await _mergeAround(entries, e.start, e.end ?? _clock.now());
     });
     await _changed();
   }
@@ -111,8 +114,20 @@ class EntryEditService extends ChangeNotifier {
     required bool apply,
   }) async {
     final effects = await _db.transaction((txn) async {
+      final old = await _entry(txn, entryId);
       final plan = await _planRetime(txn, entryId, start, end);
-      if (apply) await _applyPlan(txn, plan);
+      if (apply) {
+        await _applyPlan(txn, plan);
+        final now = _clock.now();
+        final from = start.isBefore(old.start) ? start : old.start;
+        final oldEnd = old.end ?? now;
+        final newEnd = end ?? now;
+        await _mergeAround(
+          TimeEntryRepository(txn),
+          from,
+          newEnd.isAfter(oldEnd) ? newEnd : oldEnd,
+        );
+      }
       return plan.effects;
     });
     if (apply) await _changed();
@@ -227,8 +242,12 @@ class EntryEditService extends ChangeNotifier {
           : (entry: next, activity: activities[next.activityId]!),
       available: [
         if (prev != null) DeleteFill.previous,
-        if (next != null) DeleteFill.following,
-        if (prev != null && next != null) DeleteFill.split,
+        // Same activity on both sides: every fill gives the same merged
+        // result, so offer just one.
+        if (next != null && next.activityId != prev?.activityId)
+          DeleteFill.following,
+        if (prev != null && next != null && prev.activityId != next.activityId)
+          DeleteFill.split,
         // Leaving a gap is only allowed when nothing can fill it, and never
         // for the running entry (something must always be active).
         if (prev == null && next == null && !e.isOpen) DeleteFill.leaveEmpty,
@@ -275,27 +294,7 @@ class EntryEditService extends ChangeNotifier {
           break;
       }
       await _splitAll(txn, touched, now);
-    });
-    await _changed();
-  }
-
-  // ---- Split -------------------------------------------------------------
-
-  /// Splits an entry at [at] into two entries of the same activity.
-  Future<void> split(int entryId, DateTime at) async {
-    await _db.transaction((txn) async {
-      final entries = TimeEntryRepository(txn);
-      final e = await _entry(txn, entryId);
-      final end = e.end ?? _clock.now();
-      if (!at.isAfter(e.start) || !at.isBefore(end)) {
-        throw const EditException('Choose a time inside the entry.');
-      }
-      if (e.isOpen) {
-        await entries.close(e.id, at);
-      } else {
-        await entries.setBounds(e.id, e.start, at);
-      }
-      await entries.insert(activityId: e.activityId, start: at, end: e.end);
+      await _mergeAround(entries, e.start, e.end ?? now);
     });
     await _changed();
   }
@@ -339,6 +338,17 @@ class EntryEditService extends ChangeNotifier {
     }
     await _splitAll(txn, touched, now);
   }
+
+  /// Merges same-activity neighbours a day either side of [from]–[to].
+  Future<void> _mergeAround(
+    TimeEntryRepository entries,
+    DateTime from,
+    DateTime to,
+  ) => mergeSameActivityNeighbours(
+    entries,
+    from.subtract(const Duration(days: 1)),
+    to.add(const Duration(days: 1)),
+  );
 
   Future<void> _splitAll(Transaction txn, List<int> ids, DateTime now) async {
     final entries = TimeEntryRepository(txn);

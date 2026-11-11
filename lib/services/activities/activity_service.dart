@@ -6,6 +6,7 @@ import '../../models/activity_colors.dart';
 import '../../repositories/activity_repository.dart';
 import '../../repositories/time_entry_repository.dart';
 import '../../util/clock.dart';
+import '../tracking/entry_normalization.dart';
 import '../tracking/tracking_service.dart';
 
 /// What happens to an activity's past entries when it is deleted.
@@ -185,6 +186,17 @@ class ActivityService extends ChangeNotifier {
           await activities.softDelete(id, now);
         case null:
           await activities.softDelete(id, now);
+      }
+      // Moved entries may now sit next to entries of the same activity.
+      if (history is MoveToActivity || history is MarkUnavailable) {
+        final first = await entries.earliestStart();
+        if (first != null) {
+          await mergeSameActivityNeighbours(
+            entries,
+            first,
+            now.add(const Duration(days: 1)),
+          );
+        }
       }
     });
     await load();

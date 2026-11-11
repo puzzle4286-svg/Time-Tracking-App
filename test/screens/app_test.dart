@@ -501,14 +501,10 @@ void main() {
     testWidgets('tapping an entry offers the edit actions', (tester) async {
       await openHistoryWithEntries(tester);
       await tapGamingBlock(tester);
-      for (final label in [
-        'Change activity',
-        'Change start / end',
-        'Split',
-        'Delete',
-      ]) {
+      for (final label in ['Change activity', 'Change start / end', 'Delete']) {
         expect(find.text(label), findsOneWidget);
       }
+      expect(find.text('Split'), findsNothing);
     });
 
     testWidgets('change activity', (tester) async {
@@ -524,27 +520,30 @@ void main() {
       expect(find.text('Study'), findsWidgets); // timeline refreshed
     });
 
-    testWidgets('delete and fill with the following activity', (tester) async {
+    testWidgets('delete between the same activity merges into one entry', (
+      tester,
+    ) async {
       await openHistoryWithEntries(tester);
       await tapGamingBlock(tester);
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
-      expect(
-        find.text('Split evenly between Free Time and Free Time'),
-        findsOneWidget,
-      );
-      await tester.tap(
-        find.text('Fill with the following activity (Free Time)'),
-      );
-      await tester.pumpAndSettle();
+      // Free Time on both sides: one option, not three identical ones.
+      expect(find.text('Fill with Free Time'), findsOneWidget);
+      expect(find.textContaining('Split evenly'), findsNothing);
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
       await settle(tester);
       await tester.pumpAndSettle();
 
       final entries = await f.entries();
-      expect(entries, hasLength(2));
-      expect(entries.last.start, isMoment(DateTime(2026, 11, 9, 10)));
-      expect(find.text('10:00 – now · 2h 0m'), findsOneWidget);
+      expect(entries, hasLength(1));
+      expect(entries.single.start, isMoment(DateTime(2026, 11, 9, 9)));
+      expect(find.text('09:00 – now · 3h 0m'), findsOneWidget);
+    });
+
+    testWidgets('day header shows the Info placeholder', (tester) async {
+      await openHistoryWithEntries(tester);
+      expect(find.text('Info'), findsWidgets);
+      expect(find.textContaining('tracked'), findsNothing);
     });
   });
 
