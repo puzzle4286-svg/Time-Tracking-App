@@ -190,3 +190,13 @@
   History running entry 9m → 10m and day total 47m → 48m without leaving
   the tab; History position identical after tab switch and restart (stored
   anchor 23:28:25).
+
+## 2026-11-11 – History grid lines
+
+- Added solid hour / dashed half-hour lines (`_GridPainter`) behind the
+  timeline entries, using the shared time → y mapping.
+- Tests: 48 marks per day alternating, marks only before now for today,
+  strictly increasing and in-range on DST days, line positions match layout.
+  111 tests pass in all seven timezones.
+- Emulator (dark mode): dashed 22:30, solid 23:00, dashed 23:30 exactly at
+  the 23:30 entry boundary.

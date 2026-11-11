@@ -41,6 +41,8 @@ explicitly under **Database**.
 - History updates live every second, follows now when at the bottom, keeps
   the view still otherwise, and remembers its position across tab switches
   and restarts.
+- History shows a solid line at every hour and a dashed line at every half
+  hour.
 - Insights no longer holds the daily timeline; it moved to History.
 
 ### Fixed

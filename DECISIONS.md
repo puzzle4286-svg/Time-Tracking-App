@@ -168,6 +168,10 @@ History tab, at the developer's request. Design:
   exactly proportional; only entries shorter than ~8 min are stretched, and
   hour marks follow the same mapping so they stay consistent. Durations under
   a minute show seconds (`40s`).
+- Full-width grid lines behind the entries: solid at every hour, dashed at
+  every half hour, positioned through the same mapping as the blocks. Marks
+  come from calendar fields (`DayTimeline.gridMarks`), so a skipped DST hour
+  has no line and a repeated hour is marked once.
 - Each entry is a tinted row with a coloured left edge; label is
   "name  start – end · duration" (two lines when the block is tall enough).
 - Day heights depend on entries, so "Jump to date" loads the days in

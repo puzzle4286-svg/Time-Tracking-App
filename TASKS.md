@@ -57,6 +57,7 @@ A phase is only checked off once its functionality is tested.
       History remembers its position (as an instant) across tabs and restarts;
       History updates every second, follows now at the bottom, keeps the view
       still when scrolled into the past
+- [x] History grid lines: solid per hour, dashed per half hour
 
 ## Phase 4 – Activity and history management
 - [ ] Edit activity (name, color)

@@ -35,6 +35,26 @@ class DayTimeline extends StatelessWidget {
   static DateTime visibleEnd(TimeRange day, DateTime now) =>
       day.contains(now) ? now : day.end;
 
+  /// Every full hour and half hour of [day] before [end], from calendar
+  /// fields so DST days get the right marks (a skipped hour has no mark, a
+  /// repeated hour is not marked twice).
+  static List<({DateTime time, bool isHalfHour})> gridMarks(
+    TimeRange day,
+    DateTime end,
+  ) {
+    final marks = <({DateTime time, bool isHalfHour})>[];
+    final d = day.start;
+    for (var h = 0; h < 26; h++) {
+      for (final minute in const [0, 30]) {
+        final t = DateTime(d.year, d.month, d.day, h, minute);
+        if (!t.isBefore(end) || !day.contains(t)) continue;
+        if (marks.isNotEmpty && !t.isAfter(marks.last.time)) continue;
+        marks.add((time: t, isHalfHour: minute == 30));
+      }
+    }
+    return marks;
+  }
+
   static TimelineLayout layoutFor(
     TimeRange day,
     List<DayEntry> entries,
@@ -55,27 +75,33 @@ class DayTimeline extends StatelessWidget {
     final end = visibleEnd(day, now);
     final layout = layoutFor(day, entries, now);
 
-    // Hour marks from calendar fields, so DST days get the right labels.
-    final hours = <DateTime>[];
-    for (var h = 0; ; h++) {
-      final t = DateTime(day.start.year, day.start.month, day.start.day, h);
-      if (!t.isBefore(end) || !day.contains(t)) break;
-      if (hours.isEmpty || t.isAfter(hours.last)) hours.add(t);
-    }
+    final marks = gridMarks(day, end);
+    final hours = [
+      for (final m in marks)
+        if (!m.isHalfHour) m.time,
+    ];
 
     return SizedBox(
       height: layout.height,
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
+          // Hour (solid) and half-hour (dashed) lines, behind the entries.
+          Positioned.fill(
+            left: _timeGutter - 6,
+            child: CustomPaint(
+              key: const Key('timeline-grid'),
+              painter: _GridPainter(
+                lines: [
+                  for (final m in marks) (layout.yOf(m.time), m.isHalfHour),
+                ],
+                hourColor: scheme.outlineVariant,
+                halfHourColor: scheme.outlineVariant.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
           for (final block in layout.blocks) _block(context, block),
           for (final h in hours) ...[
-            Positioned(
-              left: _timeGutter - 6,
-              width: 6,
-              top: layout.yOf(h),
-              child: Divider(height: 1, color: scheme.outline),
-            ),
             Positioned(
               left: 0,
               width: _timeGutter - 10,
@@ -158,5 +184,57 @@ class DayTimeline extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Draws full-width horizontal lines: solid for hours, dashed for half hours.
+class _GridPainter extends CustomPainter {
+  _GridPainter({
+    required this.lines,
+    required this.hourColor,
+    required this.halfHourColor,
+  });
+
+  /// (y, isHalfHour) for each line.
+  final List<(double, bool)> lines;
+  final Color hourColor;
+  final Color halfHourColor;
+
+  static const double _dash = 6;
+  static const double _gap = 5;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final hour = Paint()
+      ..color = hourColor
+      ..strokeWidth = 1;
+    final half = Paint()
+      ..color = halfHourColor
+      ..strokeWidth = 1;
+    for (final (y, isHalf) in lines) {
+      final dy = y + 0.5; // crisp 1 px line
+      if (!isHalf) {
+        canvas.drawLine(Offset(0, dy), Offset(size.width, dy), hour);
+        continue;
+      }
+      for (var x = 0.0; x < size.width; x += _dash + _gap) {
+        final to = x + _dash > size.width ? size.width : x + _dash;
+        canvas.drawLine(Offset(x, dy), Offset(to, dy), half);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GridPainter old) =>
+      old.hourColor != hourColor ||
+      old.halfHourColor != halfHourColor ||
+      !_sameLines(old.lines, lines);
+
+  static bool _sameLines(List<(double, bool)> a, List<(double, bool)> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }

@@ -96,4 +96,70 @@ void main() {
       23 * 60 * ppm,
     );
   });
+
+  group('hour grid', () {
+    test('a full day has 24 hour and 24 half-hour marks, alternating', () {
+      final marks = DayTimeline.gridMarks(day, day.end);
+      expect(marks, hasLength(48));
+      for (var i = 0; i < marks.length; i++) {
+        expect(marks[i].isHalfHour, i.isOdd);
+      }
+      expect(marks.first.time, DateTime(2026, 11, 9));
+      expect(marks[1].time, DateTime(2026, 11, 9, 0, 30));
+      expect(marks.last.time, DateTime(2026, 11, 9, 23, 30));
+    });
+
+    test('today only has marks before now', () {
+      final marks = DayTimeline.gridMarks(day, DateTime(2026, 11, 9, 14, 10));
+      expect(marks, hasLength(29)); // 00:00 … 14:00
+      expect(marks.last.time, DateTime(2026, 11, 9, 14));
+      expect(marks.last.isHalfHour, isFalse);
+    });
+
+    test('marks are strictly increasing on DST days too', () {
+      for (
+        var d = DateTime(2026);
+        d.year == 2026;
+        d = DateTime(d.year, d.month, d.day + 1)
+      ) {
+        final range = localDay(d);
+        if (range.duration == const Duration(hours: 24)) continue;
+        final marks = DayTimeline.gridMarks(range, range.end);
+        for (var i = 1; i < marks.length; i++) {
+          expect(marks[i].time.isAfter(marks[i - 1].time), isTrue);
+        }
+        expect(marks.every((m) => range.contains(m.time)), isTrue);
+      }
+    });
+
+    testWidgets('lines are drawn at the layout positions of the marks', (
+      tester,
+    ) async {
+      await pump(tester, [
+        dayEntry(
+          1,
+          'Work',
+          DateTime(2026, 11, 9, 9),
+          DateTime(2026, 11, 9, 10),
+        ),
+      ], DateTime(2026, 11, 9, 11, 45));
+      final paint = tester.widget<CustomPaint>(
+        find.byKey(const Key('timeline-grid')),
+      );
+      expect(paint.painter, isNotNull);
+      // 00:00 … 11:30 → 24 marks; the 10:00 line sits at 600 min × 4 px.
+      final marks = DayTimeline.gridMarks(day, DateTime(2026, 11, 9, 11, 45));
+      expect(marks, hasLength(24));
+      final layout = DayTimeline.layoutFor(day, [
+        dayEntry(
+          1,
+          'Work',
+          DateTime(2026, 11, 9, 9),
+          DateTime(2026, 11, 9, 10),
+        ),
+      ], DateTime(2026, 11, 9, 11, 45));
+      expect(layout.yOf(DateTime(2026, 11, 9, 10)), 600 * ppm);
+      expect(layout.yOf(DateTime(2026, 11, 9, 10, 30)), 630 * ppm);
+    });
+  });
 }
