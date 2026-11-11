@@ -5,6 +5,7 @@ import 'package:time_tracker/app/app_shell.dart';
 import 'package:time_tracker/app/settings_controller.dart';
 import 'package:time_tracker/models/app_settings.dart';
 import 'package:time_tracker/repositories/settings_repository.dart';
+import 'package:time_tracker/screens/home/home_screen.dart';
 import 'package:time_tracker/services/activities/activity_service.dart';
 import 'package:time_tracker/services/history/history_service.dart';
 
@@ -59,7 +60,9 @@ void main() {
     for (var p = 1; p <= 8; p++) {
       expect(find.byKey(Key('activity-tile-$p')), findsOneWidget);
     }
-    expect(find.text('Tap to set up'), findsNWidgets(5));
+    expect(find.byIcon(Icons.add), findsNWidgets(5));
+    expect(find.byIcon(Icons.pause_rounded), findsOneWidget); // Free Time
+    expect(find.byIcon(Icons.play_arrow_rounded), findsNWidgets(2));
   });
 
   testWidgets('every grid tile fills an equal cell', (tester) async {
@@ -69,6 +72,29 @@ void main() {
         tester.getSize(find.byKey(Key('activity-tile-$p'))),
     };
     expect(sizes, hasLength(1));
+  });
+
+  testWidgets('grid is compact and icons follow the active state', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    final tile = tester.getSize(find.byKey(const Key('activity-tile-1')));
+    expect(tile.height, HomeScreen.tileHeight);
+
+    final gaming = find.byKey(const Key('activity-tile-2'));
+    await tester.tap(gaming);
+    await settle(tester);
+    expect(
+      find.descendant(of: gaming, matching: find.byIcon(Icons.pause_rounded)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('activity-tile-1')),
+        matching: find.byIcon(Icons.play_arrow_rounded),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('display refreshes from timestamps', (tester) async {
@@ -82,7 +108,7 @@ void main() {
   testWidgets('tapping an activity switches to it', (tester) async {
     await pumpApp(tester);
     f.clock.advance(const Duration(minutes: 30));
-    await tester.tap(find.text('Gaming'));
+    await tester.tap(find.byKey(const Key('activity-tile-2')));
     await settle(tester);
 
     expect(textOf(tester, 'current-activity-name'), 'Gaming');
@@ -112,7 +138,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(textOf(tester, 'current-activity-name'), 'Leisure');
-    expect(find.text('Leisure'), findsNWidgets(2));
+    expect(activities.byId(f.freeTime)!.name, 'Leisure');
   });
 
   testWidgets('empty name is rejected in the editor', (tester) async {
@@ -136,7 +162,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(activities.atPosition(4)!.name, 'Reading');
-    expect(find.text('Tap to set up'), findsNWidgets(4));
+    expect(find.byIcon(Icons.add), findsNWidgets(4));
     // Setting up does not switch.
     expect(textOf(tester, 'current-activity-name'), 'Free Time');
   });

@@ -50,6 +50,9 @@ A phase is only checked off once its functionality is tested.
 - [x] History tab: continuous, proportional vertical timeline with jump to date / now
 - [x] Timestamps stored as UTC epoch microseconds; schema v2 migration (verified on device)
 - [x] Test that seconds from separate sessions add up in totals
+- [x] Review round 2: compact icon-only colour tiles (pause/play), no overscroll
+      stretch, timeline at 4 px/min with every entry shown and labelled,
+      History toolbar no longer overlaps content
 
 ## Phase 4 – Activity and history management
 - [ ] Edit activity (name, color)
@@ -81,7 +84,10 @@ A phase is only checked off once its functionality is tested.
 - [ ] Documentation and changelog update
 
 ## Known issues
-- With 2 rows, grid tiles are very tall on phones; could cap tile height if wanted.
-- Entries shorter than ~12 minutes show as thin blocks without a label (D24).
+- Grid tiles show no names for now (D23); identify by colour.
+- Very short entries are stretched to label height on the timeline, so the
+  scale is locally non-linear around them (D24).
+- "Jump to date" far into the past loads every day in between (one query per
+  day); fine for now, could become a single range query.
 - Insights tab is a placeholder until Phase 6.
 - Android launch splash is white while the default theme is dark (cosmetic; Phase 8).

@@ -147,22 +147,33 @@ tap, which keeps interactions predictable.
 `package_info_plus`. It must be kept in sync with `pubspec.yaml`.
 
 ## D23 – Grid is 2 rows × 4 columns (developer request, 2026-11-11)
-Positions 1–4 form the top row, 5–8 the bottom row. Tiles stack the colour
-dot, name (up to 3 lines) and active marker vertically to suit the narrower
-width. The grid still fills the space below the header.
+Positions 1–4 form the top row, 5–8 the bottom row. Revised after review:
+tiles are compact (64 dp tall, about a quarter of the earlier grid) and sit at
+the bottom of the screen. Each tile is filled with the activity's colour and
+shows only a centred icon: pause while that activity runs, play otherwise
+("+" on empty slots). Names are not shown on tiles for now (the header shows
+the active name; screen readers get the name via a semantics label;
+long-press opens the editor). The active tile also gets a contrasting border.
 
 ## D24 – History is one continuous, proportional vertical timeline
 Replaces the planned Insights "daily timeline" (spec 8.1) with a dedicated
 History tab, at the developer's request. Design:
 - Reversed `ListView.builder`: now at the bottom, scrolling up goes back one
   local day per item, ending at the first recorded day.
-- Fixed scale of 1.5 px per minute (90 px/hour). Each day's height comes from
-  its real length, so DST days are 23 h / 25 h tall; today ends at now.
-- Entries are coloured blocks on the line; the label (name, then
-  "start – end · duration") is shown beside a block only if it fits
-  (≥ 12 min for the name, ≥ 25 min for times). Shorter entries are still drawn.
-- Because every item's height is known, "Jump to date" computes the exact
-  scroll offset; "Now" scrolls back to the bottom.
+- Scale of 4 px per minute (240 px/hour, about 3 hours per screen): detail
+  over overview (revised after review; was 1.5 px/min).
+- Every entry is drawn and labelled, however short: blocks have a minimum
+  height of one label line (30 px). Time maps to y through
+  `TimelineLayout`, a piecewise-linear mapping: gaps and long entries stay
+  exactly proportional; only entries shorter than ~8 min are stretched, and
+  hour marks follow the same mapping so they stay consistent. Durations under
+  a minute show seconds (`40s`).
+- Each entry is a tinted row with a coloured left edge; label is
+  "name  start – end · duration" (two lines when the block is tall enough).
+- Day heights depend on entries, so "Jump to date" loads the days in
+  between before computing the offset; "Now" scrolls back to the bottom.
+- The Android overscroll stretch is disabled app-wide
+  (`scrollBehavior: overscroll: false`).
 - Entries are loaded per day on demand and cached; the cache is cleared when
   tracking changes. Insights (Phase 6) keeps distribution and comparison.
 

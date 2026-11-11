@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../models/activity.dart';
 
-/// One of the eight grid buttons. [activity] is null for an empty slot.
+/// One of the eight compact grid buttons, filled with the activity's colour.
+/// Shows a pause icon while the activity is running and a play icon
+/// otherwise. [activity] is null for an empty slot (shows "+").
 class ActivityTile extends StatelessWidget {
   const ActivityTile({
     super.key,
@@ -20,15 +22,15 @@ class ActivityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
     final a = activity;
-
-    final background = isActive
-        ? scheme.primaryContainer
-        : scheme.surfaceContainerHigh;
-    final foreground = isActive ? scheme.onPrimaryContainer : scheme.onSurface;
+    final fill = a == null ? Colors.transparent : Color(a.color);
+    final iconColor = a == null
+        ? scheme.onSurfaceVariant
+        : ThemeData.estimateBrightnessForColor(fill) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
     final border = isActive
-        ? BorderSide(color: scheme.primary, width: 2)
+        ? BorderSide(color: scheme.onSurface, width: 3)
         : a == null
         ? BorderSide(color: scheme.outlineVariant)
         : BorderSide.none;
@@ -36,65 +38,29 @@ class ActivityTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isActive,
+      label: a == null
+          ? 'Empty slot, tap to set up'
+          : '${a.name}${isActive ? ', active' : ''}',
+      excludeSemantics: true,
       child: Material(
-        color: a == null ? Colors.transparent : background,
+        color: fill,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           side: border,
         ),
         clipBehavior: Clip.antiAlias,
-        // Fill the whole grid cell, whatever the content height.
-        child: SizedBox.expand(
-          child: InkWell(
-            onTap: onTap,
-            onLongPress: onLongPress,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: a == null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add, color: scheme.onSurfaceVariant),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Tap to set up',
-                            textAlign: TextAlign.center,
-                            style: text.labelMedium?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: Color(a.color),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          a.name,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: text.titleSmall?.copyWith(
-                            color: foreground,
-                            fontWeight: isActive ? FontWeight.w700 : null,
-                          ),
-                        ),
-                        if (isActive) ...[
-                          const SizedBox(height: 6),
-                          Icon(Icons.play_arrow_rounded, color: scheme.primary),
-                        ],
-                      ],
-                    ),
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: SizedBox.expand(
+            child: Icon(
+              a == null
+                  ? Icons.add
+                  : isActive
+                  ? Icons.pause_rounded
+                  : Icons.play_arrow_rounded,
+              color: iconColor,
+              size: 30,
             ),
           ),
         ),

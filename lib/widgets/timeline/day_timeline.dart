@@ -4,56 +4,56 @@ import '../../services/history/history_service.dart';
 import '../../services/tracking/time_range.dart';
 import '../../util/date_format.dart';
 import '../../util/duration_format.dart';
+import 'timeline_layout.dart';
 
-/// Vertical timeline of one local day. Height is proportional to time:
-/// [pixelsPerMinute] × the real length of the day (23/25 h on DST days).
-/// For today, the timeline ends at [now].
+/// Vertical timeline of one local day. Height follows time at
+/// [pixelsPerMinute]; every entry is drawn and labelled, short ones get a
+/// minimum height (see [TimelineLayout]). For today the timeline ends at [now].
 class DayTimeline extends StatelessWidget {
   const DayTimeline({
     super.key,
     required this.day,
     required this.entries,
     required this.now,
-    this.pixelsPerMinute = defaultPixelsPerMinute,
   });
 
-  static const double defaultPixelsPerMinute = 1.5;
-  static const double _timeGutter = 52;
-  static const double _barWidth = 14;
-  static const double _labelGap = 12;
+  /// 240 px per hour: detail over overview; scroll for earlier hours.
+  static const double pixelsPerMinute = 4;
 
-  /// Minimum block heights before a label (name / name + times) is drawn.
-  static const double _nameOnlyHeight = 18;
-  static const double _fullLabelHeight = 38;
+  /// One label line plus padding.
+  static const double minBlockHeight = 30;
+
+  /// Blocks at least this tall show name and times on separate lines.
+  static const double _twoLineHeight = 48;
+  static const double _timeGutter = 52;
 
   final TimeRange day;
   final List<DayEntry> entries;
   final DateTime now;
-  final double pixelsPerMinute;
 
   /// Where the drawn part of the day ends: day end, or now for today.
   static DateTime visibleEnd(TimeRange day, DateTime now) =>
       day.contains(now) ? now : day.end;
 
-  /// Height of the timeline for [day] (needed for scroll offsets).
-  static double heightFor(
+  static TimelineLayout layoutFor(
     TimeRange day,
-    DateTime now, {
-    double pixelsPerMinute = defaultPixelsPerMinute,
-  }) =>
-      visibleEnd(day, now).difference(day.start).inSeconds /
-      60 *
-      pixelsPerMinute;
-
-  double _y(DateTime t) =>
-      t.difference(day.start).inSeconds / 60 * pixelsPerMinute;
+    List<DayEntry> entries,
+    DateTime now,
+  ) => TimelineLayout.compute(
+    day: day,
+    entries: entries,
+    end: visibleEnd(day, now),
+    now: now,
+    pixelsPerMinute: pixelsPerMinute,
+    minBlockHeight: minBlockHeight,
+  );
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final end = visibleEnd(day, now);
-    final height = heightFor(day, now, pixelsPerMinute: pixelsPerMinute);
+    final layout = layoutFor(day, entries, now);
 
     // Hour marks from calendar fields, so DST days get the right labels.
     final hours = <DateTime>[];
@@ -64,21 +64,22 @@ class DayTimeline extends StatelessWidget {
     }
 
     return SizedBox(
-      height: height,
+      height: layout.height,
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
+          for (final block in layout.blocks) _block(context, block),
           for (final h in hours) ...[
             Positioned(
-              left: _timeGutter,
-              right: 0,
-              top: _y(h),
-              child: Divider(height: 1, color: scheme.outlineVariant),
+              left: _timeGutter - 6,
+              width: 6,
+              top: layout.yOf(h),
+              child: Divider(height: 1, color: scheme.outline),
             ),
             Positioned(
               left: 0,
-              width: _timeGutter - 8,
-              top: (_y(h) - 7).clamp(0, double.infinity),
+              width: _timeGutter - 10,
+              top: (layout.yOf(h) - 7).clamp(0, double.infinity),
               child: Text(
                 formatTimeOfDay(h),
                 textAlign: TextAlign.right,
@@ -89,80 +90,73 @@ class DayTimeline extends StatelessWidget {
               ),
             ),
           ],
-          // The line itself.
-          Positioned(
-            left: _timeGutter + _barWidth / 2 - 1,
-            width: 2,
-            top: 0,
-            bottom: 0,
-            child: ColoredBox(color: scheme.outlineVariant),
-          ),
-          for (final e in entries) ..._entry(context, e),
         ],
       ),
     );
   }
 
-  List<Widget> _entry(BuildContext context, DayEntry e) {
+  Widget _block(BuildContext context, TimelineBlock block) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final e = block.item;
+    final color = Color(e.activity.color);
     final endAt = e.end ?? now;
-    final top = _y(e.start);
-    final blockHeight = (_y(endAt) - top).clamp(1.0, double.infinity);
     final running = e.end == null;
     final endLabel = running
         ? 'now'
         : endAt.isAtSameMomentAs(day.end)
         ? '24:00'
         : formatTimeOfDay(endAt);
+    final times =
+        '${formatTimeOfDay(e.start)} – $endLabel · '
+        '${formatEntryDuration(e.durationAt(now))}';
+    final name = Text(
+      e.activity.name,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: text.titleSmall?.copyWith(color: running ? scheme.primary : null),
+    );
+    final timesText = Text(
+      times,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: text.bodySmall?.copyWith(
+        color: scheme.onSurfaceVariant,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
 
-    return [
-      Positioned(
-        key: ValueKey('timeline-block-${e.entry.id}'),
-        left: _timeGutter,
-        width: _barWidth,
-        top: top,
-        height: blockHeight,
+    return Positioned(
+      key: ValueKey('timeline-block-${e.entry.id}'),
+      left: _timeGutter,
+      right: 8,
+      top: block.top,
+      height: block.height,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 1),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: Color(e.activity.color),
+            color: color.withValues(alpha: 0.18),
+            border: Border(left: BorderSide(color: color, width: 6)),
             borderRadius: BorderRadius.circular(4),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: block.height >= _twoLineHeight
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [name, timesText],
+                  )
+                : Row(
+                    children: [
+                      Flexible(child: name),
+                      const SizedBox(width: 8),
+                      Flexible(child: timesText),
+                    ],
+                  ),
           ),
         ),
       ),
-      if (blockHeight >= _nameOnlyHeight)
-        Positioned(
-          left: _timeGutter + _barWidth + _labelGap,
-          right: 8,
-          top: top + 2,
-          height: blockHeight - 2,
-          child: ClipRect(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  e.activity.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: text.titleSmall?.copyWith(
-                    color: running ? scheme.primary : null,
-                  ),
-                ),
-                if (blockHeight >= _fullLabelHeight)
-                  Text(
-                    '${formatTimeOfDay(e.start)} – $endLabel · '
-                    '${formatTotal(e.durationAt(now))}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: text.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-    ];
+    );
   }
 }

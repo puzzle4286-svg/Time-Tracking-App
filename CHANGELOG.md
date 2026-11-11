@@ -31,7 +31,11 @@ explicitly under **Database**.
   blocks proportional to duration, labels beside blocks, jump to date / now.
 
 ### Changed
-- Activity grid is now 2 rows × 4 columns.
+- Activity grid is now 2 rows × 4 columns of compact buttons filled with the
+  activity colour, showing pause (active) or play.
+- History timeline zoomed to 240 px per hour; every entry is shown and
+  labelled regardless of length; sub-minute durations show seconds.
+- Overscroll stretch effect disabled.
 - Insights no longer holds the daily timeline; it moved to History.
 
 ### Fixed

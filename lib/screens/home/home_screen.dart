@@ -11,8 +11,8 @@ import '../../widgets/activities/activity_editor_sheet.dart';
 import '../../widgets/activities/activity_tile.dart';
 import 'current_activity_header.dart';
 
-/// Main screen: current activity on top, the grid (2 rows × 4 columns,
-/// positions 1–4 on top) below, within thumb reach.
+/// Main screen: current activity on top, a compact grid (2 rows × 4
+/// columns, positions 1–4 on top) at the bottom, within thumb reach.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
@@ -24,6 +24,9 @@ class HomeScreen extends StatelessWidget {
   final TrackingService tracking;
   final ActivityService activities;
   final Clock clock;
+
+  /// Compact buttons, so the grid takes little space at the bottom.
+  static const double tileHeight = 64;
 
   Future<void> _select(BuildContext context, Activity activity) async {
     if (activity.id == tracking.current.activity.id) return;
@@ -97,35 +100,31 @@ class HomeScreen extends StatelessWidget {
                 activity: active,
                 clock: clock,
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  child: Column(
-                    children: [
-                      for (var row = 0; row < Activity.gridRows; row++)
-                        Expanded(
-                          child: Row(
-                            children: [
-                              for (
-                                var col = 0;
-                                col < Activity.gridColumns;
-                                col++
-                              )
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(3),
-                                    child: _tile(
-                                      context,
-                                      row * Activity.gridColumns + col + 1,
-                                      activeId,
-                                    ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                child: Column(
+                  children: [
+                    for (var row = 0; row < Activity.gridRows; row++)
+                      SizedBox(
+                        height: tileHeight + 6,
+                        child: Row(
+                          children: [
+                            for (var col = 0; col < Activity.gridColumns; col++)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(3),
+                                  child: _tile(
+                                    context,
+                                    row * Activity.gridColumns + col + 1,
+                                    activeId,
                                   ),
                                 ),
-                            ],
-                          ),
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
             ],

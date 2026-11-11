@@ -140,3 +140,24 @@
 
 **Next steps**
 - Developer review, push, then Phase 4.
+
+## 2026-11-11 – Review round 2
+
+**Requested**
+- Grid at ~25% of its height; icon-only tiles (pause/play) in activity colour.
+- No UI stretching when scrolling past the ends of History.
+- Every entry visible on the timeline regardless of length; more zoom.
+
+**Work completed**
+- `ActivityTile` rewritten; grid rows fixed at 64 dp, placed at the bottom.
+- `scrollBehavior.copyWith(overscroll: false)` on `MaterialApp`.
+- `TimelineLayout` (pure, tested) with minimum block height; 4 px/min.
+- History day loads share futures and are guarded by a generation counter so
+  a load finishing after a tracking change cannot re-insert stale entries
+  (found while fixing a lint).
+- History toolbar moved out of the overlay (it covered the day header).
+
+**Testing performed**
+- 98 tests pass in all seven timezones.
+- Emulator: compact grid; six 3–4 s entries all labelled on the timeline;
+  mid-drag screenshots at both ends show no stretch.

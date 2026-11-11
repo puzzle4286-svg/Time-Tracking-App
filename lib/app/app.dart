@@ -20,6 +20,10 @@ class TimeTrackerApp extends StatelessWidget {
         return MaterialApp(
           title: 'Time Tracker',
           theme: buildTheme(s.appearance, s.accent),
+          // No Android stretch/glow when scrolling past the ends.
+          scrollBehavior: const MaterialScrollBehavior().copyWith(
+            overscroll: false,
+          ),
           home: home,
         );
       },

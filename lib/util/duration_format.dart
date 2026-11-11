@@ -16,3 +16,10 @@ String formatTotal(Duration d) {
 }
 
 String _two(int n) => n.toString().padLeft(2, '0');
+
+/// Like [formatTotal], but shows seconds for entries under a minute (`45s`),
+/// so very short entries do not read as `0m`.
+String formatEntryDuration(Duration d) {
+  if (d.isNegative) return '0s';
+  return d.inMinutes == 0 ? '${d.inSeconds}s' : formatTotal(d);
+}

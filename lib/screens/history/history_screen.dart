@@ -37,9 +37,13 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final _scroll = ScrollController();
   final Map<DateTime, List<DayEntry>> _cache = {};
-  final Set<DateTime> _loading = {};
+  final Map<DateTime, Future<void>> _loading = {};
   DateTime? _firstDay;
   Timer? _ticker;
+
+  /// Bumped whenever cached data becomes stale, so loads that were already
+  /// running cannot write outdated entries back into the cache.
+  int _generation = 0;
 
   @override
   void initState() {
@@ -68,7 +72,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void _onTrackingChanged() {
     // Switching or midnight splitting only changes today (and possibly
     // yesterday right after midnight); cheapest correct choice: drop all.
-    setState(_cache.clear);
+    setState(() {
+      _generation++;
+      _cache.clear();
+      _loading.clear();
+    });
     _loadFirstDay();
   }
 
@@ -91,17 +99,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return n;
   }
 
-  Future<void> _ensureLoaded(DateTime day) async {
-    if (_cache.containsKey(day) || !_loading.add(day)) return;
-    final entries = await widget.history.entriesForDay(day);
-    _loading.remove(day);
-    if (mounted) setState(() => _cache[day] = entries);
+  /// Loads [day] once; concurrent callers share the same future.
+  Future<void> _ensureLoaded(DateTime day) {
+    if (_cache.containsKey(day)) return Future.value();
+    return _loading[day] ??= _load(day);
   }
 
-  double _extentOf(int i, DateTime now) =>
-      HistoryScreen.dayHeaderHeight +
-      DayTimeline.heightFor(localDay(_dayAt(i)), now) +
-      24; // bottom padding of a day
+  Future<void> _load(DateTime day) async {
+    final generation = _generation;
+    final entries = await widget.history.entriesForDay(day);
+    if (!mounted || generation != _generation) return;
+    setState(() {
+      _cache[day] = entries;
+      _loading.removeWhere((key, _) => key == day);
+    });
+  }
+
+  /// Height of day [i]; exact once its entries are loaded.
+  double _extentOf(int i, DateTime now) {
+    final day = _dayAt(i);
+    return HistoryScreen.dayHeaderHeight +
+        DayTimeline.layoutFor(
+          localDay(day),
+          _cache[day] ?? const [],
+          now,
+        ).height +
+        24; // bottom padding of a day
+  }
 
   Future<void> _jumpToDate() async {
     final first = _firstDay ?? _today();
@@ -112,18 +136,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
       lastDate: _today(),
     );
     if (picked == null || !mounted) return;
+    // Day heights depend on their entries, so load every day in between.
+    final target = _indexOf(picked);
+    for (var i = 0; i <= target; i++) {
+      await _ensureLoaded(_dayAt(i));
+    }
+    if (!mounted) return;
     final now = widget.clock.now();
     // The list is reversed: offset 0 is now; day i starts after days 0..i-1.
     var offset = 0.0;
-    for (var i = 0; _dayAt(i).isAfter(startOfLocalDay(picked)); i++) {
+    for (var i = 0; i < target; i++) {
       offset += _extentOf(i, now);
     }
     // Show the picked day's header at the top of the viewport.
-    final target =
-        offset +
-        _extentOf(_indexOf(picked), now) -
-        _scroll.position.viewportDimension;
-    _scroll.jumpTo(target.clamp(0, _scroll.position.maxScrollExtent));
+    final position =
+        offset + _extentOf(target, now) - _scroll.position.viewportDimension;
+    _scroll.jumpTo(
+      position.clamp(0.0, _scroll.position.maxScrollExtent).toDouble(),
+    );
   }
 
   int _indexOf(DateTime day) {
@@ -137,44 +167,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final now = widget.clock.now();
-    return Stack(
+    return Column(
       children: [
-        ListView.builder(
-          key: const Key('history-list'),
-          controller: _scroll,
-          reverse: true, // now at the bottom; scroll up into the past
-          itemCount: _dayCount,
-          itemBuilder: (context, i) {
-            final day = _dayAt(i);
-            unawaited(_ensureLoaded(day));
-            return _DaySection(
-              key: ValueKey(day),
-              day: localDay(day),
-              entries: _cache[day],
-              now: now,
-            );
-          },
-        ),
-        Positioned(
-          right: 16,
-          top: 8,
+        // Toolbar above the timeline so it never covers entries.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              FilledButton.tonalIcon(
+              TextButton.icon(
                 onPressed: _jumpToDate,
                 icon: const Icon(Icons.calendar_month),
                 label: const Text('Jump to date'),
               ),
-              const SizedBox(width: 8),
-              FilledButton.tonal(
+              TextButton.icon(
                 onPressed: () => _scroll.animateTo(
                   0,
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOut,
                 ),
-                child: const Text('Now'),
+                icon: const Icon(Icons.vertical_align_bottom),
+                label: const Text('Now'),
               ),
             ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            key: const Key('history-list'),
+            controller: _scroll,
+            reverse: true, // now at the bottom; scroll up into the past
+            itemCount: _dayCount,
+            itemBuilder: (context, i) {
+              final day = _dayAt(i);
+              unawaited(_ensureLoaded(day));
+              return _DaySection(
+                key: ValueKey(day),
+                day: localDay(day),
+                entries: _cache[day],
+                now: now,
+              );
+            },
           ),
         ),
       ],
