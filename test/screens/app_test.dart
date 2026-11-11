@@ -8,6 +8,7 @@ import 'package:time_tracker/repositories/settings_repository.dart';
 import 'package:time_tracker/repositories/ui_state_store.dart';
 import 'package:time_tracker/screens/home/home_screen.dart';
 import 'package:time_tracker/services/activities/activity_service.dart';
+import 'package:time_tracker/services/history/entry_edit_service.dart';
 import 'package:time_tracker/services/history/history_service.dart';
 
 import '../support/matchers.dart';
@@ -23,7 +24,7 @@ void main() {
   setUp(() async {
     f = await TrackingFixture.create(monday9);
     await f.service.reconcile();
-    activities = ActivityService(f.db, f.clock);
+    activities = ActivityService(f.db, f.clock, f.service);
     await activities.load();
     final repo = SettingsRepository(f.db);
     settings = SettingsController(repo, await repo.load());
@@ -40,6 +41,7 @@ void main() {
           activities: activities,
           settings: settings,
           history: HistoryService(f.db),
+          edits: EntryEditService(f.db, f.clock, f.service),
           uiState: uiState,
           clock: f.clock,
         ),
@@ -418,6 +420,131 @@ void main() {
       await tester.tap(find.text('Now'));
       await tester.pumpAndSettle();
       expect(uiState.get('history.anchor'), 'now');
+    });
+  });
+
+  group('delete activity', () {
+    Future<void> openDelete(WidgetTester tester, int position) async {
+      await tester.longPress(find.byKey(Key('activity-tile-$position')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete activity'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('an activity without history is simply deleted', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await openDelete(tester, 2); // Gaming, never tracked
+      expect(find.text('It has no recorded time.'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+      expect(activities.atPosition(2), isNull);
+      expect(find.byIcon(Icons.add), findsNWidgets(6));
+    });
+
+    testWidgets('history is kept under a new name by default', (tester) async {
+      f.clock.advance(const Duration(hours: 1));
+      await f.service.switchTo(f.gaming);
+      f.clock.advance(const Duration(hours: 1));
+      await f.service.switchTo(f.freeTime);
+      await pumpApp(tester);
+
+      await openDelete(tester, 2);
+      expect(find.textContaining('1 past entry'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      final day = await HistoryService(f.db).entriesForDay(f.clock.now());
+      expect(day.map((e) => e.activity.name), contains('Gaming (deleted)'));
+      expect(activities.atPosition(2), isNull);
+    });
+
+    testWidgets('deleting the running activity hands over to another', (
+      tester,
+    ) async {
+      f.clock.advance(const Duration(hours: 1));
+      await pumpApp(tester);
+      await openDelete(tester, 1); // Free Time, running
+      expect(find.text('It is running now. Continue with:'), findsOneWidget);
+      await tester.tap(find.text('Mark them as "Unavailable"'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, 'current-activity-name'), 'Gaming');
+      expect(activities.atPosition(1), isNull);
+      final day = await HistoryService(f.db).entriesForDay(f.clock.now());
+      expect(day.first.activity.name, 'Unavailable');
+    });
+  });
+
+  group('edit entries from History', () {
+    Future<void> openHistoryWithEntries(WidgetTester tester) async {
+      // Free Time 09-10, Gaming 10-11, Free Time 11-now (12:00).
+      f.clock.set(DateTime(2026, 11, 9, 10));
+      await f.service.switchTo(f.gaming);
+      f.clock.set(DateTime(2026, 11, 9, 11));
+      await f.service.switchTo(f.freeTime);
+      f.clock.set(DateTime(2026, 11, 9, 12));
+      await pumpApp(tester);
+      await tester.tap(find.text('History'));
+      await settle(tester);
+    }
+
+    Future<void> tapGamingBlock(WidgetTester tester) async {
+      final gaming = (await f.entries())[1];
+      await tester.tap(find.byKey(ValueKey('timeline-block-${gaming.id}')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('tapping an entry offers the edit actions', (tester) async {
+      await openHistoryWithEntries(tester);
+      await tapGamingBlock(tester);
+      for (final label in [
+        'Change activity',
+        'Change start / end',
+        'Split',
+        'Delete',
+      ]) {
+        expect(find.text(label), findsOneWidget);
+      }
+    });
+
+    testWidgets('change activity', (tester) async {
+      await openHistoryWithEntries(tester);
+      await tapGamingBlock(tester);
+      await tester.tap(find.text('Change activity'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(SimpleDialogOption, 'Study'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+
+      expect((await f.entries())[1].activityId, f.study);
+      expect(find.text('Study'), findsWidgets); // timeline refreshed
+    });
+
+    testWidgets('delete and fill with the following activity', (tester) async {
+      await openHistoryWithEntries(tester);
+      await tapGamingBlock(tester);
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Split evenly between Free Time and Free Time'),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.text('Fill with the following activity (Free Time)'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+
+      final entries = await f.entries();
+      expect(entries, hasLength(2));
+      expect(entries.last.start, isMoment(DateTime(2026, 11, 9, 10)));
+      expect(find.text('10:00 – now · 2h 0m'), findsOneWidget);
     });
   });
 

@@ -215,3 +215,36 @@ scroll end. Keys: `ui.settings.accentScroll` (pixels),
   restart or hours later the same moment is shown in the same place.
 - Tracking changes refresh today and yesterday in place, keeping old data
   until the new arrives, so the layout does not jump.
+
+## D29 – Activity deletion
+`ActivityService.delete(id, history:, newActiveId:)`. All choices are
+validated before anything is written. If the activity is running, the
+successor is switched to first (its own atomic transaction, so an activity is
+always active), then one transaction applies the history choice and
+soft-deletes: `KeepUnderName` renames the kept row, `MoveToActivity`
+reassigns entries, `MarkUnavailable` reassigns them to the system activity.
+Without entries no choice is needed. The UI defaults to "keep under a new
+name" (`<name> (deleted)`), the least surprising option.
+
+## D30 – Editing history entries (developer rules, 2026-11-12)
+`EntryEditService`, one transaction per edit, then midnight re-split and a
+tracking reconcile so the header, History and future statistics follow.
+- **Change activity**: only the entry's activity changes. On the running
+  entry this changes what is running without splitting the session.
+- **Change start / end**: a dry run (`apply: false`) lists every effect on
+  other entries; the UI asks for confirmation if there are any, then applies
+  the recomputed plan. Overlapped entries are shortened, split around the
+  edited entry, or removed if fully covered. When the entry shrinks, the
+  directly adjacent neighbour takes over exactly the freed part of the old
+  range (never more), so tracked time is not silently lost. End cannot be in
+  the future; the running entry's end cannot be set; an edit may not swallow
+  the running entry.
+- **Delete**: fill with the previous or following activity, or split the time
+  evenly between them. An option is offered only if that neighbour touches
+  the entry exactly. Deleting the running entry offers "resume the previous
+  activity". "Leave empty" appears only when no neighbour is adjacent (and
+  never for the running entry).
+- **Split** (from the original spec, kept as a fourth action): one entry
+  becomes two of the same activity at a chosen time.
+- Time pickers have minute precision; an unchanged field keeps its exact
+  original timestamp (seconds included).

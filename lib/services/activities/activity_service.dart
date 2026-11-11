@@ -4,16 +4,44 @@ import 'package:sqflite/sqflite.dart';
 import '../../models/activity.dart';
 import '../../models/activity_colors.dart';
 import '../../repositories/activity_repository.dart';
+import '../../repositories/time_entry_repository.dart';
 import '../../util/clock.dart';
+import '../tracking/tracking_service.dart';
+
+/// What happens to an activity's past entries when it is deleted.
+sealed class HistoryChoice {
+  const HistoryChoice();
+}
+
+/// Keep the entries under a new name (the activity row is renamed).
+final class KeepUnderName extends HistoryChoice {
+  const KeepUnderName(this.name);
+  final String name;
+}
+
+/// Reassign the entries to another live activity.
+final class MoveToActivity extends HistoryChoice {
+  const MoveToActivity(this.activityId);
+  final int activityId;
+}
+
+/// Reassign the entries to the system "Unavailable" activity.
+final class MarkUnavailable extends HistoryChoice {
+  const MarkUnavailable();
+}
 
 /// The eight grid activities and the operations that change them.
 class ActivityService extends ChangeNotifier {
-  ActivityService(this._db, this._clock);
+  ActivityService(this._db, this._clock, this._tracking);
 
   static const int maxNameLength = 30;
 
   final Database _db;
   final Clock _clock;
+
+  /// Needed to hand over the active state when the active activity is
+  /// deleted, and to refresh the current session after changes.
+  final TrackingService _tracking;
 
   List<Activity> _live = const [];
 
@@ -85,5 +113,81 @@ class ActivityService extends ChangeNotifier {
   void _checkName(String name) {
     final error = validateName(name);
     if (error != null) throw ArgumentError.value(name, 'name', error);
+  }
+
+  /// Number of time entries recorded for [activityId].
+  Future<int> entryCount(int activityId) =>
+      TimeEntryRepository(_db).countForActivity(activityId);
+
+  /// Deletes a grid activity without losing history.
+  ///
+  /// If it has entries, [history] says what happens to them. If it is the
+  /// active activity, [newActiveId] must name the activity that runs from now
+  /// on (exactly one activity is always active). Everything is validated
+  /// before anything is written.
+  Future<void> delete(
+    int id, {
+    HistoryChoice? history,
+    int? newActiveId,
+  }) async {
+    final activity = byId(id);
+    if (activity == null) throw StateError('Activity $id is not live.');
+    final isActive = _tracking.current.activity.id == id;
+    final count = await entryCount(id);
+
+    if (isActive) {
+      if (newActiveId == null ||
+          newActiveId == id ||
+          byId(newActiveId) == null) {
+        throw ArgumentError.value(
+          newActiveId,
+          'newActiveId',
+          'Choose another activity to run from now on',
+        );
+      }
+    }
+    if (count > 0) {
+      switch (history) {
+        case null:
+          throw ArgumentError('Choose what happens to the past entries');
+        case KeepUnderName(:final name):
+          _checkName(name);
+        case MoveToActivity(:final activityId):
+          if (activityId == id || byId(activityId) == null) {
+            throw ArgumentError.value(
+              activityId,
+              'activityId',
+              'Not another live activity',
+            );
+          }
+        case MarkUnavailable():
+          break;
+      }
+    }
+
+    // Hand over the active state first (its own atomic transaction), so
+    // there is never a moment without an active activity.
+    if (isActive) await _tracking.switchTo(newActiveId!);
+
+    final now = _clock.now();
+    await _db.transaction((txn) async {
+      final activities = ActivityRepository(txn);
+      final entries = TimeEntryRepository(txn);
+      switch (count > 0 ? history : null) {
+        case KeepUnderName(:final name):
+          await activities.softDelete(id, now, rename: name.trim());
+        case MoveToActivity(:final activityId):
+          await entries.reassignActivity(id, activityId);
+          await activities.softDelete(id, now);
+        case MarkUnavailable():
+          final unavailable = await activities.systemActivity();
+          await entries.reassignActivity(id, unavailable!.id);
+          await activities.softDelete(id, now);
+        case null:
+          await activities.softDelete(id, now);
+      }
+    });
+    await load();
+    await _tracking.reconcile();
   }
 }

@@ -1,7 +1,7 @@
 # Architecture
 
-Status: Phases 1–3 implemented (storage, seeding, theme, tracking, main UI,
-read-only history timeline).
+Status: Phases 1–4 implemented (storage, seeding, theme, tracking, main UI,
+history timeline, activity deletion, history editing).
 Goals and analytics sections describe the planned design.
 
 ## Layers
@@ -88,6 +88,11 @@ Rules:
 | `lib/screens/history/history_screen.dart` | Continuous reversed timeline, jump to date / now |
 | `lib/widgets/timeline/day_timeline.dart` | One day drawn at 4 px/min; every entry labelled |
 | `lib/widgets/timeline/timeline_layout.dart` | Pure layout: time ⇄ y (`yOf`, `timeOf`) with minimum block height |
+| `lib/services/history/entry_edit_service.dart` | Entry edits: change activity, retime (dry run + apply), delete with fill, split |
+| `lib/services/tracking/day_split.dart` | `splitAtLocalMidnights` – shared by tracking and edits |
+| `lib/widgets/activities/delete_activity_flow.dart` | Delete dialog: successor + history choice |
+| `lib/widgets/entries/entry_editor_sheet.dart` | History entry actions and their dialogs |
+| `lib/widgets/common/date_time_picker.dart` | Date + time picking that keeps unchanged seconds |
 | `lib/repositories/ui_state_store.dart` | Persisted UI conveniences (scroll positions), `ui.*` keys in `settings` |
 
 ## Database (schema v2 implemented; goals planned as v3)

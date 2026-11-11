@@ -30,6 +30,13 @@ explicitly under **Database**.
 - History tab: continuous vertical timeline back to the first recorded day,
   blocks proportional to duration, labels beside blocks, jump to date / now.
 
+- Delete activities without losing history: keep entries under a new name,
+  move them to another activity, or mark them "Unavailable"; a running
+  activity hands over to a chosen successor.
+- Edit history from the History tab: change activity, change start/end (with
+  a confirmation listing every affected entry), split, or delete and fill the
+  time with the previous/following activity or split it between them.
+
 ### Changed
 - Activity grid is now 2 rows × 4 columns of compact buttons filled with the
   activity colour, showing pause (active) or play.

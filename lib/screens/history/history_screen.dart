@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../repositories/ui_state_store.dart';
+import '../../services/activities/activity_service.dart';
+import '../../services/history/entry_edit_service.dart';
 import '../../services/history/history_service.dart';
 import '../../services/tracking/durations.dart';
 import '../../services/tracking/time_range.dart';
@@ -11,6 +13,7 @@ import '../../util/clock.dart';
 import '../../util/date_format.dart';
 import '../../util/duration_format.dart';
 import '../../util/timestamps.dart';
+import '../../widgets/entries/entry_editor_sheet.dart';
 import '../../widgets/timeline/day_timeline.dart';
 
 /// One continuous vertical timeline: now at the bottom, scrolling up goes back
@@ -26,11 +29,18 @@ class HistoryScreen extends StatefulWidget {
     super.key,
     required this.history,
     required this.tracking,
+    required this.edits,
+    required this.activities,
     required this.uiState,
     required this.clock,
   });
 
   final HistoryService history;
+
+  /// Edits made from this screen; also listened to, like [activities]
+  /// (renames and deletions change how history is shown).
+  final EntryEditService edits;
+  final ActivityService activities;
 
   /// Listened to so the timeline refreshes when the activity changes.
   final TrackingService tracking;
@@ -67,6 +77,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     widget.tracking.addListener(_onTrackingChanged);
+    widget.edits.addListener(_refreshAll);
+    widget.activities.addListener(_refreshAll);
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     _loadFirstDay();
     _restorePosition();
@@ -75,6 +87,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void dispose() {
     widget.tracking.removeListener(_onTrackingChanged);
+    widget.edits.removeListener(_refreshAll);
+    widget.activities.removeListener(_refreshAll);
     _ticker?.cancel();
     _scroll.dispose();
     super.dispose();
@@ -111,6 +125,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _loading.clear();
     for (final i in [0, 1]) {
       _loading[_dayAt(i)] = _fetch(_dayAt(i));
+    }
+    _loadFirstDay();
+  }
+
+  /// Any day may have changed: refetch every loaded day in place.
+  void _refreshAll() {
+    _generation++;
+    _loading.clear();
+    for (final day in _cache.keys.toList()) {
+      _loading[day] = _fetch(day);
     }
     _loadFirstDay();
   }
@@ -355,6 +379,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 unawaited(_ensureLoaded(day));
                 return _DaySection(
                   key: ValueKey(day),
+                  onEntryTap: (item) => showEntryEditor(
+                    context,
+                    item: item,
+                    edits: widget.edits,
+                    activities: widget.activities,
+                    clock: widget.clock,
+                  ),
                   sectionKey: _sectionKey(day),
                   day: localDay(day),
                   entries: _cache[day],
@@ -373,6 +404,7 @@ class _DaySection extends StatelessWidget {
   const _DaySection({
     super.key,
     required this.sectionKey,
+    required this.onEntryTap,
     required this.day,
     required this.entries,
     required this.now,
@@ -380,6 +412,7 @@ class _DaySection extends StatelessWidget {
 
   /// Used to measure the section's on-screen position.
   final GlobalKey sectionKey;
+  final ValueChanged<DayEntry> onEntryTap;
   final TimeRange day;
   final List<DayEntry>? entries;
   final DateTime now;
@@ -414,7 +447,12 @@ class _DaySection extends StatelessWidget {
               ),
             ),
           ),
-          DayTimeline(day: day, entries: list ?? const [], now: now),
+          DayTimeline(
+            day: day,
+            entries: list ?? const [],
+            now: now,
+            onEntryTap: onEntryTap,
+          ),
         ],
       ),
     );

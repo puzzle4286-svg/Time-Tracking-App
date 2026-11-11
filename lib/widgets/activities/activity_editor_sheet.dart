@@ -7,12 +7,14 @@ import '../../services/activities/activity_service.dart';
 typedef ActivityDraft = ({String name, int color});
 
 /// Bottom sheet for setting up an empty slot or editing an activity.
-/// Returns the entered values, or null if cancelled.
+/// Returns the entered values, or null if cancelled. With [onDelete], a
+/// "Delete activity" button closes the sheet and calls it.
 Future<ActivityDraft?> showActivityEditor(
   BuildContext context, {
   required String title,
   required String initialName,
   required int initialColor,
+  VoidCallback? onDelete,
 }) {
   return showModalBottomSheet<ActivityDraft>(
     context: context,
@@ -22,6 +24,7 @@ Future<ActivityDraft?> showActivityEditor(
       title: title,
       initialName: initialName,
       initialColor: initialColor,
+      onDelete: onDelete,
     ),
   );
 }
@@ -31,11 +34,13 @@ class _ActivityEditor extends StatefulWidget {
     required this.title,
     required this.initialName,
     required this.initialColor,
+    required this.onDelete,
   });
 
   final String title;
   final String initialName;
   final int initialColor;
+  final VoidCallback? onDelete;
 
   @override
   State<_ActivityEditor> createState() => _ActivityEditorState();
@@ -119,6 +124,20 @@ class _ActivityEditorState extends State<_ActivityEditor> {
             ),
             const SizedBox(height: 24),
             FilledButton(onPressed: _save, child: const Text('Save')),
+            if (widget.onDelete != null) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  widget.onDelete!();
+                },
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete activity'),
+              ),
+            ],
           ],
         ),
       ),

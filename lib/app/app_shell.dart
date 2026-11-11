@@ -6,6 +6,7 @@ import '../screens/home/home_screen.dart';
 import '../screens/insights/insights_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../services/activities/activity_service.dart';
+import '../services/history/entry_edit_service.dart';
 import '../services/history/history_service.dart';
 import '../services/tracking/tracking_service.dart';
 import '../util/clock.dart';
@@ -20,6 +21,7 @@ class AppShell extends StatefulWidget {
     required this.activities,
     required this.settings,
     required this.history,
+    required this.edits,
     required this.uiState,
     required this.clock,
   });
@@ -28,6 +30,7 @@ class AppShell extends StatefulWidget {
   final ActivityService activities;
   final SettingsController settings;
   final HistoryService history;
+  final EntryEditService edits;
   final UiStateStore uiState;
   final Clock clock;
 
@@ -65,6 +68,8 @@ class _AppShellState extends State<AppShell> {
         1 => HistoryScreen(
           history: widget.history,
           tracking: widget.tracking,
+          edits: widget.edits,
+          activities: widget.activities,
           uiState: widget.uiState,
           clock: widget.clock,
         ),

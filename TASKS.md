@@ -1,6 +1,6 @@
 # Tasks
 
-**Current phase:** Phase 3 revisions (developer feedback) complete; awaiting review. Next: Phase 4 – Activity and history management
+**Current phase:** Phase 4 – Activity and history management (complete, awaiting review). Next: Phase 5 – Goals
 
 A phase is only checked off once its functionality is tested.
 
@@ -60,11 +60,14 @@ A phase is only checked off once its functionality is tested.
 - [x] History grid lines: solid per hour, dashed per half hour
 
 ## Phase 4 – Activity and history management
-- [ ] Edit activity (name, color)
-- [ ] Delete activity: rename history / replace / mark Unavailable; replacement required if active
-- [ ] Tap a block in the History timeline to edit activity/start/end; delete; split
-- [ ] Overlap detection with explicit resolution (trim neighbours or cancel)
-- [ ] Tests for all of the above
+- [x] Edit activity (name, colour)
+- [x] Delete activity: keep under new name / move to another / mark Unavailable;
+      successor required if running (D29)
+- [x] History: tap an entry to change activity, change start/end (with
+      confirmation of affected entries), split, delete with fill options (D30)
+- [x] Edits re-split at midnight; header, History refresh after every edit
+- [x] Tests: 24 service tests for edits/deletion, 6 widget tests for the flows
+- [x] Emulator: dialogs checked (cancelled; no data changed)
 
 ## Phase 5 – Goals
 - [ ] Goal model + repository (schema v3)

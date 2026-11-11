@@ -32,4 +32,14 @@ String formatDayLabel(DateTime day, DateTime now) {
       '${d.year}';
 }
 
+/// Short local date, e.g. `Mon 9 Nov`.
+String formatShortDate(DateTime t) {
+  final d = t.toLocal();
+  return '${_weekdays[d.weekday - 1]} ${d.day} ${_months[d.month - 1]}';
+}
+
+/// Short local date and time, e.g. `Mon 9 Nov, 09:05`.
+String formatMoment(DateTime t) =>
+    '${formatShortDate(t)}, ${formatTimeOfDay(t)}';
+
 String _two(int n) => n.toString().padLeft(2, '0');

@@ -10,7 +10,7 @@ void main() {
 
   setUp(() async {
     f = await TrackingFixture.create(DateTime(2026, 11, 9, 9));
-    service = ActivityService(f.db, f.clock);
+    service = ActivityService(f.db, f.clock, f.service);
     await service.load();
   });
   tearDown(() => f.close());

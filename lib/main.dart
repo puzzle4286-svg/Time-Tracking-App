@@ -10,6 +10,7 @@ import 'database/seed.dart';
 import 'repositories/settings_repository.dart';
 import 'repositories/ui_state_store.dart';
 import 'services/activities/activity_service.dart';
+import 'services/history/entry_edit_service.dart';
 import 'services/history/history_service.dart';
 import 'services/tracking/tracking_service.dart';
 import 'util/clock.dart';
@@ -33,7 +34,7 @@ Future<void> main() async {
   // Split at any midnights missed while the app was not running.
   final tracking = TrackingService(db, clock);
   await tracking.reconcile();
-  final activities = ActivityService(db, clock);
+  final activities = ActivityService(db, clock, tracking);
   await activities.load();
 
   runApp(
@@ -44,6 +45,7 @@ Future<void> main() async {
         activities: activities,
         settings: settings,
         history: HistoryService(db),
+        edits: EntryEditService(db, clock, tracking),
         uiState: await UiStateStore.load(db),
         clock: clock,
       ),

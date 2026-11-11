@@ -9,6 +9,7 @@ import '../../services/tracking/tracking_service.dart';
 import '../../util/clock.dart';
 import '../../widgets/activities/activity_editor_sheet.dart';
 import '../../widgets/activities/activity_tile.dart';
+import '../../widgets/activities/delete_activity_flow.dart';
 import 'current_activity_header.dart';
 
 /// Main screen: current activity on top, a compact grid (2 rows × 4
@@ -58,6 +59,12 @@ class HomeScreen extends StatelessWidget {
       title: 'Edit activity',
       initialName: activity.name,
       initialColor: activity.color,
+      onDelete: () => runDeleteActivityFlow(
+        context,
+        activity: activity,
+        activities: activities,
+        tracking: tracking,
+      ),
     );
     if (draft == null || !context.mounted) return;
     await _guard(

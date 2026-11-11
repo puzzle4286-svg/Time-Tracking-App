@@ -6,6 +6,7 @@ import '../../models/time_entry.dart';
 import '../../repositories/activity_repository.dart';
 import '../../repositories/time_entry_repository.dart';
 import '../../util/clock.dart';
+import 'day_split.dart';
 import 'durations.dart';
 import 'time_range.dart';
 
@@ -117,21 +118,7 @@ class TrackingService extends ChangeNotifier {
     final entries = TimeEntryRepository(txn);
     var open = await entries.openEntry() ?? await _recoverOpenEntry(txn, now);
 
-    var boundary = nextLocalMidnight(open.start);
-    while (!boundary.isAfter(now)) {
-      await entries.close(open.id, boundary);
-      final id = await entries.insert(
-        activityId: open.activityId,
-        start: boundary,
-      );
-      open = TimeEntry(
-        id: id,
-        activityId: open.activityId,
-        start: boundary,
-        end: null,
-      );
-      boundary = nextLocalMidnight(boundary);
-    }
+    open = await splitAtLocalMidnights(entries, open, now);
     return open;
   }
 

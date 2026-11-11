@@ -200,3 +200,32 @@
   111 tests pass in all seven timezones.
 - Emulator (dark mode): dashed 22:30, solid 23:00, dashed 23:30 exactly at
   the 23:30 entry boundary.
+
+## 2026-11-12 – Phase 4: activity and history management
+
+**Developer rules** for entry editing: change activity; change start/end
+with confirmation of overridden entries; delete with fill previous /
+following / split evenly. Split-into-two kept from the original spec.
+
+**Work completed**
+- Repository helpers (by id, adjacency queries, bounds, reassignment,
+  soft delete); `splitAtLocalMidnights` shared with `TrackingService`.
+- `ActivityService.delete` with `HistoryChoice`; delete dialog.
+- `EntryEditService` with dry-run planning for retime; entry editor sheet and
+  dialogs; tap-to-edit on timeline blocks; History refreshes on any edit,
+  rename or deletion.
+
+**Problems and solutions**
+- Neighbour fill on shrink initially extended into time another entry got
+  when an entry was moved elsewhere entirely; now limited to old-minus-new.
+- Widget tests found the entry sheet overflowing on short screens; the sheet
+  is now scroll-controlled.
+
+**Testing performed**
+- 147 tests pass in all seven timezones.
+- Emulator: entry sheet, delete options (both neighbours) and start/end
+  dialog render correctly in dark mode; live midnight split observed
+  (Developing 23:56–24:00 and 00:00–now).
+
+**Next steps**
+- Developer review, then Phase 5 (goals).

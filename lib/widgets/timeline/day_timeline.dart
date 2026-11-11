@@ -15,6 +15,7 @@ class DayTimeline extends StatelessWidget {
     required this.day,
     required this.entries,
     required this.now,
+    this.onEntryTap,
   });
 
   /// 240 px per hour: detail over overview; scroll for earlier hours.
@@ -30,6 +31,9 @@ class DayTimeline extends StatelessWidget {
   final TimeRange day;
   final List<DayEntry> entries;
   final DateTime now;
+
+  /// Called when an entry is tapped (opens its editor).
+  final ValueChanged<DayEntry>? onEntryTap;
 
   /// Where the drawn part of the day ends: day end, or now for today.
   static DateTime visibleEnd(TimeRange day, DateTime now) =>
@@ -160,26 +164,36 @@ class DayTimeline extends StatelessWidget {
       height: block.height,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 1),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.18),
-            border: Border(left: BorderSide(color: color, width: 6)),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
             borderRadius: BorderRadius.circular(4),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            child: block.height >= _twoLineHeight
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [name, timesText],
-                  )
-                : Row(
-                    children: [
-                      Flexible(child: name),
-                      const SizedBox(width: 8),
-                      Flexible(child: timesText),
-                    ],
-                  ),
+            onTap: onEntryTap == null ? null : () => onEntryTap!(e),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.18),
+                border: Border(left: BorderSide(color: color, width: 6)),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                child: block.height >= _twoLineHeight
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [name, timesText],
+                      )
+                    : Row(
+                        children: [
+                          Flexible(child: name),
+                          const SizedBox(width: 8),
+                          Flexible(child: timesText),
+                        ],
+                      ),
+              ),
+            ),
           ),
         ),
       ),
