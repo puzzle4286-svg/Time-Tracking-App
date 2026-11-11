@@ -38,6 +38,9 @@ class TimeEntryRepository {
     });
   }
 
+  Future<void> delete(int id) =>
+      _db.delete('time_entries', where: 'id = ?', whereArgs: [id]);
+
   Future<void> close(int id, DateTime end) async {
     final updated = await _db.update(
       'time_entries',

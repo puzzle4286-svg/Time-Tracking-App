@@ -16,6 +16,10 @@ explicitly under **Database**.
 - First-launch setup: "Free Time" active at position 1, hidden "Unavailable" activity.
 - Light, dark and black themes; five accent palettes (Teal, Blue, Violet, Amber, Rose), persisted.
 - Injectable `Clock` for time-dependent logic.
+- `TrackingService`: atomic activity switching, reconciliation that splits the
+  active entry at every missed local midnight, recovery if no entry is open.
+- Pure duration helpers (`TimeRange`, `trackedInRange`, local-day boundaries).
+- `tool/test_timezones.sh` runs the suite in seven timezones.
 
 ### Database
 - Schema v1: `activities`, `time_entries`, `settings`. Constraints: at most one

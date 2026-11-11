@@ -52,3 +52,30 @@
 **Next steps**
 - Phase 2: `TrackingService` (switching, reconciliation, midnight splitting,
   durations) with DST tests.
+
+## 2026-11-11 – Phase 2: core tracking
+
+**Work completed**
+- `TimeRange` and local-day helpers; `trackedInRange` duration calculation.
+- `TrackingService` with transactional `reconcile()` / `switchTo()`, midnight
+  splitting for any number of missed days, and defensive recovery.
+- `main.dart` reconciles at startup instead of reading entries directly.
+- `tool/test_timezones.sh` timezone matrix.
+
+**Problems and solutions**
+- Fixture-created in-memory databases were silently shared (sqflite reuses
+  single-instance `:memory:` handles), so a second fixture saw the first's
+  activities. `openAppDatabase` now accepts `singleInstance`; tests pass false
+  for in-memory databases.
+- Checked how Dart resolves non-existent / repeated midnights (Havana) and
+  recorded it (D18).
+
+**Testing performed**
+- 57 tests pass. DST tests ran in Europe/Berlin, America/Havana,
+  Australia/Lord_Howe, Europe/London, America/New_York and were correctly
+  skipped in UTC, Asia/Kolkata, Pacific/Kiritimati, Pacific/Pago_Pago.
+- Not re-verified on the emulator (it was closed); scheduled for Phase 3.
+
+**Next steps**
+- Phase 3: main screen, grid, lifecycle-driven reconcile, display ticker,
+  theme/accent settings UI.

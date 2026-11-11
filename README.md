@@ -6,7 +6,7 @@ Eight fixed activity buttons. Exactly one activity is always active; tapping
 another one switches to it. Tracking is purely timestamp-based, so it survives
 the app being closed, killed, or the phone restarting — no background service.
 
-> Status: **Phase 1 – foundation complete**. See [TASKS.md](TASKS.md).
+> Status: **Phase 2 – core tracking complete**. See [TASKS.md](TASKS.md).
 
 ## Features (planned for v1)
 
@@ -54,5 +54,9 @@ flutter analyze
 flutter test
 ```
 
-Daylight-saving tests need a timezone with DST; run them with e.g.
-`TZ=Europe/Berlin flutter test`.
+Daylight-saving tests use the local timezone and are skipped if it has no DST.
+To run the suite across several timezones (including DST edge cases):
+
+```bash
+./tool/test_timezones.sh
+```

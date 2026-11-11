@@ -94,3 +94,28 @@ avoids shipping an unused table and exercises the migration path for real.
 ## D15 – Default appearance is dark, accent Teal
 Defaults until the user chooses otherwise. Stored in `settings` as enum names;
 unknown values fall back to defaults instead of failing.
+
+## D16 – Reconciliation runs inside every tracking transaction
+`reconcile()` and `switchTo()` both split missed midnights first, in the same
+transaction. So even a switch made right after a long gap produces correct
+per-day entries without relying on a prior launch or resume hook.
+
+## D17 – Edge cases in switching
+- Selecting the active activity: no write at all.
+- Zero-length session (two switches at the same instant): the empty entry is
+  deleted rather than kept.
+- Device clock moved before the session start: no split, the session shows
+  0:00, and on the next switch the old entry is closed at its own start
+  (zero length, kept) instead of getting a negative duration. Rare; the user
+  can fix it via history editing (Phase 4).
+- No open entry found (should be impossible): one is opened for the first
+  live activity at "now" and a debug message is printed. Missing time is not
+  invented.
+
+## D18 – DST semantics
+Dart builds local midnights from calendar fields. Verified behaviour:
+days can be 23 h or 25 h; where 00:00 does not exist (e.g. Havana) the day
+starts at 01:00; where it occurs twice the first one is used. Durations are
+always instant differences, so they equal real elapsed time. DST tests find
+the local zone's 2026 transition days automatically and are skipped (with a
+reason) in zones without DST; `tool/test_timezones.sh` covers both kinds.

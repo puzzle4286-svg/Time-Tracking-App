@@ -1,7 +1,7 @@
 # Architecture
 
-Status: Phase 1 implemented (database, models, repositories, seeding, theme).
-Tracking, goals and analytics sections describe the planned design.
+Status: Phases 1–2 implemented (storage, seeding, theme, tracking).
+Goals and analytics sections describe the planned design.
 
 ## Layers
 
@@ -49,8 +49,13 @@ Rules:
   happen), open one for Free Time / first live activity and log it.
 - **Durations:** `session = now − open.start`; `todayTotal(activity) =` sum of
   that activity's entries clipped to today's local range, open entry using `now`.
+  `ActiveSession` caches the closed part once per change, so the per-second UI
+  refresh does no database work; `ActiveSession.dayEnd` tells the UI when to
+  call `reconcile()` because a day ended while it was visible.
+- Edge cases (same activity, zero length, clock moved back, missing open
+  entry): see DECISIONS D17.
 
-## Implemented files (Phase 1)
+## Implemented files
 
 | Path | Purpose |
 |---|---|
@@ -64,6 +69,9 @@ Rules:
 | `lib/models/` | `Activity`, `TimeEntry`, `AppSettings`, activity colours |
 | `lib/repositories/` | Activity, time-entry and settings SQL |
 | `lib/util/clock.dart` | `Clock` / `SystemClock` |
+| `lib/services/tracking/time_range.dart` | `TimeRange`, `startOfLocalDay`, `nextLocalMidnight`, `localDay` |
+| `lib/services/tracking/durations.dart` | `trackedInRange` – clipped sums over entries |
+| `lib/services/tracking/tracking_service.dart` | `TrackingService` (`reconcile`, `switchTo`) and `ActiveSession` snapshot |
 
 ## Database (schema v1 implemented; goals planned as v2)
 

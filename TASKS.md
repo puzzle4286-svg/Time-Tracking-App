@@ -1,6 +1,6 @@
 # Tasks
 
-**Current phase:** Phase 1 – Foundation (complete). Next: Phase 2 – Core tracking
+**Current phase:** Phase 2 – Core tracking (complete). Next: Phase 3 – Main interface
 
 A phase is only checked off once its functionality is tested.
 
@@ -25,16 +25,20 @@ A phase is only checked off once its functionality is tested.
 - [x] Verified on Android emulator: seeding, force-stop + relaunch keeps the original entry
 
 ## Phase 2 – Core tracking
-- [ ] `TrackingService.switchTo` in one transaction; no-op on same activity
-- [ ] Startup/resume reconciliation incl. multiple missed midnights
-- [ ] Local-day boundary helpers (DST-safe)
-- [ ] Duration calculations (session, today's total)
-- [ ] Tests: switching, repeat select, restart, suspension, midnight, multi-midnight, DST
+- [x] `TrackingService.switchTo` in one transaction; no-op on same activity
+- [x] Startup reconciliation incl. multiple missed midnights (resume hook wired in Phase 3)
+- [x] Local-day boundary helpers (DST-safe), `TimeRange`
+- [x] Duration calculations (session, today's total) as pure functions
+- [x] Tests: switching, repeat select, restart, suspension, midnight, multi-midnight, DST,
+      clock moved back, missing open entry recovery
+- [x] Timezone matrix script `tool/test_timezones.sh` (7 zones incl. midnight-DST Havana)
 
 ## Phase 3 – Main interface
 - [ ] Current activity header (name, session, today total)
 - [ ] 2×4 grid; tap = switch, long-press = edit; empty slots "Tap to set up"
-- [ ] UI refresh ticker (display only)
+- [ ] UI refresh ticker (display only); call `reconcile()` when `dayEnd` is reached
+- [ ] `AppLifecycleListener`: `reconcile()` on resume
+- [ ] Re-verify on emulator (Phase 2 was verified by tests only)
 - [ ] Settings: theme mode + accent selection
 
 ## Phase 4 – Activity and history management

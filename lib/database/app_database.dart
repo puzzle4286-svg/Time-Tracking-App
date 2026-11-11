@@ -6,12 +6,18 @@ const String databaseFileName = 'time_tracker.db';
 
 /// Opens (creating or migrating as needed) the app database.
 ///
-/// [factory] is injectable so tests can use the FFI implementation.
-Future<Database> openAppDatabase(DatabaseFactory factory, String path) {
+/// [factory] is injectable so tests can use the FFI implementation; tests also
+/// pass `singleInstance: false` so each in-memory database is independent.
+Future<Database> openAppDatabase(
+  DatabaseFactory factory,
+  String path, {
+  bool singleInstance = true,
+}) {
   return factory.openDatabase(
     path,
     options: OpenDatabaseOptions(
       version: schemaVersion,
+      singleInstance: singleInstance,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: (db, version) => _migrate(db, 0, version),
       onUpgrade: _migrate,
