@@ -67,6 +67,9 @@ A phase is only checked off once its functionality is tested.
       confirmation of affected entries), delete with fill options (D30)
 - [x] Split removed (developer request); same-activity neighbours merged
       except at midnight (D31); day header "Info" placeholder (D32)
+- [x] Freed time: choose neighbour / another activity / empty (D30)
+- [x] Confirmation grouped by effect, entry-strip style, precise durations
+- [x] Fixed: entries around midnight could not be edited (D33)
 - [x] Edits re-split at midnight; header, History refresh after every edit
 - [x] Tests: 24 service tests for edits/deletion, 6 widget tests for the flows
 - [x] Emulator: real delete (merged Free Time neighbours) and real end change
@@ -96,8 +99,6 @@ A phase is only checked off once its functionality is tested.
 
 ## Known issues
 - Day header "Info ›" has no action yet (D32).
-- Time pickers have minute precision; a shortened entry with seconds can be
-  described as e.g. "23:32 – 23:32" in the confirmation.
 - Grid tiles show no names for now (D23); identify by colour.
 - Very short entries are stretched to label height on the timeline, so the
   scale is locally non-linear around them (D24).

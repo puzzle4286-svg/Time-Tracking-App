@@ -39,6 +39,15 @@ explicitly under **Database**.
 - Back-to-back entries of the same activity are merged after edits (except at
   midnight).
 
+- When an edit frees time, choose what fills it: the neighbouring activity,
+  another activity, or nothing.
+- Edit confirmations are grouped ("These entries will be removed:", …) and
+  show entries in the History style with name and duration.
+
+### Fixed
+- Entries around midnight could not be edited (the date picker received UTC
+  bounds).
+
 ### Removed
 - Splitting an entry into two of the same activity.
 - "N tracked" day total in History headers (replaced by an "Info" placeholder).

@@ -248,3 +248,31 @@ neighbours match; History day header shows "Info ›".
   one Free Time 23:26:45–23:26:56; moved a Gaming end to 23:32 → confirmation
   listed "Free Time … removed" and "Gaming … shortened", result one Gaming
   entry 23:27:03–23:32:57.
+
+## 2026-11-12 – Edit confirmation redesign, freed-time choices, midnight fix
+
+**Requested**: fix the "23:32 – 23:32" display; cleaner, grouped
+confirmation in History style; make entries around midnight editable with
+fill options.
+
+**Findings**
+- Two separate midnight problems: (1) freed time went to the same-activity
+  entry on the other side of midnight and was merged straight back, undoing
+  the edit; (2) the date picker received a UTC `now` whose date was still
+  yesterday after local midnight, asserted, and the tap did nothing (found
+  in the emulator log while testing).
+
+**Work completed**
+- `freedRanges` + `fills` in `retime`; fill dialog (neighbour / another
+  activity / leave empty); `EntryStrip` shared with the timeline;
+  grouped `_EffectsDialog`; `formatDurationPrecise` for dialogs; local
+  picker bounds.
+
+**Testing performed**
+- 162 tests pass in all seven timezones (new: freed ranges, fills incl.
+  invalid, midnight shrink/start-later, full picker-driven confirmation
+  flow, picker with UTC bounds — fails without the fix).
+- Emulator, real edits: yesterday's Developing 23:56–24:00 ended at 23:58
+  and the freed 2 min filled with Free Time (today's Developing untouched);
+  Gaming end moved to 23:57 → grouped confirmation (removed Free Time 3s,
+  shortened Developing), applied correctly.

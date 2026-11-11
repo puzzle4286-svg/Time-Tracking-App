@@ -25,4 +25,18 @@ void main() {
     // Seconds are summed before formatting, so 3 x 40 s shows 2m.
     expect(formatTotal(const Duration(seconds: 40) * 3), '2m');
   });
+
+  test('formatDurationPrecise keeps seconds below an hour', () {
+    expect(formatDurationPrecise(const Duration(seconds: 40)), '40s');
+    expect(
+      formatDurationPrecise(const Duration(minutes: 1, seconds: 37)),
+      '1m 37s',
+    );
+    expect(formatDurationPrecise(const Duration(minutes: 1)), '1m 0s');
+    expect(
+      formatDurationPrecise(const Duration(hours: 2, minutes: 5, seconds: 9)),
+      '2h 5m',
+    );
+    expect(formatDurationPrecise(const Duration(seconds: -1)), '0s');
+  });
 }

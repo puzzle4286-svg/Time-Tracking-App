@@ -520,6 +520,53 @@ void main() {
       expect(find.text('Study'), findsWidgets); // timeline refreshed
     });
 
+    testWidgets('changing an end lists affected entries grouped by effect', (
+      tester,
+    ) async {
+      await openHistoryWithEntries(tester);
+      await tapGamingBlock(tester);
+      await tester.tap(find.text('Change start / end'));
+      await tester.pumpAndSettle();
+
+      // End 11:00 -> 11:30 via the real pickers.
+      await tester.tap(find.byKey(const Key('pick-end')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK')); // keep the date
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.keyboard_outlined));
+      await tester.pumpAndSettle();
+      final fields = find.descendant(
+        of: find.byType(TimePickerDialog),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(fields.at(0), '11');
+      await tester.enterText(fields.at(1), '30');
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('This changes other entries'), findsOneWidget);
+      expect(find.text('This entry will be shortened:'), findsOneWidget);
+      expect(find.text('1h 0m → 30m 0s'), findsOneWidget); // running Free Time
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.textContaining(RegExp(r'\d:\d')),
+        ),
+        findsNothing,
+        reason: 'the dialog shows durations, not clock times',
+      );
+
+      await tester.tap(find.text('Apply'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+      final entries = await f.entries();
+      expect(entries[1].end, isMoment(DateTime(2026, 11, 9, 11, 30)));
+      expect(entries[2].start, isMoment(DateTime(2026, 11, 9, 11, 30)));
+    });
+
     testWidgets('delete between the same activity merges into one entry', (
       tester,
     ) async {

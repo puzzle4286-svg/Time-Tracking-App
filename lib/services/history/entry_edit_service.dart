@@ -18,7 +18,7 @@ class EditException implements Exception {
   String toString() => message;
 }
 
-enum EffectKind { shortened, extended, removed, splitAround }
+enum EffectKind { shortened, extended, removed, splitAround, added }
 
 /// How an edit changes an entry other than the one being edited. Shown to
 /// the user for confirmation before anything is written.
@@ -70,6 +70,28 @@ class DeleteOptions {
   final List<DeleteFill> available;
 }
 
+enum FreedSide { start, end }
+
+/// Time an edit takes away from the edited entry (old range minus new), and
+/// the adjacent entry on that side. [neighbour] is null if nothing touches
+/// that side, or if it is the same activity as the edited entry (filling with
+/// it would undo the edit, e.g. around midnight).
+class FreedRange {
+  const FreedRange({
+    required this.side,
+    required this.start,
+    required this.end,
+    required this.neighbour,
+  });
+
+  final FreedSide side;
+  final DateTime start;
+  final DateTime end;
+  final Activity? neighbour;
+
+  Duration get duration => end.difference(start);
+}
+
 /// Edits of historical time entries. Every edit is one transaction; entries
 /// are re-split at local midnights and same-activity neighbours merged
 /// afterwards (an activity only follows itself at midnight), and tracking is
@@ -104,18 +126,20 @@ class EntryEditService extends ChangeNotifier {
   /// [apply] true the same plan is recomputed and applied atomically.
   ///
   /// Rules: overlapped entries are shortened, split around the edited entry,
-  /// or removed if fully covered. When the edited entry shrinks, an adjacent
-  /// neighbour grows into the freed time, so no tracked time disappears.
-  /// The end of the running entry cannot be set (it is "now").
+  /// or removed if fully covered. Time the edited entry gives up (see
+  /// [freedRanges]) is filled as chosen in [fills]: an activity id, or null to
+  /// leave it empty. A side missing from [fills] defaults to its adjacent
+  /// neighbour (if any). The end of the running entry cannot be set.
   Future<List<EntryEffect>> retime(
     int entryId, {
     required DateTime start,
     DateTime? end,
+    Map<FreedSide, int?> fills = const {},
     required bool apply,
   }) async {
     final effects = await _db.transaction((txn) async {
       final old = await _entry(txn, entryId);
-      final plan = await _planRetime(txn, entryId, start, end);
+      final plan = await _planRetime(txn, entryId, start, end, fills);
       if (apply) {
         await _applyPlan(txn, plan);
         final now = _clock.now();
@@ -134,11 +158,67 @@ class EntryEditService extends ChangeNotifier {
     return effects;
   }
 
+  /// The parts of [entryId]'s current range that the new bounds give up.
+  Future<List<FreedRange>> freedRanges(
+    int entryId, {
+    required DateTime start,
+    DateTime? end,
+  }) => _db.transaction((txn) async {
+    final e = await _entry(txn, entryId);
+    final activities = await ActivityRepository(txn).allById();
+    return [
+      for (final f in await _freed(
+        txn,
+        e,
+        start,
+        e.isOpen ? null : end ?? e.end,
+      ))
+        FreedRange(
+          side: f.side,
+          start: f.start,
+          end: f.end,
+          neighbour:
+              f.neighbour == null || f.neighbour!.activityId == e.activityId
+              ? null
+              : activities[f.neighbour!.activityId],
+        ),
+    ];
+  });
+
+  /// Old range minus new range, per side, with the adjacent entry there.
+  Future<
+    List<({FreedSide side, DateTime start, DateTime end, TimeEntry? neighbour})>
+  >
+  _freed(Transaction txn, TimeEntry e, DateTime start, DateTime? end) async {
+    final entries = TimeEntryRepository(txn);
+    final now = _clock.now();
+    final oldEnd = e.end ?? now;
+    return [
+      if (start.isAfter(e.start))
+        (
+          side: FreedSide.start,
+          start: e.start,
+          end: start.isBefore(oldEnd) ? start : oldEnd,
+          neighbour: await entries.endingAt(e.start, excludeId: e.id),
+        ),
+      if (end != null && end.isBefore(oldEnd))
+        (
+          side: FreedSide.end,
+          start: end.isAfter(e.start) ? end : e.start,
+          end: oldEnd,
+          neighbour: e.isOpen
+              ? null
+              : await entries.startingAt(oldEnd, excludeId: e.id),
+        ),
+    ];
+  }
+
   Future<_Plan> _planRetime(
     Transaction txn,
     int entryId,
     DateTime start,
     DateTime? requestedEnd,
+    Map<FreedSide, int?> fills,
   ) async {
     final entries = TimeEntryRepository(txn);
     final activities = await ActivityRepository(txn).allById();
@@ -171,23 +251,42 @@ class EntryEditService extends ChangeNotifier {
       newEnd: t,
     );
 
-    // Shrinking: adjacent neighbours take over the freed part of the old
-    // range (old minus new), never more, so they cannot overlap anything.
-    final oldEnd = e.end ?? now;
-    if (start.isAfter(e.start)) {
-      final prev = await entries.endingAt(e.start, excludeId: e.id);
-      if (prev != null) {
-        final to = start.isBefore(oldEnd) ? start : oldEnd;
-        plan.update(prev.id, prev.start, to);
-        plan.effects.add(effect(EffectKind.extended, prev, prev.start, to));
+    // Shrinking: fill the freed time as chosen. Filling with the adjacent
+    // neighbour's activity extends that neighbour.
+    for (final f in await _freed(txn, e, start, end)) {
+      final neighbour = f.neighbour;
+      final fillId = fills.containsKey(f.side)
+          ? fills[f.side]
+          : (neighbour != null && neighbour.activityId != e.activityId
+                ? neighbour.activityId
+                : null);
+      if (fillId == null) continue; // leave empty
+      final fill = activities[fillId];
+      if (fill == null || fill.isDeleted || fill.isSystem) {
+        throw const EditException('Choose an activity from the grid.');
       }
-    }
-    if (end != null && end.isBefore(oldEnd)) {
-      final next = await entries.startingAt(oldEnd, excludeId: e.id);
-      if (next != null) {
-        final from = end.isAfter(e.start) ? end : e.start;
-        plan.update(next.id, from, next.end);
-        plan.effects.add(effect(EffectKind.extended, next, from, next.end));
+      if (neighbour != null && neighbour.activityId == fillId) {
+        final (s, t) = f.side == FreedSide.start
+            ? (neighbour.start, f.end)
+            : (f.start, neighbour.end);
+        plan.update(neighbour.id, s, t);
+        plan.effects.add(effect(EffectKind.extended, neighbour, s, t));
+      } else {
+        plan.insert(fillId, f.start, f.end);
+        plan.effects.add(
+          EntryEffect(
+            kind: EffectKind.added,
+            entry: TimeEntry(
+              id: -1,
+              activityId: fillId,
+              start: f.start,
+              end: f.end,
+            ),
+            activity: fill,
+            newStart: f.start,
+            newEnd: f.end,
+          ),
+        );
       }
     }
 

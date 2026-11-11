@@ -92,7 +92,8 @@ Rules:
 | `lib/services/tracking/entry_normalization.dart` | `splitAtLocalMidnights`, `mergeSameActivityNeighbours` – shared by tracking and edits |
 | `lib/widgets/activities/delete_activity_flow.dart` | Delete dialog: successor + history choice |
 | `lib/widgets/entries/entry_editor_sheet.dart` | History entry actions and their dialogs |
-| `lib/widgets/common/date_time_picker.dart` | Date + time picking that keeps unchanged seconds |
+| `lib/widgets/common/date_time_picker.dart` | Date + time picking (local bounds) that keeps unchanged seconds |
+| `lib/widgets/entries/entry_strip.dart` | Shared entry look (tinted, coloured left bar) for timeline and dialogs |
 | `lib/repositories/ui_state_store.dart` | Persisted UI conveniences (scroll positions), `ui.*` keys in `settings` |
 
 ## Database (schema v2 implemented; goals planned as v3)

@@ -4,6 +4,7 @@ import '../../services/history/history_service.dart';
 import '../../services/tracking/time_range.dart';
 import '../../util/date_format.dart';
 import '../../util/duration_format.dart';
+import '../entries/entry_strip.dart';
 import 'timeline_layout.dart';
 
 /// Vertical timeline of one local day. Height follows time at
@@ -169,30 +170,20 @@ class DayTimeline extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(4),
             onTap: onEntryTap == null ? null : () => onEntryTap!(e),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.18),
-                border: Border(left: BorderSide(color: color, width: 6)),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                child: block.height >= _twoLineHeight
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [name, timesText],
-                      )
-                    : Row(
-                        children: [
-                          Flexible(child: name),
-                          const SizedBox(width: 8),
-                          Flexible(child: timesText),
-                        ],
-                      ),
-              ),
+            child: EntryStrip(
+              color: color,
+              child: block.height >= _twoLineHeight
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [name, timesText],
+                    )
+                  : Row(
+                      children: [
+                        Flexible(child: name),
+                        const SizedBox(width: 8),
+                        Flexible(child: timesText),
+                      ],
+                    ),
             ),
           ),
         ),

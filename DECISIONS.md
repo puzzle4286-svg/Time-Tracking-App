@@ -232,13 +232,22 @@ tracking reconcile so the header, History and future statistics follow.
 - **Change activity**: only the entry's activity changes. On the running
   entry this changes what is running without splitting the session.
 - **Change start / end**: a dry run (`apply: false`) lists every effect on
-  other entries; the UI asks for confirmation if there are any, then applies
-  the recomputed plan. Overlapped entries are shortened, split around the
-  edited entry, or removed if fully covered. When the entry shrinks, the
-  directly adjacent neighbour takes over exactly the freed part of the old
-  range (never more), so tracked time is not silently lost. End cannot be in
-  the future; the running entry's end cannot be set; an edit may not swallow
-  the running entry.
+  other entries; the UI asks for confirmation if any entry loses time, then
+  applies the recomputed plan. Overlapped entries are shortened, split around
+  the edited entry, or removed if fully covered. End cannot be in the future;
+  the running entry's end cannot be set; an edit may not swallow the running
+  entry.
+- **Freed time** (revised 2026-11-12): when the entry shrinks, the user
+  chooses per side what fills exactly the freed part of the old range: the
+  adjacent neighbour's activity, another activity, or nothing. The neighbour
+  is not offered when it is the entry's own activity (e.g. the same activity
+  continuing past midnight), because filling with it would merge the edit
+  away; previously such edits around midnight were silently undone.
+- **Confirmation layout**: grouped by effect ("These entries will be
+  removed:", "…shortened:", …), sorted by time, each shown as an entry strip
+  (History style) with name and duration only; durations in dialogs keep
+  seconds below an hour (`1m 37s → 1m 0s`) so changes within a minute are
+  visible.
 - **Delete**: fill with the previous or following activity, or split the time
   evenly between them. An option is offered only if that neighbour touches
   the entry exactly. Deleting the running entry offers "resume the previous
@@ -263,3 +272,11 @@ offered.
 Every day is fully tracked by design, so "N tracked" would read ~24 h. The
 header now shows the day label and an "Info ›" placeholder (no action yet),
 intended to open that day's Insights later.
+
+## D33 – Date pickers get local bounds
+The app clock returns UTC; Flutter's date picker reads calendar fields
+directly. After local midnight (while UTC is still the previous date) a UTC
+`now` as `lastDate` was "yesterday", the picker asserted and the tap silently
+failed — the real reason entries around midnight could not be edited.
+`pickDateTime` converts every bound to local time; a widget test reproduces
+the failure.

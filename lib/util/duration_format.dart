@@ -23,3 +23,13 @@ String formatEntryDuration(Duration d) {
   if (d.isNegative) return '0s';
   return d.inMinutes == 0 ? '${d.inSeconds}s' : formatTotal(d);
 }
+
+/// Precise format for comparing durations in dialogs, where two values can
+/// fall in the same minute: `40s`, `1m 37s`, `2h 5m`.
+String formatDurationPrecise(Duration d) {
+  if (d.isNegative) return '0s';
+  final s = d.inSeconds;
+  if (s < 60) return '${s}s';
+  if (s < 3600) return '${s ~/ 60}m ${s % 60}s';
+  return formatTotal(d);
+}

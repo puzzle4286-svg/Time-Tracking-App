@@ -209,6 +209,135 @@ void main() {
     });
   });
 
+  group('freed time', () {
+    test('reports what each side gives up and its neighbour', () async {
+      final gaming = await entryOf(f.gaming, mon(10));
+      final freed = await edits.freedRanges(
+        gaming.id,
+        start: mon(10, 30),
+        end: mon(11, 30),
+      );
+      expect(freed.map((r) => (r.side, r.duration, r.neighbour?.name)), [
+        (FreedSide.start, const Duration(minutes: 30), 'Free Time'),
+        (FreedSide.end, const Duration(minutes: 30), 'Study'),
+      ]);
+    });
+
+    test('can be filled with another activity', () async {
+      final gaming = await entryOf(f.gaming, mon(10));
+      final effects = await edits.retime(
+        gaming.id,
+        start: mon(10, 30),
+        end: mon(12),
+        fills: {FreedSide.start: f.study},
+        apply: true,
+      );
+      expect(effects.single.kind, EffectKind.added);
+      expect(await spans(f), [
+        (f.freeTime, mon(9), mon(10)),
+        (f.study, mon(10), mon(10, 30)),
+        (f.gaming, mon(10, 30), mon(12)),
+        (f.study, mon(12), mon(13)),
+        (f.freeTime, mon(13), null),
+      ]);
+    });
+
+    test('can be left empty', () async {
+      final gaming = await entryOf(f.gaming, mon(10));
+      await edits.retime(
+        gaming.id,
+        start: mon(10, 30),
+        end: mon(12),
+        fills: {FreedSide.start: null},
+        apply: true,
+      );
+      expect((await spans(f)).sublist(0, 2), [
+        (f.freeTime, mon(9), mon(10)),
+        (f.gaming, mon(10, 30), mon(12)),
+      ]);
+    });
+
+    test('rejects filling with a non-grid activity', () async {
+      final system =
+          (await f.db.query('activities', where: 'is_system = 1')).single['id']!
+              as int;
+      final gaming = await entryOf(f.gaming, mon(10));
+      await expectLater(
+        edits.retime(
+          gaming.id,
+          start: mon(10, 30),
+          end: mon(12),
+          fills: {FreedSide.start: system},
+          apply: false,
+        ),
+        throwsA(isA<EditException>()),
+      );
+    });
+  });
+
+  group('editing around midnight', () {
+    // Free Time 13:00 Monday continues through midnight; now Tuesday 09:00.
+    setUp(() async {
+      f.clock.set(DateTime(2026, 11, 10, 9));
+      await f.service.reconcile();
+    });
+
+    test('ending the day earlier offers no same-activity neighbour', () async {
+      final monday = await entryOf(f.freeTime, mon(13));
+      final freed = await edits.freedRanges(
+        monday.id,
+        start: mon(13),
+        end: mon(23),
+      );
+      expect(freed.single.side, FreedSide.end);
+      expect(freed.single.neighbour, isNull); // Tuesday's Free Time
+    });
+
+    test('the freed evening can be filled with another activity', () async {
+      final monday = await entryOf(f.freeTime, mon(13));
+      await edits.retime(
+        monday.id,
+        start: mon(13),
+        end: mon(23),
+        fills: {FreedSide.end: f.gaming},
+        apply: true,
+      );
+      final s = await spans(f);
+      expect(s.sublist(s.length - 3), [
+        (f.freeTime, mon(13), mon(23)),
+        (f.gaming, mon(23), DateTime(2026, 11, 10)),
+        (f.freeTime, DateTime(2026, 11, 10), null),
+      ]);
+      await expectConsistent();
+    });
+
+    test('the change is not undone by default either', () async {
+      final monday = await entryOf(f.freeTime, mon(13));
+      await edits.retime(monday.id, start: mon(13), end: mon(23), apply: true);
+      final s = await spans(f);
+      expect(s.sublist(s.length - 2), [
+        (f.freeTime, mon(13), mon(23)), // 23–24 left empty
+        (f.freeTime, DateTime(2026, 11, 10), null),
+      ]);
+    });
+
+    test('a day can start later, filled with another activity', () async {
+      final tuesday = await entryOf(f.freeTime, DateTime(2026, 11, 10));
+      await edits.retime(
+        tuesday.id,
+        start: DateTime(2026, 11, 10, 1),
+        fills: {FreedSide.start: f.study},
+        apply: true,
+      );
+      final s = await spans(f);
+      expect(s.sublist(s.length - 2), [
+        (f.study, DateTime(2026, 11, 10), DateTime(2026, 11, 10, 1)),
+        (f.freeTime, DateTime(2026, 11, 10, 1), null),
+      ]);
+      await expectConsistent();
+    });
+  });
+
   group('delete', () {
     test('options depend on adjacent neighbours', () async {
       final gaming = await entryOf(f.gaming, mon(10));

@@ -9,6 +9,7 @@ import '../../util/clock.dart';
 import '../../util/date_format.dart';
 import '../../util/duration_format.dart';
 import '../common/date_time_picker.dart';
+import 'entry_strip.dart';
 
 /// Opens the actions for one history entry: change activity, change start /
 /// end, delete. Every change that affects other entries is confirmed
@@ -150,66 +151,57 @@ class _EntryFlow {
     );
     if (bounds == null || !context.mounted) return;
     await _run(() async {
+      // Ask what fills any time the entry gives up.
+      final fills = <FreedSide, int?>{};
+      final freed = await edits.freedRanges(
+        entry.id,
+        start: bounds.start,
+        end: bounds.end,
+      );
+      for (final range in freed) {
+        if (!context.mounted) return;
+        final choice = await showDialog<({int? activityId})>(
+          context: context,
+          builder: (_) => _FillDialog(
+            range: range,
+            choices: [
+              for (final a in activities.live)
+                if (a.id != entry.activityId) a,
+            ],
+          ),
+        );
+        if (choice == null) return; // cancelled
+        fills[range.side] = choice.activityId;
+      }
+
       final effects = await edits.retime(
         entry.id,
         start: bounds.start,
         end: bounds.end,
+        fills: fills,
         apply: false,
       );
-      if (effects.isNotEmpty) {
+      // Confirm whenever other entries lose time; then show the whole
+      // picture, including the fills just chosen.
+      final losesTime = effects.any(
+        (e) => e.kind != EffectKind.added && e.kind != EffectKind.extended,
+      );
+      if (losesTime) {
         if (!context.mounted) return;
-        final ok = await _confirmEffects(effects);
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (_) => _EffectsDialog(effects: effects, now: clock.now()),
+        );
         if (ok != true) return;
       }
       await edits.retime(
         entry.id,
         start: bounds.start,
         end: bounds.end,
+        fills: fills,
         apply: true,
       );
     });
-  }
-
-  Future<bool?> _confirmEffects(List<EntryEffect> effects) => showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('This changes other entries'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final e in effects)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text('• ${_describe(e)}'),
-            ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Apply'),
-        ),
-      ],
-    ),
-  );
-
-  static String _describe(EntryEffect e) {
-    final name = e.activity.name;
-    final old = _span(e.entry);
-    String fresh() =>
-        '${formatTimeOfDay(e.newStart!)} – '
-        '${e.newEnd == null ? 'now' : formatTimeOfDay(e.newEnd!)}';
-    return switch (e.kind) {
-      EffectKind.shortened => '$name $old will be shortened to ${fresh()}',
-      EffectKind.extended => '$name $old will be extended to ${fresh()}',
-      EffectKind.removed => '$name $old will be removed',
-      EffectKind.splitAround => '$name $old will be split around this entry',
-    };
   }
 
   Future<void> delete() async {
@@ -227,7 +219,12 @@ class _EntryFlow {
     }
     final fill = await showDialog<DeleteFill>(
       context: context,
-      builder: (_) => _DeleteDialog(entry: entry, options: options),
+      builder: (_) => _DeleteDialog(
+        entry: entry,
+        activity: activity,
+        options: options,
+        now: clock.now(),
+      ),
     );
     if (fill == null) return;
     await _run(() => edits.delete(entry.id, fill));
@@ -306,10 +303,17 @@ class _TimesDialogState extends State<_TimesDialog> {
 }
 
 class _DeleteDialog extends StatefulWidget {
-  const _DeleteDialog({required this.entry, required this.options});
+  const _DeleteDialog({
+    required this.entry,
+    required this.activity,
+    required this.options,
+    required this.now,
+  });
 
   final TimeEntry entry;
+  final Activity activity;
   final DeleteOptions options;
+  final DateTime now;
 
   @override
   State<_DeleteDialog> createState() => _DeleteDialogState();
@@ -345,7 +349,15 @@ class _DeleteDialogState extends State<_DeleteDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('What should fill ${_span(widget.entry)}?'),
+          EntryStripRow(
+            color: Color(widget.activity.color),
+            name: widget.activity.name,
+            trailing: formatDurationPrecise(
+              widget.entry.durationAt(widget.now),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('What should fill its time?'),
           const SizedBox(height: 8),
           RadioGroup<DeleteFill>(
             groupValue: _fill,
@@ -375,6 +387,193 @@ class _DeleteDialogState extends State<_DeleteDialog> {
           ),
           onPressed: () => Navigator.of(context).pop(_fill),
           child: const Text('Delete'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Confirmation of an edit's effects on other entries, grouped by what
+/// happens to them and shown in the History entry style.
+class _EffectsDialog extends StatelessWidget {
+  const _EffectsDialog({required this.effects, required this.now});
+
+  final List<EntryEffect> effects;
+  final DateTime now;
+
+  static const _order = [
+    EffectKind.removed,
+    EffectKind.shortened,
+    EffectKind.splitAround,
+    EffectKind.extended,
+    EffectKind.added,
+  ];
+
+  static String _heading(EffectKind kind, int count) {
+    final one = count == 1;
+    final verb = switch (kind) {
+      EffectKind.removed => 'removed',
+      EffectKind.shortened => 'shortened',
+      EffectKind.splitAround => 'split around the edited entry',
+      EffectKind.extended => 'extended',
+      EffectKind.added => 'added',
+    };
+    return one ? 'This entry will be $verb:' : 'These entries will be $verb:';
+  }
+
+  String _duration(EntryEffect e) {
+    final before = formatDurationPrecise(e.entry.durationAt(now));
+    return switch (e.kind) {
+      EffectKind.shortened || EffectKind.extended =>
+        '$before → ${formatDurationPrecise((e.newEnd ?? now).difference(e.newStart!))}',
+      _ => before,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return AlertDialog(
+      title: const Text('This changes other entries'),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final kind in _order)
+            if (effects.any((e) => e.kind == kind)) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: Text(
+                  _heading(kind, effects.where((e) => e.kind == kind).length),
+                  style: text.titleSmall,
+                ),
+              ),
+              for (final e
+                  in effects.where((e) => e.kind == kind).toList()
+                    ..sort((a, b) => a.entry.start.compareTo(b.entry.start)))
+                EntryStripRow(
+                  color: Color(e.activity.color),
+                  name: e.activity.name,
+                  trailing: _duration(e),
+                ),
+            ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Apply'),
+        ),
+      ],
+    );
+  }
+}
+
+enum _FillOption { neighbour, other, empty }
+
+/// Asks what fills time an edited entry gives up.
+class _FillDialog extends StatefulWidget {
+  const _FillDialog({required this.range, required this.choices});
+
+  final FreedRange range;
+
+  /// Activities that may fill it (never the edited entry's own activity).
+  final List<Activity> choices;
+
+  @override
+  State<_FillDialog> createState() => _FillDialogState();
+}
+
+class _FillDialogState extends State<_FillDialog> {
+  late _FillOption _option = widget.range.neighbour != null
+      ? _FillOption.neighbour
+      : _FillOption.empty;
+  late int? _other = widget.choices
+      .where((a) => a.id != widget.range.neighbour?.id)
+      .firstOrNull
+      ?.id;
+
+  @override
+  Widget build(BuildContext context) {
+    final range = widget.range;
+    final neighbour = range.neighbour;
+    final where = range.side == FreedSide.start ? 'before' : 'after';
+    final others = widget.choices.where((a) => a.id != neighbour?.id).toList();
+    return AlertDialog(
+      title: const Text('Fill the freed time'),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'This frees ${formatDurationPrecise(range.duration)} $where the '
+            'entry. What should fill it?',
+          ),
+          const SizedBox(height: 8),
+          RadioGroup<_FillOption>(
+            groupValue: _option,
+            onChanged: (v) => setState(() => _option = v!),
+            child: Column(
+              children: [
+                if (neighbour != null)
+                  RadioListTile(
+                    value: _FillOption.neighbour,
+                    title: Text(
+                      '${neighbour.name} '
+                      '(${range.side == FreedSide.start ? 'previous' : 'following'})',
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                RadioListTile(
+                  value: _FillOption.other,
+                  enabled: others.isNotEmpty,
+                  title: const Text('Another activity'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (_option == _FillOption.other)
+                  DropdownButtonFormField<int>(
+                    initialValue: _other,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final a in others)
+                        DropdownMenuItem(value: a.id, child: Text(a.name)),
+                    ],
+                    onChanged: (v) => setState(() => _other = v),
+                  ),
+                const RadioListTile(
+                  value: _FillOption.empty,
+                  title: Text('Leave empty'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _option == _FillOption.other && _other == null
+              ? null
+              : () => Navigator.of(context).pop<({int? activityId})>((
+                  activityId: switch (_option) {
+                    _FillOption.neighbour => neighbour!.id,
+                    _FillOption.other => _other,
+                    _FillOption.empty => null,
+                  },
+                )),
+          child: const Text('Next'),
         ),
       ],
     );
