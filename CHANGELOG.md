@@ -11,5 +11,13 @@ explicitly under **Database**.
 - Project documentation: README, TASKS, CHANGELOG, DECISIONS, ARCHITECTURE,
   DEVELOPMENT_LOG.
 
+- SQLite storage with versioned migrations (`sqflite`, `path`).
+- Activity, TimeEntry and AppSettings models; repositories for each.
+- First-launch setup: "Free Time" active at position 1, hidden "Unavailable" activity.
+- Light, dark and black themes; five accent palettes (Teal, Blue, Violet, Amber, Rose), persisted.
+- Injectable `Clock` for time-dependent logic.
+
 ### Database
-- No schema yet (planned v1 schema documented in ARCHITECTURE.md).
+- Schema v1: `activities`, `time_entries`, `settings`. Constraints: at most one
+  open entry, non-negative durations, unique live positions 1–8, foreign keys
+  with `ON DELETE RESTRICT`.

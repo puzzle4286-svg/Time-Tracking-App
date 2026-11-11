@@ -1,15 +1,28 @@
 import 'package:flutter/material.dart';
 
-/// Root widget. Theme, storage and tracking are wired in during Phase 1.
+import 'settings_controller.dart';
+import 'theme/app_theme.dart';
+
+/// Root widget: applies the persisted theme. [home] is replaced by the real
+/// main screen in Phase 3.
 class TimeTrackerApp extends StatelessWidget {
-  const TimeTrackerApp({super.key});
+  const TimeTrackerApp({super.key, required this.settings, required this.home});
+
+  final SettingsController settings;
+  final Widget home;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Time Tracker',
-      theme: ThemeData(useMaterial3: true),
-      home: const Scaffold(body: Center(child: Text('Time Tracker'))),
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, _) {
+        final s = settings.settings;
+        return MaterialApp(
+          title: 'Time Tracker',
+          theme: buildTheme(s.appearance, s.accent),
+          home: home,
+        );
+      },
     );
   }
 }

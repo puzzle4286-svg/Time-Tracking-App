@@ -1,6 +1,6 @@
 # Tasks
 
-**Current phase:** Phase 0 – Project inspection and planning (complete, awaiting Phase 1)
+**Current phase:** Phase 1 – Foundation (complete). Next: Phase 2 – Core tracking
 
 A phase is only checked off once its functionality is tested.
 
@@ -13,15 +13,16 @@ A phase is only checked off once its functionality is tested.
 - [x] Initial commit
 
 ## Phase 1 – Foundation
-- [ ] `Clock` abstraction (system + fake for tests)
-- [ ] SQLite setup with versioned migrations (`sqflite`; `sqflite_common_ffi` in tests)
-- [ ] Models: Activity, TimeEntry, Goal, settings
-- [ ] Repositories: activities, entries, settings
-- [ ] First-launch seeding: "Free Time" at position 1 + system "Unavailable" activity
-- [ ] Initial open entry for Free Time (exactly one active)
-- [ ] Theme system: light / dark / black, five accent palettes, persisted
-- [ ] Tests: seeding, initial active state, migrations
-- [ ] Verify the `one_open_entry` partial unique index rejects a second open entry
+- [x] `Clock` abstraction (system + fake for tests)
+- [x] SQLite setup with versioned migrations (`sqflite`; `sqflite_common_ffi` in tests)
+- [x] Models: Activity, TimeEntry, settings (Goal model + table deferred to Phase 5 as migration v2)
+- [x] Repositories: activities, entries, settings
+- [x] First-launch seeding: "Free Time" at position 1 + system "Unavailable" activity
+- [x] Initial open entry for Free Time (exactly one active)
+- [x] Theme system: light / dark / black, five accent palettes, persisted (UI to switch comes in Phase 3)
+- [x] Tests: seeding, initial active state, schema constraints, reopen persistence, settings, themes
+- [x] Verified the `one_open_entry` partial unique index rejects a second open entry
+- [x] Verified on Android emulator: seeding, force-stop + relaunch keeps the original entry
 
 ## Phase 2 – Core tracking
 - [ ] `TrackingService.switchTo` in one transaction; no-op on same activity
@@ -66,4 +67,5 @@ A phase is only checked off once its functionality is tested.
 - [ ] Documentation and changelog update
 
 ## Known issues
-- None yet.
+- Android launch splash is white while the default theme is dark (cosmetic; Phase 8).
+- Temporary Phase 1 home screen only shows the active activity name (replaced in Phase 3).

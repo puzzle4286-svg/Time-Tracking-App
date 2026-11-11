@@ -74,5 +74,23 @@ and arbitrary periods without hardcoding daily/weekly/monthly.
   trim neighbouring entries or cancel.
 
 ## D11 – Dependencies added only when their phase needs them
-Planned: `sqflite`, `path` (Phase 1), `fl_chart` (Phase 6), `share_plus`,
+Added in Phase 1: `sqflite` 2.4, `path` 1.9, dev `sqflite_common_ffi` 2.4. Planned, `fl_chart` (Phase 6), `share_plus`,
 `file_picker` (Phase 7). Each addition is recorded here.
+
+## D12 – Models expose local `DateTime`s
+Rows store UTC milliseconds; models convert with `fromMillisecondsSinceEpoch`,
+which yields a local `DateTime` for the same instant. Code compares instants,
+not representations (`==` on `DateTime` also compares the UTC flag).
+
+## D13 – Repositories wrap a `DatabaseExecutor`
+Repositories are tiny objects over a `Database` *or* a `Transaction`, so a
+service builds them inside `db.transaction((txn) …)` for atomic operations
+without passing transaction handles through every method.
+
+## D14 – Goals table added in Phase 5, not schema v1
+The goal design is finalised in Phase 5; adding its table then as migration v2
+avoids shipping an unused table and exercises the migration path for real.
+
+## D15 – Default appearance is dark, accent Teal
+Defaults until the user chooses otherwise. Stored in `settings` as enum names;
+unknown values fall back to defaults instead of failing.

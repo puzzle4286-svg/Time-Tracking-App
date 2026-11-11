@@ -1,6 +1,7 @@
 # Architecture
 
-Status: planned design (Phase 0). Sections are updated as code lands.
+Status: Phase 1 implemented (database, models, repositories, seeding, theme).
+Tracking, goals and analytics sections describe the planned design.
 
 ## Layers
 
@@ -49,7 +50,22 @@ Rules:
 - **Durations:** `session = now − open.start`; `todayTotal(activity) =` sum of
   that activity's entries clipped to today's local range, open entry using `now`.
 
-## Database (planned v1 schema)
+## Implemented files (Phase 1)
+
+| Path | Purpose |
+|---|---|
+| `lib/main.dart` | Opens DB, seeds, loads settings, runs app |
+| `lib/app/app.dart` | Root `MaterialApp`, rebuilds on settings change |
+| `lib/app/settings_controller.dart` | `ChangeNotifier` for settings; persists before notifying |
+| `lib/app/theme/app_theme.dart` | `buildTheme(mode, accent)` |
+| `lib/database/schema.dart` | Ordered migration list; `schemaVersion` |
+| `lib/database/app_database.dart` | `openAppDatabase(factory, path)` |
+| `lib/database/seed.dart` | `ensureSeeded(db, now)` – idempotent first-launch setup |
+| `lib/models/` | `Activity`, `TimeEntry`, `AppSettings`, activity colours |
+| `lib/repositories/` | Activity, time-entry and settings SQL |
+| `lib/util/clock.dart` | `Clock` / `SystemClock` |
+
+## Database (schema v1 implemented; goals planned as v2)
 
 ```sql
 activities(

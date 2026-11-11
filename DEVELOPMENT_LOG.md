@@ -25,3 +25,30 @@
 
 **Next steps**
 - Phase 1: clock, database + migrations, models, repositories, seeding, themes.
+
+## 2026-11-11 – Phase 1: foundation
+
+**Work completed**
+- Dependencies: `sqflite`, `path`; dev `sqflite_common_ffi`.
+- Schema v1 via an ordered migration map; `PRAGMA foreign_keys = ON`;
+  downgrades refused with a clear error rather than resetting data.
+- Models, repositories, idempotent transactional seeding, `Clock`.
+- Theme builder (light/dark/black) and five accent palettes; persisted settings
+  via `SettingsController`.
+- Temporary home showing the active activity.
+
+**Problems and solutions**
+- Seed tests failed comparing a UTC `DateTime` with the local one read back:
+  same instant, different representation. Tests now use local times; recorded as D12.
+
+**Testing performed**
+- 22 tests (schema constraints incl. single-open-entry index, FK restrict,
+  CHECKs; seeding; reopen persistence; settings; themes) pass under the
+  system timezone and `TZ=America/New_York`. `flutter analyze` clean.
+- Android emulator (Pixel_10_Pro): installed debug APK, launched, force-stopped,
+  relaunched; pulled DB shows schema v1, Free Time + Unavailable, one open
+  entry with the original start time.
+
+**Next steps**
+- Phase 2: `TrackingService` (switching, reconciliation, midnight splitting,
+  durations) with DST tests.
