@@ -1,6 +1,6 @@
 # Tasks
 
-**Current phase:** Phase 2 – Core tracking (complete). Next: Phase 3 – Main interface
+**Current phase:** Phase 3 – Main interface (complete). Next: Phase 4 – Activity and history management
 
 A phase is only checked off once its functionality is tested.
 
@@ -34,12 +34,16 @@ A phase is only checked off once its functionality is tested.
 - [x] Timezone matrix script `tool/test_timezones.sh` (7 zones incl. midnight-DST Havana)
 
 ## Phase 3 – Main interface
-- [ ] Current activity header (name, session, today total)
-- [ ] 2×4 grid; tap = switch, long-press = edit; empty slots "Tap to set up"
-- [ ] UI refresh ticker (display only); call `reconcile()` when `dayEnd` is reached
-- [ ] `AppLifecycleListener`: `reconcile()` on resume
-- [ ] Re-verify on emulator (Phase 2 was verified by tests only)
-- [ ] Settings: theme mode + accent selection
+- [x] Current activity header (name, session, today total)
+- [x] 2×4 grid; tap = switch, long-press = edit; empty slots "Tap to set up"
+- [x] Activity setup/edit sheet (name, colour); delete comes in Phase 4
+- [x] UI refresh ticker (display only); calls `reconcile()` when `dayEnd` is reached
+- [x] `AppLifecycleListener`: `reconcile()` on resume
+- [x] Bottom navigation: Track / Insights (placeholder) / Settings
+- [x] Settings: appearance mode + accent selection, app info
+- [x] Widget tests for all of the above
+- [x] Verified on emulator: setup, switch, force-stop + relaunch, background + resume,
+      light/dark/black, accent change
 
 ## Phase 4 – Activity and history management
 - [ ] Edit activity (name, color)
@@ -71,5 +75,5 @@ A phase is only checked off once its functionality is tested.
 - [ ] Documentation and changelog update
 
 ## Known issues
+- Insights tab is a placeholder until Phase 6.
 - Android launch splash is white while the default theme is dark (cosmetic; Phase 8).
-- Temporary Phase 1 home screen only shows the active activity name (replaced in Phase 3).

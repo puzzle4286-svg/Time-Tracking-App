@@ -3,10 +3,12 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import 'app/app.dart';
+import 'app/app_shell.dart';
 import 'app/settings_controller.dart';
 import 'database/app_database.dart';
 import 'database/seed.dart';
 import 'repositories/settings_repository.dart';
+import 'services/activities/activity_service.dart';
 import 'services/tracking/tracking_service.dart';
 import 'util/clock.dart';
 
@@ -29,13 +31,17 @@ Future<void> main() async {
   // Split at any midnights missed while the app was not running.
   final tracking = TrackingService(db, clock);
   await tracking.reconcile();
+  final activities = ActivityService(db, clock);
+  await activities.load();
 
   runApp(
     TimeTrackerApp(
       settings: settings,
-      // Temporary home until Phase 3.
-      home: Scaffold(
-        body: Center(child: Text('Active: ${tracking.current.activity.name}')),
+      home: AppShell(
+        tracking: tracking,
+        activities: activities,
+        settings: settings,
+        clock: clock,
       ),
     ),
   );

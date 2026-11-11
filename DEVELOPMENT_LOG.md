@@ -79,3 +79,31 @@
 **Next steps**
 - Phase 3: main screen, grid, lifecycle-driven reconcile, display ticker,
   theme/accent settings UI.
+
+## 2026-11-11 – Phase 3: main interface
+
+**Work completed**
+- Home screen with header (name, session, today) and a 2×4 grid filling the
+  space above the navigation bar; tap switches, long-press edits.
+- Activity setup/edit bottom sheet; `ActivityService` for create/update.
+- App shell with bottom navigation, lifecycle-driven reconcile.
+- Settings: Light/Dark/Black segmented control, five accent swatches, about.
+
+**Problems and solutions**
+- On the emulator, the active tile shrank to its text height while empty slots
+  filled their cells. Tiles now use `SizedBox.expand`; a widget test asserts
+  all eight tiles have equal size.
+- Accent swatches were announced twice by TalkBack ("Rose Rose");
+  `excludeSemantics` on the labelled wrapper fixes it.
+- Theme changes animate (~200 ms); the settings widget test now settles.
+- Launcher label was the package name; set to "Time Tracker".
+
+**Testing performed**
+- 77 tests pass in all seven timezones of `tool/test_timezones.sh`.
+- Emulator (Pixel_10_Pro, debug): first-run grid, setting up slot 2, switching,
+  force-stop + relaunch (entries 22:54:59–22:56:14 Free Time, then Gaming open),
+  home + return (timer continued from stored start), Black + Rose, Light.
+
+**Next steps**
+- Phase 4: activity deletion with history options, history list, entry
+  editing/splitting/deleting with overlap resolution.

@@ -20,6 +20,15 @@ explicitly under **Database**.
   active entry at every missed local midnight, recovery if no entry is open.
 - Pure duration helpers (`TimeRange`, `trackedInRange`, local-day boundaries).
 - `tool/test_timezones.sh` runs the suite in seven timezones.
+- Main screen: current activity, live session (`1:42:15`) and today's total
+  (`2h 42m`), 2×4 activity grid with tap-to-switch and long-press editing.
+- Activity setup/edit sheet (name, colour) for empty and existing slots.
+- Bottom navigation (Track / Insights / Settings); Settings screen with
+  appearance mode, accent colour and app info.
+- Tracking reconciles on app resume and when midnight passes on screen.
+
+### Fixed
+- Android launcher label now reads "Time Tracker".
 
 ### Database
 - Schema v1: `activities`, `time_entries`, `settings`. Constraints: at most one

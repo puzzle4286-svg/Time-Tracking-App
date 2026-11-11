@@ -55,4 +55,19 @@ class ActivityRepository {
       'created_at': createdAt.millisecondsSinceEpoch,
     });
   }
+
+  /// Updates a live activity's name and colour.
+  Future<void> update(
+    int id, {
+    required String name,
+    required int color,
+  }) async {
+    final updated = await _db.update(
+      'activities',
+      {'name': name, 'color': color},
+      where: 'id = ? AND deleted_at IS NULL AND is_system = 0',
+      whereArgs: [id],
+    );
+    if (updated != 1) throw StateError('Activity $id is not editable.');
+  }
 }

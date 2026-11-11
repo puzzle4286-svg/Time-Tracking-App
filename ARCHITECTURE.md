@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phases 1–2 implemented (storage, seeding, theme, tracking).
+Status: Phases 1–3 implemented (storage, seeding, theme, tracking, main UI).
 Goals and analytics sections describe the planned design.
 
 ## Layers
@@ -32,7 +32,8 @@ Rules:
 
 1. `main.dart` opens the database, creates repositories and services, and runs
    tracking reconciliation before the first frame.
-2. `AppLifecycleListener` re-runs reconciliation on resume.
+2. `AppShell`'s `AppLifecycleListener` re-runs reconciliation on resume; the
+   header's ticker re-runs it when `ActiveSession.dayEnd` is reached.
 3. A tap calls `TrackingService.switchTo(activityId)` → one transaction →
    `TrackingService` notifies listeners → UI rebuilds.
 4. A one-second display ticker recomputes `now − start` for the header only.
@@ -72,6 +73,14 @@ Rules:
 | `lib/services/tracking/time_range.dart` | `TimeRange`, `startOfLocalDay`, `nextLocalMidnight`, `localDay` |
 | `lib/services/tracking/durations.dart` | `trackedInRange` – clipped sums over entries |
 | `lib/services/tracking/tracking_service.dart` | `TrackingService` (`reconcile`, `switchTo`) and `ActiveSession` snapshot |
+| `lib/services/activities/activity_service.dart` | Live grid activities; create / update; name validation |
+| `lib/util/duration_format.dart` | `formatClock` (`1:42:15`), `formatTotal` (`2h 42m`) |
+| `lib/app/app_shell.dart` | Bottom navigation; reconcile on resume |
+| `lib/app/app_info.dart` | App name and version constants |
+| `lib/screens/home/` | `HomeScreen`, `CurrentActivityHeader` (1 s display ticker) |
+| `lib/screens/settings/settings_screen.dart` | Appearance, accent, about |
+| `lib/screens/insights/insights_screen.dart` | Placeholder until Phase 6 |
+| `lib/widgets/activities/` | `ActivityTile`, `showActivityEditor` sheet |
 
 ## Database (schema v1 implemented; goals planned as v2)
 

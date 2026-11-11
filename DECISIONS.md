@@ -119,3 +119,24 @@ starts at 01:00; where it occurs twice the first one is used. Durations are
 always instant differences, so they equal real elapsed time. DST tests find
 the local zone's 2026 transition days automatically and are skipped (with a
 reason) in zones without DST; `tool/test_timezones.sh` covers both kinds.
+
+## D19 – Bottom navigation bar with three tabs
+Track / Insights / Settings in a Material 3 `NavigationBar`, reachable with
+the thumb. The grid sits in the lower part of the Track screen for the same
+reason. History editing (Phase 4) will be reached from Insights' timeline and
+from the current-activity header rather than a fourth tab, unless that
+proves awkward.
+
+## D20 – Accent vs activity colours
+Each activity keeps its own colour (dot in the grid and header; charts later).
+The accent palette drives interactive and "active" state: the active tile's
+fill and border, the session timer, buttons and navigation. This keeps the two
+independent, as required.
+
+## D21 – Setting up an empty slot does not switch to it
+Creating an activity is a configuration action; switching remains an explicit
+tap, which keeps interactions predictable.
+
+## D22 – App version shown from a constant
+`lib/app/app_info.dart` holds the version string instead of adding
+`package_info_plus`. It must be kept in sync with `pubspec.yaml`.
