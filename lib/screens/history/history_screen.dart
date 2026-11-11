@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../repositories/ui_state_store.dart';
 import '../../services/history/history_service.dart';
 import '../../services/tracking/durations.dart';
 import '../../services/tracking/time_range.dart';
@@ -9,16 +10,23 @@ import '../../services/tracking/tracking_service.dart';
 import '../../util/clock.dart';
 import '../../util/date_format.dart';
 import '../../util/duration_format.dart';
+import '../../util/timestamps.dart';
 import '../../widgets/timeline/day_timeline.dart';
 
 /// One continuous vertical timeline: now at the bottom, scrolling up goes back
-/// day by day until the first recorded day. Block heights are proportional to
-/// time, so long activities take more space.
+/// day by day until the first recorded day.
+///
+/// Updates every second. While scrolled to the bottom it follows "now" (the
+/// running block grows and older content moves up); while scrolled into the
+/// past, the visible moment stays in place. The position is remembered as
+/// the instant shown at the bottom edge, so it survives tab switches,
+/// restarts and the passing of time.
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({
     super.key,
     required this.history,
     required this.tracking,
+    required this.uiState,
     required this.clock,
   });
 
@@ -26,9 +34,15 @@ class HistoryScreen extends StatefulWidget {
 
   /// Listened to so the timeline refreshes when the activity changes.
   final TrackingService tracking;
+  final UiStateStore uiState;
   final Clock clock;
 
   static const double dayHeaderHeight = 48;
+  static const double dayBottomPadding = 24;
+  static const anchorKey = 'history.anchor';
+
+  /// Within this distance of the bottom the view counts as "at now".
+  static const double followThreshold = 8;
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -41,19 +55,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
   DateTime? _firstDay;
   Timer? _ticker;
 
-  /// Bumped whenever cached data becomes stale, so loads that were already
-  /// running cannot write outdated entries back into the cache.
+  /// The `now` the current layout was built with. Anchors must be computed
+  /// against what is on screen, not against the (already newer) clock.
+  late DateTime _builtNow = widget.clock.now();
+
+  /// Bumped when cached data becomes stale, so loads that were already
+  /// running cannot write outdated entries into the cache.
   int _generation = 0;
 
   @override
   void initState() {
     super.initState();
     widget.tracking.addListener(_onTrackingChanged);
-    // Repaints the running block; all data comes from stored timestamps.
-    _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     _loadFirstDay();
+    _restorePosition();
   }
 
   @override
@@ -64,21 +80,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.dispose();
   }
 
+  // ---- Data -------------------------------------------------------------
+
   Future<void> _loadFirstDay() async {
     final first = await widget.history.firstDay();
     if (mounted) setState(() => _firstDay = first);
   }
 
-  void _onTrackingChanged() {
-    // Switching or midnight splitting only changes today (and possibly
-    // yesterday right after midnight); cheapest correct choice: drop all.
-    setState(() {
-      _generation++;
-      _cache.clear();
-      _loading.clear();
+  /// Loads [day] once; concurrent callers share the same future.
+  Future<void> _ensureLoaded(DateTime day) {
+    if (_cache.containsKey(day)) return Future.value();
+    return _loading[day] ??= _fetch(day);
+  }
+
+  Future<void> _fetch(DateTime day) async {
+    final generation = _generation;
+    final entries = await widget.history.entriesForDay(day);
+    if (!mounted || generation != _generation) return;
+    _keepingPosition(() {
+      _cache[day] = entries;
+      _loading.removeWhere((key, _) => key == day);
     });
+  }
+
+  void _onTrackingChanged() {
+    // A switch or midnight split only touches today and yesterday. Refresh
+    // those in place (keeping the old data until the new arrives, so the
+    // layout does not jump).
+    _generation++;
+    _loading.clear();
+    for (final i in [0, 1]) {
+      _loading[_dayAt(i)] = _fetch(_dayAt(i));
+    }
     _loadFirstDay();
   }
+
+  void _tick() {
+    if (mounted) _keepingPosition(() {});
+  }
+
+  // ---- Geometry ---------------------------------------------------------
 
   DateTime _today() => startOfLocalDay(widget.clock.now());
 
@@ -88,85 +129,198 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return DateTime(t.year, t.month, t.day - i);
   }
 
-  int get _dayCount {
-    final first = _firstDay;
-    if (first == null) return 1;
-    var n = 1;
-    final t = _today();
-    while (DateTime(t.year, t.month, t.day - n + 1).isAfter(first)) {
-      n++;
-    }
-    return n;
-  }
-
-  /// Loads [day] once; concurrent callers share the same future.
-  Future<void> _ensureLoaded(DateTime day) {
-    if (_cache.containsKey(day)) return Future.value();
-    return _loading[day] ??= _load(day);
-  }
-
-  Future<void> _load(DateTime day) async {
-    final generation = _generation;
-    final entries = await widget.history.entriesForDay(day);
-    if (!mounted || generation != _generation) return;
-    setState(() {
-      _cache[day] = entries;
-      _loading.removeWhere((key, _) => key == day);
-    });
-  }
-
-  /// Height of day [i]; exact once its entries are loaded.
-  double _extentOf(int i, DateTime now) {
-    final day = _dayAt(i);
-    return HistoryScreen.dayHeaderHeight +
-        DayTimeline.layoutFor(
-          localDay(day),
-          _cache[day] ?? const [],
-          now,
-        ).height +
-        24; // bottom padding of a day
-  }
-
-  Future<void> _jumpToDate() async {
-    final first = _firstDay ?? _today();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _today(),
-      firstDate: first,
-      lastDate: _today(),
-    );
-    if (picked == null || !mounted) return;
-    // Day heights depend on their entries, so load every day in between.
-    final target = _indexOf(picked);
-    for (var i = 0; i <= target; i++) {
-      await _ensureLoaded(_dayAt(i));
-    }
-    if (!mounted) return;
-    final now = widget.clock.now();
-    // The list is reversed: offset 0 is now; day i starts after days 0..i-1.
-    var offset = 0.0;
-    for (var i = 0; i < target; i++) {
-      offset += _extentOf(i, now);
-    }
-    // Show the picked day's header at the top of the viewport.
-    final position =
-        offset + _extentOf(target, now) - _scroll.position.viewportDimension;
-    _scroll.jumpTo(
-      position.clamp(0.0, _scroll.position.maxScrollExtent).toDouble(),
-    );
-  }
-
-  int _indexOf(DateTime day) {
+  int _indexOf(DateTime t) {
+    final day = startOfLocalDay(t);
     var i = 0;
-    while (_dayAt(i).isAfter(startOfLocalDay(day))) {
+    while (_dayAt(i).isAfter(day)) {
       i++;
     }
     return i;
   }
 
+  int get _dayCount {
+    final first = _firstDay;
+    return first == null ? 1 : _indexOf(first) + 1;
+  }
+
+  double _timelineHeight(int i, DateTime now) {
+    final day = _dayAt(i);
+    return DayTimeline.layoutFor(
+      localDay(day),
+      _cache[day] ?? const [],
+      now,
+    ).height;
+  }
+
+  double _extentOf(int i, DateTime now) =>
+      HistoryScreen.dayHeaderHeight +
+      _timelineHeight(i, now) +
+      HistoryScreen.dayBottomPadding;
+
+  bool get _followingNow =>
+      !_scroll.hasClients || _scroll.offset <= HistoryScreen.followThreshold;
+
+  /// The instant at the bottom edge of the viewport. The list is reversed,
+  /// so the scroll offset is the distance from the bottom of today.
+  DateTime _anchorAtBottom(DateTime now) {
+    var remaining = _scroll.offset;
+    for (var i = 0; i < _dayCount; i++) {
+      final extent = _extentOf(i, now);
+      if (remaining < extent) {
+        final day = localDay(_dayAt(i));
+        final layout = DayTimeline.layoutFor(
+          day,
+          _cache[_dayAt(i)] ?? const [],
+          now,
+        );
+        final fromBottom = remaining - HistoryScreen.dayBottomPadding;
+        if (fromBottom <= 0) return DayTimeline.visibleEnd(day, now);
+        final y = layout.height - fromBottom;
+        return y <= 0 ? day.start : layout.timeOf(y);
+      }
+      remaining -= extent;
+    }
+    return _firstDay ?? _today();
+  }
+
+  /// Scroll offset that puts [t] at the bottom edge. Days 0.._indexOf(t)
+  /// must be loaded for this to be exact.
+  double _offsetForAnchor(DateTime t, DateTime now) {
+    final target = _indexOf(t);
+    var offset = 0.0;
+    for (var i = 0; i < target; i++) {
+      offset += _extentOf(i, now);
+    }
+    final day = localDay(_dayAt(target));
+    final layout = DayTimeline.layoutFor(
+      day,
+      _cache[_dayAt(target)] ?? const [],
+      now,
+    );
+    return offset +
+        HistoryScreen.dayBottomPadding +
+        layout.height -
+        layout.yOf(t);
+  }
+
+  /// Not clamped to `maxScrollExtent`: with lazily built days that extent
+  /// is only an estimate; the scroll physics clamp after layout.
+  void _jumpTo(double offset) {
+    if (_scroll.hasClients) _scroll.jumpTo(offset < 0 ? 0 : offset);
+  }
+
+  /// Applies [change] (new data or a newer `now`). At the bottom the view
+  /// keeps following now. Otherwise the visible content is kept in place:
+  /// the on-screen position of a visible day section is measured before and
+  /// after the frame and any actual shift is scrolled back. (Measuring, not
+  /// predicting, because the list itself already compensates size changes of
+  /// days that are not laid out.)
+  void _keepingPosition(VoidCallback change) {
+    final reference = _followingNow ? null : _visibleSection();
+    final before = reference == null ? null : _topOf(reference);
+    setState(change);
+    if (reference == null || before == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final after = mounted ? _topOf(reference) : null;
+      if (after == null || !_scroll.hasClients) return;
+      final shift = after - before;
+      if (shift.abs() > 0.01) _jumpTo(_scroll.offset - shift);
+    });
+  }
+
+  final Map<DateTime, GlobalKey> _sectionKeys = {};
+
+  GlobalKey _sectionKey(DateTime day) =>
+      _sectionKeys.putIfAbsent(day, GlobalKey.new);
+
+  /// A day section that is currently laid out and on screen.
+  DateTime? _visibleSection() {
+    if (!_scroll.hasClients) return null;
+    final viewport =
+        _scroll.position.context.storageContext.findRenderObject()
+            as RenderBox?;
+    if (viewport == null) return null;
+    final top = viewport.localToGlobal(Offset.zero).dy;
+    final bottom = top + viewport.size.height;
+    for (final MapEntry(key: day, value: key) in _sectionKeys.entries) {
+      final y = _topOf(day);
+      final box = key.currentContext?.findRenderObject() as RenderBox?;
+      if (y == null || box == null) continue;
+      if (y < bottom && y + box.size.height > top) return day;
+    }
+    return null;
+  }
+
+  double? _topOf(DateTime day) {
+    final box =
+        _sectionKeys[day]?.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero).dy;
+  }
+
+  // ---- Persistence ------------------------------------------------------
+
+  Future<void> _restorePosition() async {
+    final saved = widget.uiState.get(HistoryScreen.anchorKey);
+    final micros = int.tryParse(saved ?? '');
+    if (micros == null) return; // "now" or nothing saved
+    await _scrollToAnchor(fromStoredTimestamp(micros));
+  }
+
+  Future<void> _scrollToAnchor(DateTime t) async {
+    final target = _indexOf(t);
+    for (var i = 0; i <= target; i++) {
+      await _ensureLoaded(_dayAt(i));
+    }
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _jumpTo(_offsetForAnchor(t, widget.clock.now()));
+    });
+  }
+
+  bool _savePosition(ScrollEndNotification _) {
+    final value = _followingNow
+        ? 'now'
+        : toStoredTimestamp(_anchorAtBottom(_builtNow)).toString();
+    widget.uiState.set(HistoryScreen.anchorKey, value);
+    return false;
+  }
+
+  // ---- Actions ----------------------------------------------------------
+
+  Future<void> _jumpToDate() async {
+    final today = _today();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: today,
+      firstDate: _firstDay ?? today,
+      lastDate: today,
+    );
+    if (picked == null || !mounted) return;
+    final now = widget.clock.now();
+    // Put the picked day's header at the top: anchor the bottom edge at the
+    // moment that lies one viewport below the day start.
+    final target = _indexOf(picked);
+    for (var i = 0; i <= target; i++) {
+      await _ensureLoaded(_dayAt(i));
+    }
+    if (!mounted || !_scroll.hasClients) return;
+    var offset = 0.0;
+    for (var i = 0; i <= target; i++) {
+      offset += _extentOf(i, now);
+    }
+    _jumpTo(offset - _scroll.position.viewportDimension);
+  }
+
+  void _scrollToNow() => _scroll.animateTo(
+    0,
+    duration: const Duration(milliseconds: 250),
+    curve: Curves.easeOut,
+  );
+
   @override
   Widget build(BuildContext context) {
-    final now = widget.clock.now();
+    final now = _builtNow = widget.clock.now();
     return Column(
       children: [
         // Toolbar above the timeline so it never covers entries.
@@ -181,11 +335,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 label: const Text('Jump to date'),
               ),
               TextButton.icon(
-                onPressed: () => _scroll.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                ),
+                onPressed: _scrollToNow,
                 icon: const Icon(Icons.vertical_align_bottom),
                 label: const Text('Now'),
               ),
@@ -193,21 +343,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            key: const Key('history-list'),
-            controller: _scroll,
-            reverse: true, // now at the bottom; scroll up into the past
-            itemCount: _dayCount,
-            itemBuilder: (context, i) {
-              final day = _dayAt(i);
-              unawaited(_ensureLoaded(day));
-              return _DaySection(
-                key: ValueKey(day),
-                day: localDay(day),
-                entries: _cache[day],
-                now: now,
-              );
-            },
+          child: NotificationListener<ScrollEndNotification>(
+            onNotification: _savePosition,
+            child: ListView.builder(
+              key: const Key('history-list'),
+              controller: _scroll,
+              reverse: true, // now at the bottom; scroll up into the past
+              itemCount: _dayCount,
+              itemBuilder: (context, i) {
+                final day = _dayAt(i);
+                unawaited(_ensureLoaded(day));
+                return _DaySection(
+                  key: ValueKey(day),
+                  sectionKey: _sectionKey(day),
+                  day: localDay(day),
+                  entries: _cache[day],
+                  now: now,
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -218,11 +372,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
 class _DaySection extends StatelessWidget {
   const _DaySection({
     super.key,
+    required this.sectionKey,
     required this.day,
     required this.entries,
     required this.now,
   });
 
+  /// Used to measure the section's on-screen position.
+  final GlobalKey sectionKey;
   final TimeRange day;
   final List<DayEntry>? entries;
   final DateTime now;
@@ -237,7 +394,8 @@ class _DaySection extends StatelessWidget {
         : trackedInRange(list.map((e) => e.entry), day, now);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      key: sectionKey,
+      padding: const EdgeInsets.only(bottom: HistoryScreen.dayBottomPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

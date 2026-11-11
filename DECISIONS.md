@@ -181,3 +181,33 @@ History tab, at the developer's request. Design:
 Totals are sums of exact timestamp differences (microseconds) and are only
 truncated to minutes when formatted, so seconds from separate sessions add up
 (3 × 40 s shows as 2m). Nothing stores rounded durations.
+
+## D26 – Fourteen accent palettes in a scrollable row (developer request)
+The spec asked for five; the developer asked for more (2026-11-11). Nine were
+appended (Indigo, Cyan, Green, Lime, Orange, Red, Pink, Brown, Slate). They are
+stored by enum name, so appending never changes saved choices. The selector
+is a horizontal list.
+
+## D27 – Persisted UI state in the settings table
+Scroll positions live in `settings` under `ui.`-prefixed keys via
+`UiStateStore`, loaded once at startup so screens can restore synchronously.
+No new table or dependency (`shared_preferences` was not needed). Saved on
+scroll end. Keys: `ui.settings.accentScroll` (pixels),
+`ui.history.anchor` (`now` or a stored timestamp).
+
+## D28 – History live updates and position anchoring
+- The History screen rebuilds every second (display only).
+- At the bottom ("now", within 8 px) the view follows the present: today's
+  running block grows and earlier content moves up.
+- Scrolled away from now, visible content is kept still. This is done by
+  measuring a visible day section's on-screen position before and after each
+  update and scrolling back any actual shift. Predicting the shift was wrong
+  because Flutter's list already compensates size changes of days that are
+  not laid out (caught by a test that failed with both approaches until this
+  one).
+- Anchors for saving/restoring use the `now` the layout was built with, not
+  the live clock (otherwise the view drifts ~4 px per second).
+- The saved position is the instant at the viewport's bottom edge, so after a
+  restart or hours later the same moment is shown in the same place.
+- Tracking changes refresh today and yesterday in place, keeping old data
+  until the new arrives, so the layout does not jump.

@@ -19,7 +19,7 @@ A phase is only checked off once its functionality is tested.
 - [x] Repositories: activities, entries, settings
 - [x] First-launch seeding: "Free Time" at position 1 + system "Unavailable" activity
 - [x] Initial open entry for Free Time (exactly one active)
-- [x] Theme system: light / dark / black, five accent palettes, persisted (UI to switch comes in Phase 3)
+- [x] Theme system: light / dark / black, accent palettes (5, later 14 – D26), persisted
 - [x] Tests: seeding, initial active state, schema constraints, reopen persistence, settings, themes
 - [x] Verified the `one_open_entry` partial unique index rejects a second open entry
 - [x] Verified on Android emulator: seeding, force-stop + relaunch keeps the original entry
@@ -53,6 +53,10 @@ A phase is only checked off once its functionality is tested.
 - [x] Review round 2: compact icon-only colour tiles (pause/play), no overscroll
       stretch, timeline at 4 px/min with every entry shown and labelled,
       History toolbar no longer overlaps content
+- [x] Review round 3: 14 accents in a horizontal, remembered selector;
+      History remembers its position (as an instant) across tabs and restarts;
+      History updates every second, follows now at the bottom, keeps the view
+      still when scrolled into the past
 
 ## Phase 4 – Activity and history management
 - [ ] Edit activity (name, color)

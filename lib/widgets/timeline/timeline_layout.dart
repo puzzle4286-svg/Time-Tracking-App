@@ -77,4 +77,21 @@ class TimelineLayout {
     }
     return height;
   }
+
+  /// Instant drawn at [y]; the inverse of [yOf].
+  DateTime timeOf(double y) {
+    if (y <= 0) return _knots.first.$1;
+    for (var i = 1; i < _knots.length; i++) {
+      final (t1, y1) = _knots[i];
+      if (y <= y1) {
+        final (t0, y0) = _knots[i - 1];
+        if (y1 == y0) return t1;
+        final span = t1.difference(t0).inMicroseconds;
+        return t0.add(
+          Duration(microseconds: (span * (y - y0) / (y1 - y0)).round()),
+        );
+      }
+    }
+    return _knots.last.$1;
+  }
 }

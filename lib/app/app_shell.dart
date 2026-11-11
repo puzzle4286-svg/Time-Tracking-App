@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../repositories/ui_state_store.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/insights/insights_screen.dart';
@@ -19,6 +20,7 @@ class AppShell extends StatefulWidget {
     required this.activities,
     required this.settings,
     required this.history,
+    required this.uiState,
     required this.clock,
   });
 
@@ -26,6 +28,7 @@ class AppShell extends StatefulWidget {
   final ActivityService activities;
   final SettingsController settings;
   final HistoryService history;
+  final UiStateStore uiState;
   final Clock clock;
 
   @override
@@ -62,10 +65,16 @@ class _AppShellState extends State<AppShell> {
         1 => HistoryScreen(
           history: widget.history,
           tracking: widget.tracking,
+          uiState: widget.uiState,
           clock: widget.clock,
         ),
         2 => const InsightsScreen(),
-        _ => SafeArea(child: SettingsScreen(settings: widget.settings)),
+        _ => SafeArea(
+          child: SettingsScreen(
+            settings: widget.settings,
+            uiState: widget.uiState,
+          ),
+        ),
       },
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,

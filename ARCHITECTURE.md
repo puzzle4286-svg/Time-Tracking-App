@@ -87,7 +87,8 @@ Rules:
 | `lib/services/history/history_service.dart` | `entriesForDay` (clipped `DayEntry`s), `firstDay` |
 | `lib/screens/history/history_screen.dart` | Continuous reversed timeline, jump to date / now |
 | `lib/widgets/timeline/day_timeline.dart` | One day drawn at 4 px/min; every entry labelled |
-| `lib/widgets/timeline/timeline_layout.dart` | Pure layout: time → y with minimum block height |
+| `lib/widgets/timeline/timeline_layout.dart` | Pure layout: time ⇄ y (`yOf`, `timeOf`) with minimum block height |
+| `lib/repositories/ui_state_store.dart` | Persisted UI conveniences (scroll positions), `ui.*` keys in `settings` |
 
 ## Database (schema v2 implemented; goals planned as v3)
 

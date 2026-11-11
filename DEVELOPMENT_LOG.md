@@ -161,3 +161,32 @@
 - 98 tests pass in all seven timezones.
 - Emulator: compact grid; six 3–4 s entries all labelled on the timeline;
   mid-drag screenshots at both ends show no stretch.
+
+## 2026-11-11 – Review round 3
+
+**Requested**
+- More accents; horizontally scrollable selector with remembered position.
+- Remember History's scroll position; update History live, including moving
+  the view along with now.
+
+**Work completed**
+- `UiStateStore`; 14 accent palettes; scrollable accent row.
+- History rewritten around time anchors: `TimelineLayout.timeOf`,
+  1-second refresh, follow-now, position keeping, saved/restored anchor,
+  in-place refresh on tracking changes.
+
+**Problems and solutions**
+- The first position-keeping test passed even with the feature disabled
+  (Flutter already keeps position when an off-screen, unlaid-out item
+  grows). Added a test where today is partly visible; it exposed two bugs:
+  anchors computed with the live clock instead of the built `now`, and
+  double correction when the list compensates by itself. Replaced the
+  prediction with before/after measurement (D28). Verified the test fails
+  with the feature disabled.
+
+**Testing performed**
+- 107 tests pass in all seven timezones.
+- Emulator: accent row position identical after tab switch and app restart;
+  History running entry 9m → 10m and day total 47m → 48m without leaving
+  the tab; History position identical after tab switch and restart (stored
+  anchor 23:28:25).

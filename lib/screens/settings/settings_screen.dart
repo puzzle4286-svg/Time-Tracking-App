@@ -3,14 +3,49 @@ import 'package:flutter/material.dart';
 import '../../app/app_info.dart';
 import '../../app/settings_controller.dart';
 import '../../models/app_settings.dart';
+import '../../repositories/ui_state_store.dart';
 
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, required this.settings});
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({
+    super.key,
+    required this.settings,
+    required this.uiState,
+  });
 
   final SettingsController settings;
 
+  /// Remembers the accent row's scroll position across tabs and restarts.
+  final UiStateStore uiState;
+
+  static const accentScrollKey = 'settings.accentScroll';
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late final _accentScroll = ScrollController(
+    initialScrollOffset:
+        widget.uiState.getDouble(SettingsScreen.accentScrollKey) ?? 0,
+  );
+
+  @override
+  void dispose() {
+    _accentScroll.dispose();
+    super.dispose();
+  }
+
+  bool _saveAccentScroll(ScrollEndNotification n) {
+    widget.uiState.set(
+      SettingsScreen.accentScrollKey,
+      n.metrics.pixels.toStringAsFixed(1),
+    );
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final settings = widget.settings;
     final text = Theme.of(context).textTheme;
     return ListenableBuilder(
       listenable: settings,
@@ -45,17 +80,26 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Text('Accent colour', style: text.titleMedium),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final accent in AccentPalette.values)
-                  _AccentSwatch(
-                    accent: accent,
-                    selected: accent == current.accent,
-                    onTap: () => settings.setAccent(accent),
-                  ),
-              ],
+            SizedBox(
+              height: 76,
+              child: NotificationListener<ScrollEndNotification>(
+                onNotification: _saveAccentScroll,
+                child: ListView.separated(
+                  key: const Key('accent-list'),
+                  controller: _accentScroll,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: AccentPalette.values.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, i) {
+                    final accent = AccentPalette.values[i];
+                    return _AccentSwatch(
+                      accent: accent,
+                      selected: accent == current.accent,
+                      onTap: () => settings.setAccent(accent),
+                    );
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 32),
             const Divider(),

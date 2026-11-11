@@ -81,4 +81,13 @@ void main() {
     final l = layout([(0, 120, 0), (60, 180, 0)]);
     expect(l.blocks[1].top, l.blocks[0].top + l.blocks[0].height);
   });
+
+  test('timeOf is the inverse of yOf', () {
+    final l = layout([(600, 601, 0), (661, 721, 0), (721, 722, 0)]);
+    for (var m = 0; m < 24 * 60; m += 13) {
+      final t = DateTime(2026, 11, 9).add(Duration(minutes: m));
+      final back = l.timeOf(l.yOf(t));
+      expect(back.difference(t).inMilliseconds.abs(), lessThan(5));
+    }
+  });
 }

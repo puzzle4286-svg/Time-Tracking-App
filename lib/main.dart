@@ -8,6 +8,7 @@ import 'app/settings_controller.dart';
 import 'database/app_database.dart';
 import 'database/seed.dart';
 import 'repositories/settings_repository.dart';
+import 'repositories/ui_state_store.dart';
 import 'services/activities/activity_service.dart';
 import 'services/history/history_service.dart';
 import 'services/tracking/tracking_service.dart';
@@ -43,6 +44,7 @@ Future<void> main() async {
         activities: activities,
         settings: settings,
         history: HistoryService(db),
+        uiState: await UiStateStore.load(db),
         clock: clock,
       ),
     ),

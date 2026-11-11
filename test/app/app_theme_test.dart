@@ -4,8 +4,12 @@ import 'package:time_tracker/app/theme/app_theme.dart';
 import 'package:time_tracker/models/app_settings.dart';
 
 void main() {
-  test('provides exactly five accent palettes', () {
-    expect(AccentPalette.values, hasLength(5));
+  test('provides the predefined accent palettes with unique names', () {
+    expect(AccentPalette.values.length, greaterThanOrEqualTo(5));
+    final labels = AccentPalette.values.map((a) => a.label).toSet();
+    expect(labels, hasLength(AccentPalette.values.length));
+    final seeds = AccentPalette.values.map((a) => a.seed).toSet();
+    expect(seeds, hasLength(AccentPalette.values.length));
   });
 
   test('light and dark modes have the matching brightness', () {

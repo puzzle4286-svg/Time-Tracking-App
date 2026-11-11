@@ -14,7 +14,7 @@ explicitly under **Database**.
 - SQLite storage with versioned migrations (`sqflite`, `path`).
 - Activity, TimeEntry and AppSettings models; repositories for each.
 - First-launch setup: "Free Time" active at position 1, hidden "Unavailable" activity.
-- Light, dark and black themes; five accent palettes (Teal, Blue, Violet, Amber, Rose), persisted.
+- Light, dark and black themes; accent palettes, persisted.
 - Injectable `Clock` for time-dependent logic.
 - `TrackingService`: atomic activity switching, reconciliation that splits the
   active entry at every missed local midnight, recovery if no entry is open.
@@ -36,6 +36,11 @@ explicitly under **Database**.
 - History timeline zoomed to 240 px per hour; every entry is shown and
   labelled regardless of length; sub-minute durations show seconds.
 - Overscroll stretch effect disabled.
+- Nine more accent palettes (14 total) in a horizontally scrollable row whose
+  position is remembered.
+- History updates live every second, follows now when at the bottom, keeps
+  the view still otherwise, and remembers its position across tab switches
+  and restarts.
 - Insights no longer holds the daily timeline; it moved to History.
 
 ### Fixed

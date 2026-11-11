@@ -16,7 +16,7 @@ the app being closed, killed, or the phone restarting — no background service.
 - Full historical entry editing (change, split, delete, conflict warnings)
 - Flexible goals per activity (any period, minimum and/or maximum)
 - Insights: daily timeline, activity distribution, period comparison
-- Light, dark and black (OLED) themes; five accent palettes
+- Light, dark and black (OLED) themes; fourteen accent palettes
 - CSV / JSON export, full backup and restore
 
 Out of scope for v1: sync, accounts, backend, desktop builds, notifications.

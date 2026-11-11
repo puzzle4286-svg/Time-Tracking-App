@@ -5,6 +5,7 @@ import 'package:time_tracker/app/app_shell.dart';
 import 'package:time_tracker/app/settings_controller.dart';
 import 'package:time_tracker/models/app_settings.dart';
 import 'package:time_tracker/repositories/settings_repository.dart';
+import 'package:time_tracker/repositories/ui_state_store.dart';
 import 'package:time_tracker/screens/home/home_screen.dart';
 import 'package:time_tracker/services/activities/activity_service.dart';
 import 'package:time_tracker/services/history/history_service.dart';
@@ -17,6 +18,7 @@ void main() {
   late TrackingFixture f;
   late ActivityService activities;
   late SettingsController settings;
+  late UiStateStore uiState;
 
   setUp(() async {
     f = await TrackingFixture.create(monday9);
@@ -25,6 +27,7 @@ void main() {
     await activities.load();
     final repo = SettingsRepository(f.db);
     settings = SettingsController(repo, await repo.load());
+    uiState = await UiStateStore.load(f.db);
   });
   tearDown(() => f.close());
 
@@ -37,6 +40,7 @@ void main() {
           activities: activities,
           settings: settings,
           history: HistoryService(f.db),
+          uiState: uiState,
           clock: f.clock,
         ),
       ),
@@ -266,6 +270,155 @@ void main() {
     expect(find.text('09:00 – 24:00 · 15h 0m'), findsOneWidget);
     // History ends at the first recorded day: nothing before Monday.
     expect(find.textContaining('Sun, 8 Nov'), findsNothing);
+  });
+
+  testWidgets('accent row scrolls horizontally and remembers its position', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    final list = find.byKey(const Key('accent-list'));
+    expect(find.text('Slate'), findsNothing); // off-screen at first
+    await tester.drag(list, const Offset(-300, 0));
+    await tester.pumpAndSettle();
+    final offset = tester.widget<ListView>(list).controller!.offset;
+    expect(offset, greaterThan(0));
+    await settle(tester);
+    expect(
+      double.parse(uiState.get('settings.accentScroll')!),
+      closeTo(offset, 0.1),
+    );
+
+    // Leave the tab and come back: same position.
+    await tester.tap(find.text('Track'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<ListView>(list).controller!.offset,
+      closeTo(offset, 0.1),
+    );
+
+    // A fresh store (as after an app restart) sees the saved value.
+    final reloaded = await UiStateStore.load(f.db);
+    expect(reloaded.getDouble('settings.accentScroll'), closeTo(offset, 0.1));
+  });
+
+  group('history live updates', () {
+    // Free Time since Monday 09:00; Gaming since Tuesday 10:00; now Wed 08:00.
+    Future<void> openHistory(WidgetTester tester) async {
+      f.clock.set(DateTime(2026, 11, 10, 10));
+      await f.service.switchTo(f.gaming);
+      f.clock.set(DateTime(2026, 11, 11, 8));
+      await f.service.reconcile();
+      await pumpApp(tester);
+      await tester.tap(find.text('History'));
+      await settle(tester);
+    }
+
+    ScrollController controller(WidgetTester tester) => tester
+        .widget<ListView>(find.byKey(const Key('history-list')))
+        .controller!;
+
+    testWidgets('running duration updates every second', (tester) async {
+      await openHistory(tester);
+      expect(find.text('00:00 – now · 8h 0m'), findsOneWidget);
+      f.clock.advance(const Duration(minutes: 5));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('00:00 – now · 8h 5m'), findsOneWidget);
+    });
+
+    testWidgets('at the bottom the view follows now', (tester) async {
+      await openHistory(tester);
+      final label = find.text('00:00 – now · 8h 0m');
+      final before = tester.getTopLeft(label).dy;
+
+      f.clock.advance(const Duration(minutes: 5));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+
+      expect(controller(tester).offset, 0);
+      // The running block grew by 5 min, so its top moved up by 20 px.
+      final after = tester.getTopLeft(find.text('00:00 – now · 8h 5m')).dy;
+      expect(before - after, closeTo(5 * 4.0, 0.5));
+    });
+
+    testWidgets('scrolled into the past, the visible moment stays put', (
+      tester,
+    ) async {
+      await openHistory(tester);
+      await tester.dragUntilVisible(
+        find.text('10:00 – 24:00 · 14h 0m'), // Tuesday's Gaming
+        find.byKey(const Key('history-list')),
+        const Offset(0, 300),
+      );
+      await settle(tester);
+      final label = find.text('10:00 – 24:00 · 14h 0m');
+      final before = tester.getTopLeft(label).dy;
+
+      f.clock.advance(const Duration(minutes: 5));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+
+      expect(tester.getTopLeft(label).dy, closeTo(before, 0.5));
+    });
+
+    testWidgets('scrolled up within today, the visible moment stays put', (
+      tester,
+    ) async {
+      await openHistory(tester);
+      // Scroll up a little: today is still on screen but no longer at now.
+      await tester.drag(
+        find.byKey(const Key('history-list')),
+        const Offset(0, 300),
+      );
+      await settle(tester);
+      expect(controller(tester).offset, greaterThan(100));
+      final sevenAm = find.descendant(
+        of: find.byKey(ValueKey(DateTime(2026, 11, 11))),
+        matching: find.text('07:00'),
+      );
+      final before = tester.getTopLeft(sevenAm).dy;
+
+      f.clock.advance(const Duration(minutes: 5));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+
+      expect(tester.getTopLeft(sevenAm).dy, closeTo(before, 0.5));
+    });
+
+    testWidgets('position is saved as an instant and restored', (tester) async {
+      await openHistory(tester);
+      expect(uiState.get('history.anchor'), anyOf(isNull, 'now'));
+
+      await tester.dragUntilVisible(
+        find.text('10:00 – 24:00 · 14h 0m'),
+        find.byKey(const Key('history-list')),
+        const Offset(0, 300),
+      );
+      await settle(tester);
+      final saved = uiState.get('history.anchor')!;
+      expect(int.tryParse(saved), isNotNull);
+      final label = find.text('10:00 – 24:00 · 14h 0m');
+      final before = tester.getTopLeft(label).dy;
+
+      // Leave and return after 10 minutes: same moment at the same place.
+      await tester.tap(find.text('Track'));
+      await settle(tester);
+      f.clock.advance(const Duration(minutes: 10));
+      await tester.tap(find.text('History'));
+      await settle(tester);
+      await tester.pump();
+
+      expect(tester.getTopLeft(label).dy, closeTo(before, 1));
+
+      // Scrolling back to the bottom saves "now".
+      await tester.tap(find.text('Now'));
+      await tester.pumpAndSettle();
+      expect(uiState.get('history.anchor'), 'now');
+    });
   });
 
   testWidgets('bottom navigation reaches every tab', (tester) async {
