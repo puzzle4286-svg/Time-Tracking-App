@@ -6,7 +6,9 @@ import 'package:time_tracker/app/settings_controller.dart';
 import 'package:time_tracker/models/app_settings.dart';
 import 'package:time_tracker/repositories/settings_repository.dart';
 import 'package:time_tracker/services/activities/activity_service.dart';
+import 'package:time_tracker/services/history/history_service.dart';
 
+import '../support/matchers.dart';
 import '../support/tracking_fixture.dart';
 
 void main() {
@@ -33,6 +35,7 @@ void main() {
           tracking: f.service,
           activities: activities,
           settings: settings,
+          history: HistoryService(f.db),
           clock: f.clock,
         ),
       ),
@@ -151,7 +154,7 @@ void main() {
 
     final entries = await f.entries();
     expect(entries, hasLength(2));
-    expect(entries.first.end, DateTime(2026, 11, 10));
+    expect(entries.first.end, isMoment(DateTime(2026, 11, 10)));
     expect(textOf(tester, 'session-duration'), '0:00:01');
   });
 
@@ -199,8 +202,51 @@ void main() {
     expect(stored.accent, AccentPalette.rose);
   });
 
+  testWidgets('grid is 2 rows x 4 columns, positions 1-4 on top', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    Offset at(int p) => tester.getTopLeft(find.byKey(Key('activity-tile-$p')));
+    for (var p = 2; p <= 4; p++) {
+      expect(at(p).dy, at(1).dy);
+      expect(at(p).dx, greaterThan(at(p - 1).dx));
+    }
+    expect(at(5).dx, at(1).dx);
+    expect(at(5).dy, greaterThan(at(1).dy));
+  });
+
+  testWidgets('history timeline shows today and scrolls back to past days', (
+    tester,
+  ) async {
+    // Free Time since Monday 09:00; Gaming from Tuesday 10:00; now Wed 08:00.
+    f.clock.set(DateTime(2026, 11, 10, 10));
+    await f.service.switchTo(f.gaming);
+    f.clock.set(DateTime(2026, 11, 11, 8));
+    await f.service.reconcile();
+
+    await pumpApp(tester);
+    await tester.tap(find.text('History'));
+    await settle(tester);
+
+    expect(find.textContaining('Today'), findsOneWidget);
+    expect(find.text('00:00 – now · 8h 0m'), findsOneWidget);
+
+    await tester.dragUntilVisible(
+      find.text('09:00 – 24:00 · 15h 0m'), // Monday's Free Time
+      find.byKey(const Key('history-list')),
+      const Offset(0, 400),
+    );
+    await settle(tester);
+    expect(find.text('09:00 – 24:00 · 15h 0m'), findsOneWidget);
+    // History ends at the first recorded day: nothing before Monday.
+    expect(find.textContaining('Sun, 8 Nov'), findsNothing);
+  });
+
   testWidgets('bottom navigation reaches every tab', (tester) async {
     await pumpApp(tester);
+    await tester.tap(find.text('History'));
+    await settle(tester);
+    expect(find.byKey(const Key('history-list')), findsOneWidget);
     await tester.tap(find.text('Insights'));
     await tester.pumpAndSettle();
     expect(find.text('Insights are coming soon.'), findsOneWidget);

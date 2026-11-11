@@ -49,7 +49,7 @@ class ActivityTile extends StatelessWidget {
             onTap: onTap,
             onLongPress: onLongPress,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               child: a == null
                   ? Center(
                       child: Column(
@@ -59,6 +59,7 @@ class ActivityTile extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             'Tap to set up',
+                            textAlign: TextAlign.center,
                             style: text.labelMedium?.copyWith(
                               color: scheme.onSurfaceVariant,
                             ),
@@ -66,30 +67,32 @@ class ActivityTile extends StatelessWidget {
                         ],
                       ),
                     )
-                  : Row(
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 12,
-                          height: 12,
+                          width: 14,
+                          height: 14,
                           decoration: BoxDecoration(
                             color: Color(a.color),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            a.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: text.titleMedium?.copyWith(
-                              color: foreground,
-                              fontWeight: isActive ? FontWeight.w600 : null,
-                            ),
+                        const SizedBox(height: 10),
+                        Text(
+                          a.name,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: text.titleSmall?.copyWith(
+                            color: foreground,
+                            fontWeight: isActive ? FontWeight.w700 : null,
                           ),
                         ),
-                        if (isActive)
+                        if (isActive) ...[
+                          const SizedBox(height: 6),
                           Icon(Icons.play_arrow_rounded, color: scheme.primary),
+                        ],
                       ],
                     ),
             ),

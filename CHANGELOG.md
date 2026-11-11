@@ -27,6 +27,13 @@ explicitly under **Database**.
   appearance mode, accent colour and app info.
 - Tracking reconciles on app resume and when midnight passes on screen.
 
+- History tab: continuous vertical timeline back to the first recorded day,
+  blocks proportional to duration, labels beside blocks, jump to date / now.
+
+### Changed
+- Activity grid is now 2 rows × 4 columns.
+- Insights no longer holds the daily timeline; it moved to History.
+
 ### Fixed
 - Android launcher label now reads "Time Tracker".
 
@@ -34,3 +41,6 @@ explicitly under **Database**.
 - Schema v1: `activities`, `time_entries`, `settings`. Constraints: at most one
   open entry, non-negative durations, unique live positions 1–8, foreign keys
   with `ON DELETE RESTRICT`.
+- Schema v2: all timestamps are now UTC epoch **microseconds** (were
+  milliseconds). Migration multiplies existing values by 1000; column names
+  unchanged.

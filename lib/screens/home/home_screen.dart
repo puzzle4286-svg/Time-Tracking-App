@@ -11,7 +11,8 @@ import '../../widgets/activities/activity_editor_sheet.dart';
 import '../../widgets/activities/activity_tile.dart';
 import 'current_activity_header.dart';
 
-/// Main screen: current activity on top, the 2×4 grid below (thumb reach).
+/// Main screen: current activity on top, the grid (2 rows × 4 columns,
+/// positions 1–4 on top) below, within thumb reach.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
@@ -101,17 +102,21 @@ class HomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                   child: Column(
                     children: [
-                      for (var row = 0; row < Activity.gridSize ~/ 2; row++)
+                      for (var row = 0; row < Activity.gridRows; row++)
                         Expanded(
                           child: Row(
                             children: [
-                              for (var col = 0; col < 2; col++)
+                              for (
+                                var col = 0;
+                                col < Activity.gridColumns;
+                                col++
+                              )
                                 Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.all(4),
+                                    padding: const EdgeInsets.all(3),
                                     child: _tile(
                                       context,
-                                      row * 2 + col + 1,
+                                      row * Activity.gridColumns + col + 1,
                                       activeId,
                                     ),
                                   ),

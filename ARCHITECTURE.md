@@ -1,6 +1,7 @@
 # Architecture
 
-Status: Phases 1–3 implemented (storage, seeding, theme, tracking, main UI).
+Status: Phases 1–3 implemented (storage, seeding, theme, tracking, main UI,
+read-only history timeline).
 Goals and analytics sections describe the planned design.
 
 ## Layers
@@ -81,8 +82,13 @@ Rules:
 | `lib/screens/settings/settings_screen.dart` | Appearance, accent, about |
 | `lib/screens/insights/insights_screen.dart` | Placeholder until Phase 6 |
 | `lib/widgets/activities/` | `ActivityTile`, `showActivityEditor` sheet |
+| `lib/util/timestamps.dart` | The only storage conversion: UTC epoch µs ⇄ `DateTime` |
+| `lib/util/date_format.dart` | `formatTimeOfDay` (`09:05`), `formatDayLabel` (`Today`, `Mon, 9 Nov 2026`) |
+| `lib/services/history/history_service.dart` | `entriesForDay` (clipped `DayEntry`s), `firstDay` |
+| `lib/screens/history/history_screen.dart` | Continuous reversed timeline, jump to date / now |
+| `lib/widgets/timeline/day_timeline.dart` | One day drawn proportionally (1.5 px/min) |
 
-## Database (schema v1 implemented; goals planned as v2)
+## Database (schema v2 implemented; goals planned as v3)
 
 ```sql
 activities(
@@ -91,15 +97,15 @@ activities(
   color INTEGER NOT NULL,          -- ARGB
   position INTEGER,                -- 1..8 while live, NULL when deleted/system
   is_system INTEGER NOT NULL DEFAULT 0,  -- the hidden "Unavailable" activity
-  created_at INTEGER NOT NULL,
-  deleted_at INTEGER
+  created_at INTEGER NOT NULL,     -- UTC epoch microseconds
+  deleted_at INTEGER               -- UTC epoch microseconds
 )
 UNIQUE INDEX on activities(position) WHERE deleted_at IS NULL AND position IS NOT NULL
 
 time_entries(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   activity_id INTEGER NOT NULL REFERENCES activities(id) ON DELETE RESTRICT,
-  start_utc INTEGER NOT NULL,      -- epoch ms
+  start_utc INTEGER NOT NULL,      -- UTC epoch microseconds
   end_utc INTEGER,                 -- NULL = currently active
   CHECK (end_utc IS NULL OR end_utc >= start_utc)
 )
@@ -122,6 +128,7 @@ goals(
 settings(key TEXT PRIMARY KEY, value TEXT NOT NULL)   -- theme_mode, accent
 ```
 
+All timestamps are UTC epoch microseconds (v2 migrated v1 milliseconds ×1000).
 `PRAGMA foreign_keys = ON` on every open. Schema version via
 `PRAGMA user_version`. No stored statistics — everything is derived from
 `time_entries`.

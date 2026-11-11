@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Placeholder until Phase 6 (timeline, distribution, comparison).
+/// Placeholder until Phase 6 (activity distribution, period comparison).
 class InsightsScreen extends StatelessWidget {
   const InsightsScreen({super.key});
 

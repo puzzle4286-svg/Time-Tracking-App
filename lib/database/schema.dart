@@ -45,6 +45,21 @@ const Map<int, List<String>> migrations = {
     )
     ''',
   ],
+  // v2: timestamps change from epoch milliseconds to epoch microseconds
+  // (UTC). Column names are kept; their unit is now microseconds.
+  2: [
+    '''
+    UPDATE time_entries
+      SET start_utc = start_utc * 1000,
+          end_utc = CASE WHEN end_utc IS NULL THEN NULL ELSE end_utc * 1000 END
+    ''',
+    '''
+    UPDATE activities
+      SET created_at = created_at * 1000,
+          deleted_at = CASE WHEN deleted_at IS NULL THEN NULL
+                            ELSE deleted_at * 1000 END
+    ''',
+  ],
 };
 
 int get schemaVersion => migrations.keys.reduce((a, b) => a > b ? a : b);

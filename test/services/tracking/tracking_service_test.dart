@@ -7,6 +7,7 @@ import 'package:time_tracker/repositories/time_entry_repository.dart';
 import 'package:time_tracker/services/tracking/time_range.dart';
 import 'package:time_tracker/services/tracking/tracking_service.dart';
 
+import '../../support/matchers.dart';
 import '../../support/tracking_fixture.dart';
 
 void main() {
@@ -34,7 +35,7 @@ void main() {
   group('initial state', () {
     test('Free Time is active from install', () {
       expect(f.service.current.activity.id, f.freeTime);
-      expect(f.service.current.entry.start, monday9);
+      expect(f.service.current.entry.start, isMoment(monday9));
     });
 
     test('current is unavailable before the first reconcile', () {
@@ -51,7 +52,10 @@ void main() {
       final entries = await expectConsistent();
       expect(entries, hasLength(2));
       expect(entries[0].activityId, f.freeTime);
-      expect(entries[0].end, monday9.add(const Duration(minutes: 30)));
+      expect(
+        entries[0].end,
+        isMoment(monday9.add(const Duration(minutes: 30))),
+      );
       expect(entries[1].activityId, f.gaming);
       expect(entries[1].start, entries[0].end);
       expect(f.service.current.activity.id, f.gaming);
@@ -65,7 +69,7 @@ void main() {
 
       final entries = await expectConsistent();
       expect(entries, hasLength(1));
-      expect(entries.single.start, monday9);
+      expect(entries.single.start, isMoment(monday9));
     });
 
     test('a zero-length session leaves no empty entry', () async {
@@ -143,6 +147,33 @@ void main() {
       expect(session.todayTotal(now), const Duration(minutes: 150));
     });
 
+    test(
+      'seconds from separate sessions add up, nothing is rounded away',
+      () async {
+        // Three 40.5 s Gaming sessions interleaved with Study.
+        f.clock.set(DateTime(2026, 11, 9, 10));
+        for (var i = 0; i < 3; i++) {
+          await f.service.switchTo(f.gaming);
+          f.clock.advance(const Duration(seconds: 40, milliseconds: 500));
+          await f.service.switchTo(f.study);
+          f.clock.advance(const Duration(minutes: 1));
+        }
+        await f.service.switchTo(f.gaming);
+
+        final session = f.service.current;
+        expect(
+          session.closedTodayTotal,
+          const Duration(minutes: 2, seconds: 1, milliseconds: 500),
+        );
+        // 2 more seconds in the current session -> 2m 3.5s total.
+        final now = f.clock.now().add(const Duration(seconds: 2));
+        expect(
+          session.todayTotal(now),
+          const Duration(minutes: 2, seconds: 3, milliseconds: 500),
+        );
+      },
+    );
+
     test("yesterday's time is not part of today's total", () async {
       f.clock.set(DateTime(2026, 11, 9, 22));
       await f.service.switchTo(f.gaming);
@@ -176,7 +207,10 @@ void main() {
 
       final session = second.service.current;
       expect(session.activity.name, 'Gaming');
-      expect(session.entry.start, monday9.add(const Duration(minutes: 20)));
+      expect(
+        session.entry.start,
+        isMoment(monday9.add(const Duration(minutes: 20))),
+      );
       expect(
         session.sessionDuration(second.clock.now()),
         const Duration(hours: 2, minutes: 40),
@@ -233,9 +267,9 @@ void main() {
       final entries = await expectConsistent();
       final gaming = entries.where((e) => e.activityId == f.gaming).toList();
       expect(gaming, hasLength(2));
-      expect(gaming[0].start, DateTime(2026, 11, 9, 23));
-      expect(gaming[0].end, DateTime(2026, 11, 10));
-      expect(gaming[1].start, DateTime(2026, 11, 10));
+      expect(gaming[0].start, isMoment(DateTime(2026, 11, 9, 23)));
+      expect(gaming[0].end, isMoment(DateTime(2026, 11, 10)));
+      expect(gaming[1].start, isMoment(DateTime(2026, 11, 10)));
       expect(gaming[1].isOpen, isTrue);
 
       final session = f.service.current;
@@ -251,12 +285,17 @@ void main() {
       await f.service.switchTo(f.study); // no reconcile in between
 
       final entries = await expectConsistent();
-      expect(entries.map((e) => (e.activityId, e.start, e.end)).toList(), [
-        (f.freeTime, monday9, DateTime(2026, 11, 9, 23)),
-        (f.gaming, DateTime(2026, 11, 9, 23), DateTime(2026, 11, 10)),
-        (f.gaming, DateTime(2026, 11, 10), DateTime(2026, 11, 10, 2)),
-        (f.study, DateTime(2026, 11, 10, 2), null),
-      ]);
+      expect(
+        entries
+            .map((e) => (e.activityId, e.start.toLocal(), e.end?.toLocal()))
+            .toList(),
+        [
+          (f.freeTime, monday9, DateTime(2026, 11, 9, 23)),
+          (f.gaming, DateTime(2026, 11, 9, 23), DateTime(2026, 11, 10)),
+          (f.gaming, DateTime(2026, 11, 10), DateTime(2026, 11, 10, 2)),
+          (f.study, DateTime(2026, 11, 10, 2), null),
+        ],
+      );
     });
 
     test('several missed midnights create one entry per day', () async {
@@ -265,7 +304,7 @@ void main() {
       await f.service.reconcile();
 
       final entries = await expectConsistent();
-      expect(entries.map((e) => e.start).toList(), [
+      expect(entries.map((e) => e.start.toLocal()).toList(), [
         monday9,
         DateTime(2026, 11, 10),
         DateTime(2026, 11, 11),
@@ -295,7 +334,7 @@ void main() {
       f.clock.set(DateTime(2026, 11, 10));
       await f.service.reconcile();
       final entries = await expectConsistent();
-      expect(entries.last.start, DateTime(2026, 11, 10));
+      expect(entries.last.start, isMoment(DateTime(2026, 11, 10)));
       expect(f.service.current.sessionDuration(f.clock.now()), Duration.zero);
     });
   });
@@ -326,8 +365,8 @@ void main() {
         final entries = await g.entries();
         expect(entries, hasLength(3));
         final dstEntry = entries[1];
-        expect(dstEntry.start, startOfLocalDay(day));
-        expect(dstEntry.end, nextLocalMidnight(day));
+        expect(dstEntry.start, isMoment(startOfLocalDay(day)));
+        expect(dstEntry.end, isMoment(nextLocalMidnight(day)));
         expect(
           dstEntry.durationAt(g.clock.now()),
           isNot(const Duration(hours: 24)),

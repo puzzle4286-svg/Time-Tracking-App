@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../screens/history/history_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/insights/insights_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../services/activities/activity_service.dart';
+import '../services/history/history_service.dart';
 import '../services/tracking/tracking_service.dart';
 import '../util/clock.dart';
 import 'settings_controller.dart';
 
-/// Bottom navigation between Track, Insights and Settings. Also reconciles
+/// Bottom navigation between Track, History, Insights and Settings. Also reconciles
 /// tracking whenever the app returns to the foreground.
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -16,12 +18,14 @@ class AppShell extends StatefulWidget {
     required this.tracking,
     required this.activities,
     required this.settings,
+    required this.history,
     required this.clock,
   });
 
   final TrackingService tracking;
   final ActivityService activities;
   final SettingsController settings;
+  final HistoryService history;
   final Clock clock;
 
   @override
@@ -46,7 +50,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    const titles = ['Track', 'Insights', 'Settings'];
+    const titles = ['Track', 'History', 'Insights', 'Settings'];
     return Scaffold(
       appBar: _index == 0 ? null : AppBar(title: Text(titles[_index])),
       body: switch (_index) {
@@ -55,7 +59,12 @@ class _AppShellState extends State<AppShell> {
           activities: widget.activities,
           clock: widget.clock,
         ),
-        1 => const InsightsScreen(),
+        1 => HistoryScreen(
+          history: widget.history,
+          tracking: widget.tracking,
+          clock: widget.clock,
+        ),
+        2 => const InsightsScreen(),
         _ => SafeArea(child: SettingsScreen(settings: widget.settings)),
       },
       bottomNavigationBar: NavigationBar(
@@ -66,6 +75,11 @@ class _AppShellState extends State<AppShell> {
             icon: Icon(Icons.timer_outlined),
             selectedIcon: Icon(Icons.timer),
             label: 'Track',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.view_timeline_outlined),
+            selectedIcon: Icon(Icons.view_timeline),
+            label: 'History',
           ),
           NavigationDestination(
             icon: Icon(Icons.insights_outlined),

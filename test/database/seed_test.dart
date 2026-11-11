@@ -7,6 +7,7 @@ import 'package:time_tracker/database/seed.dart';
 import 'package:time_tracker/repositories/activity_repository.dart';
 import 'package:time_tracker/repositories/time_entry_repository.dart';
 
+import '../support/matchers.dart';
 import '../support/test_database.dart';
 
 void main() {
@@ -29,7 +30,7 @@ void main() {
         expect(live, hasLength(1));
         expect(live.single.name, initialActivityName);
         expect(live.single.position, 1);
-        expect(live.single.createdAt, installTime);
+        expect(live.single.createdAt, isMoment(installTime));
       },
     );
 
@@ -45,7 +46,7 @@ void main() {
       final open = await TimeEntryRepository(db).openEntry();
       expect(open, isNotNull);
       expect(open!.activityId, live.single.id);
-      expect(open.start, installTime);
+      expect(open.start, isMoment(installTime));
       expect(await db.query('time_entries'), hasLength(1));
     });
 
@@ -54,7 +55,7 @@ void main() {
       expect(await ActivityRepository(db).count(), 2);
       expect(await db.query('time_entries'), hasLength(1));
       final open = await TimeEntryRepository(db).openEntry();
-      expect(open!.start, installTime);
+      expect(open!.start, isMoment(installTime));
     });
   });
 
@@ -72,7 +73,7 @@ void main() {
     await ensureSeeded(reopened, installTime.add(const Duration(days: 1)));
 
     final open = await TimeEntryRepository(reopened).openEntry();
-    expect(open!.start, installTime);
+    expect(open!.start, isMoment(installTime));
     expect(await ActivityRepository(reopened).count(), 2);
   });
 }

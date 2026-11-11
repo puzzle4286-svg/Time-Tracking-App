@@ -22,10 +22,16 @@ Alternatives: `drift` (code generation, more machinery than needed), `isar` /
 `hive` (not SQLite). Migrations are numbered steps in `onUpgrade`; the
 database is never reset.
 
-## D4 – Timestamps: UTC epoch milliseconds
-All instants are stored as integer UTC milliseconds. This is unambiguous and
-unaffected by device timezone changes. Local time is only used to *interpret*
-instants: day boundaries, goal periods and display.
+## D4 – Timestamps: UTC epoch microseconds (revised 2026-11-11)
+All persisted instants are 64-bit integers: microseconds since
+1970-01-01T00:00:00Z. Written via `toStoredTimestamp(t)` (=
+`t.toUtc().microsecondsSinceEpoch`) and read via `fromStoredTimestamp(v)` (=
+`DateTime.fromMicrosecondsSinceEpoch(v, isUtc: true)`), both in
+`lib/util/timestamps.dart` — the only place conversion happens. Never stored
+as formatted date strings. Local time is only used for display and local
+calendar boundaries. Originally milliseconds; schema v2 converted existing
+data (×1000). Column names (`start_utc`, …) were kept because
+`ALTER TABLE … RENAME COLUMN` is unavailable on older Android SQLite.
 
 ## D5 – Day boundaries via Dart's local `DateTime`
 A local day is `[DateTime(y, m, d), DateTime(y, m, d + 1))` in the device's
@@ -77,10 +83,11 @@ and arbitrary periods without hardcoding daily/weekly/monthly.
 Added in Phase 1: `sqflite` 2.4, `path` 1.9, dev `sqflite_common_ffi` 2.4. Planned, `fl_chart` (Phase 6), `share_plus`,
 `file_picker` (Phase 7). Each addition is recorded here.
 
-## D12 – Models expose local `DateTime`s
-Rows store UTC milliseconds; models convert with `fromMillisecondsSinceEpoch`,
-which yields a local `DateTime` for the same instant. Code compares instants,
-not representations (`==` on `DateTime` also compares the UTC flag).
+## D12 – Models expose UTC `DateTime`s (revised 2026-11-11)
+Values read from storage are UTC `DateTime`s, and `SystemClock` returns UTC.
+Code compares instants (`isAtSameMomentAs`, `difference`), never
+representations (`==` on `DateTime` also compares the UTC flag); tests use the
+`isMoment` matcher. Local-calendar helpers call `toLocal()` themselves.
 
 ## D13 – Repositories wrap a `DatabaseExecutor`
 Repositories are tiny objects over a `Database` *or* a `Transaction`, so a
@@ -120,12 +127,10 @@ always instant differences, so they equal real elapsed time. DST tests find
 the local zone's 2026 transition days automatically and are skipped (with a
 reason) in zones without DST; `tool/test_timezones.sh` covers both kinds.
 
-## D19 – Bottom navigation bar with three tabs
-Track / Insights / Settings in a Material 3 `NavigationBar`, reachable with
-the thumb. The grid sits in the lower part of the Track screen for the same
-reason. History editing (Phase 4) will be reached from Insights' timeline and
-from the current-activity header rather than a fourth tab, unless that
-proves awkward.
+## D19 – Bottom navigation: Track / History / Insights / Settings
+Material 3 `NavigationBar`, reachable with the thumb. History was added as its
+own tab at the developer's request (2026-11-11); history editing (Phase 4)
+will be done from the History timeline.
 
 ## D20 – Accent vs activity colours
 Each activity keeps its own colour (dot in the grid and header; charts later).
@@ -140,3 +145,28 @@ tap, which keeps interactions predictable.
 ## D22 – App version shown from a constant
 `lib/app/app_info.dart` holds the version string instead of adding
 `package_info_plus`. It must be kept in sync with `pubspec.yaml`.
+
+## D23 – Grid is 2 rows × 4 columns (developer request, 2026-11-11)
+Positions 1–4 form the top row, 5–8 the bottom row. Tiles stack the colour
+dot, name (up to 3 lines) and active marker vertically to suit the narrower
+width. The grid still fills the space below the header.
+
+## D24 – History is one continuous, proportional vertical timeline
+Replaces the planned Insights "daily timeline" (spec 8.1) with a dedicated
+History tab, at the developer's request. Design:
+- Reversed `ListView.builder`: now at the bottom, scrolling up goes back one
+  local day per item, ending at the first recorded day.
+- Fixed scale of 1.5 px per minute (90 px/hour). Each day's height comes from
+  its real length, so DST days are 23 h / 25 h tall; today ends at now.
+- Entries are coloured blocks on the line; the label (name, then
+  "start – end · duration") is shown beside a block only if it fits
+  (≥ 12 min for the name, ≥ 25 min for times). Shorter entries are still drawn.
+- Because every item's height is known, "Jump to date" computes the exact
+  scroll offset; "Now" scrolls back to the bottom.
+- Entries are loaded per day on demand and cached; the cache is cleared when
+  tracking changes. Insights (Phase 6) keeps distribution and comparison.
+
+## D25 – Totals keep sub-minute precision
+Totals are sums of exact timestamp differences (microseconds) and are only
+truncated to minutes when formatted, so seconds from separate sessions add up
+(3 × 40 s shows as 2m). Nothing stores rounded durations.

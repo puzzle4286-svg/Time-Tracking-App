@@ -107,3 +107,36 @@
 **Next steps**
 - Phase 4: activity deletion with history options, history list, entry
   editing/splitting/deleting with overlap resolution.
+
+## 2026-11-11 – Phase 3 revisions from developer feedback
+
+**Requested**
+- Grid as 2 rows × 4 columns.
+- A dedicated History page: a vertical timeline to scroll back indefinitely,
+  activities beside the line, block length proportional to duration.
+- Today's total must not lose seconds across switches.
+- Timestamp storage spec: UTC epoch microseconds, UTC on read.
+
+**Work completed**
+- `lib/util/timestamps.dart` as the single conversion point; schema v2
+  migration; `SystemClock` returns UTC; models return UTC.
+- Grid constants (`gridRows`, `gridColumns`) and vertical tile layout.
+- `HistoryService`, `DayTimeline`, `HistoryScreen`; new History tab.
+
+**Problems and solutions**
+- 23 test assertions compared UTC values with local `DateTime`s via `==`;
+  added an `isMoment` matcher that compares instants.
+- A first list-style day page was replaced mid-way by the timeline design
+  after clarification.
+
+**Testing performed**
+- 92 tests pass in all seven timezones (new: migration v1→v2, raw storage
+  format incl. microsecond precision, seconds accumulation, timeline
+  proportions / labels / 24:00 / running entry, history service clipping and
+  deleted activities, grid geometry, history scrolling to past days).
+- Emulator: existing v1 database migrated to v2 on launch (values ×1000,
+  same wall-clock times); 2×4 grid; History timeline shows the 1-minute
+  Free Time sliver and the running Gaming block.
+
+**Next steps**
+- Developer review, push, then Phase 4.

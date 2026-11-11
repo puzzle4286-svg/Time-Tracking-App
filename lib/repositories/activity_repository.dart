@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../models/activity.dart';
+import '../util/timestamps.dart';
 
 /// SQL access for the `activities` table.
 ///
@@ -19,6 +20,13 @@ class ActivityRepository {
       orderBy: 'position',
     );
     return rows.map(Activity.fromRow).toList();
+  }
+
+  /// Every activity, including deleted and system ones, keyed by id, so
+  /// historical entries can always be shown with a name and colour.
+  Future<Map<int, Activity>> allById() async {
+    final rows = await _db.query('activities');
+    return {for (final a in rows.map(Activity.fromRow)) a.id: a};
   }
 
   Future<Activity?> byId(int id) async {
@@ -52,7 +60,7 @@ class ActivityRepository {
       'color': color,
       'position': position,
       'is_system': isSystem ? 1 : 0,
-      'created_at': createdAt.millisecondsSinceEpoch,
+      'created_at': toStoredTimestamp(createdAt),
     });
   }
 

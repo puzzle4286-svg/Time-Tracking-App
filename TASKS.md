@@ -1,6 +1,6 @@
 # Tasks
 
-**Current phase:** Phase 3 – Main interface (complete). Next: Phase 4 – Activity and history management
+**Current phase:** Phase 3 revisions (developer feedback) complete; awaiting review. Next: Phase 4 – Activity and history management
 
 A phase is only checked off once its functionality is tested.
 
@@ -45,22 +45,28 @@ A phase is only checked off once its functionality is tested.
 - [x] Verified on emulator: setup, switch, force-stop + relaunch, background + resume,
       light/dark/black, accent change
 
+## Phase 3 revisions (developer feedback, 2026-11-11)
+- [x] Grid changed to 2 rows × 4 columns
+- [x] History tab: continuous, proportional vertical timeline with jump to date / now
+- [x] Timestamps stored as UTC epoch microseconds; schema v2 migration (verified on device)
+- [x] Test that seconds from separate sessions add up in totals
+
 ## Phase 4 – Activity and history management
 - [ ] Edit activity (name, color)
 - [ ] Delete activity: rename history / replace / mark Unavailable; replacement required if active
-- [ ] History list per day; edit activity/start/end; delete; split
+- [ ] Tap a block in the History timeline to edit activity/start/end; delete; split
 - [ ] Overlap detection with explicit resolution (trim neighbours or cancel)
 - [ ] Tests for all of the above
 
 ## Phase 5 – Goals
-- [ ] Goal model + repository
+- [ ] Goal model + repository (schema v3)
 - [ ] Period calculation (hours / days / weeks / months, anchored)
 - [ ] Min / max / both progress
 - [ ] Goal editor UI
 - [ ] Tests: lengths, anchors, transitions, DST, sessions crossing boundaries
 
 ## Phase 6 – Insights
-- [ ] Daily timeline with date navigation
+- [x] Daily timeline with date navigation → delivered as the History tab (D24)
 - [ ] Distribution donut (day/week/month/year/all)
 - [ ] Period comparison bars (day/week/month), incomplete periods flagged
 
@@ -75,5 +81,7 @@ A phase is only checked off once its functionality is tested.
 - [ ] Documentation and changelog update
 
 ## Known issues
+- With 2 rows, grid tiles are very tall on phones; could cap tile height if wanted.
+- Entries shorter than ~12 minutes show as thin blocks without a label (D24).
 - Insights tab is a placeholder until Phase 6.
 - Android launch splash is white while the default theme is dark (cosmetic; Phase 8).

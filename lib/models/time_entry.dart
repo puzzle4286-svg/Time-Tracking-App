@@ -1,6 +1,8 @@
+import '../util/timestamps.dart';
+
 /// A continuous block of time spent on one activity.
 ///
-/// Instants are stored as UTC epoch milliseconds. An entry with no [end] is
+/// Instants are stored as UTC epoch microseconds and read back as UTC. An entry with no [end] is
 /// the currently active session; the database allows at most one of those.
 class TimeEntry {
   const TimeEntry({
@@ -25,9 +27,7 @@ class TimeEntry {
   factory TimeEntry.fromRow(Map<String, Object?> row) => TimeEntry(
     id: row['id']! as int,
     activityId: row['activity_id']! as int,
-    start: DateTime.fromMillisecondsSinceEpoch(row['start_utc']! as int),
-    end: row['end_utc'] == null
-        ? null
-        : DateTime.fromMillisecondsSinceEpoch(row['end_utc']! as int),
+    start: fromStoredTimestamp(row['start_utc']! as int),
+    end: fromStoredTimestampOrNull(row['end_utc']),
   );
 }

@@ -1,3 +1,5 @@
+import '../util/timestamps.dart';
+
 /// One of the user's activities.
 ///
 /// Live activities occupy one of the eight grid [position]s (1–8). Deleted
@@ -16,7 +18,9 @@ class Activity {
     required this.deletedAt,
   });
 
-  static const int gridSize = 8;
+  static const int gridRows = 2;
+  static const int gridColumns = 4;
+  static const int gridSize = gridRows * gridColumns;
 
   final int id;
   final String name;
@@ -38,10 +42,7 @@ class Activity {
     color: row['color']! as int,
     position: row['position'] as int?,
     isSystem: row['is_system'] == 1,
-    createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
-    deletedAt: _optionalTime(row['deleted_at']),
+    createdAt: fromStoredTimestamp(row['created_at']! as int),
+    deletedAt: fromStoredTimestampOrNull(row['deleted_at']),
   );
 }
-
-DateTime? _optionalTime(Object? millis) =>
-    millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis as int);
