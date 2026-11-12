@@ -521,3 +521,31 @@ one- and two-line labels by measuring the text at the system text scale.
   Insights, Light/Blue, JSON backup and restore through the system dialogs,
   CSV export (file contents checked with adb). Neon checked on Track,
   History and Insights with the developer's own data (not changed).
+
+## 2026-11-12 – Home-screen task switcher
+
+**Requested**: a minimal home-screen widget to switch activities with one
+tap, without opening the app.
+
+**Work completed**: `SwitcherWidget` (Dart) draws the eight tiles as PNGs
+like the app's tiles and redraws on tracking, activity and settings
+changes; `SwitcherWidgetProvider` (Kotlin) shows them and sends taps to a
+background Dart isolate that calls `TrackingService.switchTo` (D49).
+New dependency `home_widget` 0.10.
+
+**Problems and solutions**
+- sqflite shares single database instances per path across the whole
+  process; the tap handler opens its own connection so closing it cannot
+  close the app's.
+- Size took three tries on the phone: stretched tiles were too big, fixed
+  44 x 35 dp too small, 64 x 51 dp needed more than one launcher cell row
+  (cells are about 75 x 91 dp), so the frame became 4 x 3. Final: flatter
+  tiles that fill a 4 x 1 widget.
+- The Neon glow was cut off in a square at the image edge; the widget uses
+  a tighter glow that fits in the tile gap.
+
+**Testing performed**
+- New tests for tile drawing, widget state and tap links; affected app
+  tests pass; analyze clean.
+- Phone: tap switched to Eating and back without opening the app, the
+  widget redrew, the app showed the switch on open; no errors in the log.

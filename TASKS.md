@@ -133,9 +133,9 @@ A phase is only checked off once its functionality is tested.
       header, goal name instead of activity name
 - [x] Older backups (schema v4) upgraded on restore
 - [x] Optional Neon look with a switch in Settings (D48)
+- [x] Home-screen task switcher widget, one tap per switch (D49)
 
 ## Known issues
-- Grid tiles show icons or initials, not full names (D45).
 - Very short entries are stretched to label height on the timeline, so the
   scale is locally non-linear around them (D24).
 - The launch splash is always the default dark colour; with Light selected

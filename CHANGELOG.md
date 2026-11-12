@@ -73,6 +73,8 @@ explicitly under **Database**.
 - Neon switch in Settings → Appearance: glowing active tile, timer, goal
   bars, donut, comparison bars, activity dots, entry edges and selected tab;
   inactive tiles as dark outlines.
+- Home-screen task switcher widget (Android): the eight tiles; one tap
+  switches without opening the app.
 - Main screen shows the running activity's goals under today's total: one
   bar per goal with green (between targets) and red (over the maximum)
   zones and labelled min / max marks.

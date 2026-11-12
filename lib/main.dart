@@ -7,6 +7,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart' as ffi;
 
 import 'app/app_root.dart';
 import 'database/app_database.dart';
+import 'services/widget/switcher_widget.dart';
 import 'util/clock.dart';
 
 Future<void> main() async {
@@ -15,8 +16,14 @@ Future<void> main() async {
 
   final (factory, dir) = await _databaseLocation();
   final db = await openAppDatabase(factory, p.join(dir, databaseFileName));
+  if (Platform.isAndroid) await SwitcherWidget.register();
   runApp(
-    AppRoot(db: db, clock: clock, services: await AppServices.load(db, clock)),
+    AppRoot(
+      db: db,
+      clock: clock,
+      services: await AppServices.load(db, clock),
+      syncWidget: Platform.isAndroid,
+    ),
   );
 }
 

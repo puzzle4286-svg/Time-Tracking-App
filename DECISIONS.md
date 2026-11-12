@@ -92,7 +92,9 @@ Added in Phase 1: `sqflite` 2.4, `path` 1.9, dev `sqflite_common_ffi` 2.4.
 open dialogs); `share_plus` was not needed, because the save dialog covers
 both "keep a copy" and "put it in a synced folder". `sqflite_common_ffi`
 became a runtime dependency for the Linux build (D39). Dev: `integration_test`
-(Flutter SDK). Each addition is recorded here.
+(Flutter SDK). Home-screen switcher (D49): `home_widget` 0.10 (widget
+storage, redraw requests and a background Dart isolate for taps). Each
+addition is recorded here.
 
 ## D12 – Models expose UTC `DateTime`s (revised 2026-11-11)
 Values read from storage are UTC `DateTime`s, and `SystemClock` returns UTC.
@@ -511,3 +513,39 @@ passes settings around; with it off every helper returns no shadows, so the
 default look is unchanged. Glow is strongest on Dark and Black; on Light it
 is subtle. Backups need no change: settings rows are copied as they are
 (D40).
+
+## D49 – Home-screen task switcher (developer request, 2026-11-12)
+A minimal Android home-screen widget: the eight grid tiles in two rows of
+four, no title, no background, no time. One tap on a tile switches to that
+activity without opening the app; empty slots are left blank. Tiles look
+like the app's (icon, or the first letter without one; active tile in full
+colour with a ring; others muted; Neon outlines and glow when Neon is on,
+with a tighter glow that fits inside the tile image).
+- **Size** (tuned on the phone): the widget is 4 x 1 cells (minimum
+  250 x 60 dp, so one cell row holds both tile rows) and the tiles fill it.
+  Each tile image has the shape of one slot at that size (100 x 52 logical,
+  about 71 x 37 dp on the developer's phone, whose launcher cells are about
+  75 x 91 dp), with a 4 px gap that also holds the Neon glow; icons are drawn
+  larger than in the app because the tiles are smaller. Earlier tries:
+  stretched square-ish tiles at 4 x 2 (far too large), fixed 44 x 35 dp
+  (too small) and 64 x 51 dp, which needed more than one cell row, so the
+  launcher made the frame 4 x 3.
+- **Drawing**: Dart paints each tile as a PNG (`SwitcherWidget.paintTile`,
+  the same `fillFor` / `foregroundFor` colours as `ActivityTile`). Android
+  widgets cannot use the app's icon font, so drawing in Dart is the only way
+  to show the same icons. `SwitcherWidgetProvider` (Kotlin) only shows the
+  images and attaches the tap links.
+- **Switching**: a tap sends `timetracker://switch?id=<id>` to
+  `onSwitcherTap`, which home_widget runs in a background Dart isolate. It
+  calls the normal `TrackingService.switchTo`, so the switch is the same
+  atomic transaction with midnight splitting as in the app; no tracking
+  logic exists in Kotlin. The isolate opens its own database connection
+  (`singleInstance: false`): sqflite shares single instances per path across
+  the whole process, so closing a shared one would close the app's. The app
+  reloads tracking state on resume, so it shows the switch when opened.
+- **Redrawing**: the app redraws the widget whenever tracking, the
+  activities or the settings change (`AppRoot`), and the tap handler redraws
+  after each switch. There is no periodic update: the widget shows no time,
+  so nothing goes stale.
+- The background receiver is not exported, so only the widget's own taps
+  can switch activities; other apps cannot.

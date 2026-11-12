@@ -49,6 +49,26 @@ class ActivityTile extends StatelessWidget {
     )!;
   }
 
+  /// Icon / letter colour for [activity] in the given state (also used by
+  /// the home-screen widget).
+  static Color foregroundFor(
+    ColorScheme scheme,
+    Activity? activity,
+    bool active, {
+    bool neon = false,
+  }) {
+    if (activity == null) return scheme.onSurfaceVariant;
+    if (active) {
+      final fill = fillFor(scheme, activity, true);
+      return ThemeData.estimateBrightnessForColor(fill) == Brightness.dark
+          ? Colors.white
+          : Colors.black;
+    }
+    return neon
+        ? Color(activity.color).withValues(alpha: 0.85)
+        : scheme.onSurface.withValues(alpha: 0.75);
+  }
+
   /// Inactive tile tint with Neon: darker, the outline carries the colour.
   static const double neonTint = 0.10;
 
@@ -59,15 +79,7 @@ class ActivityTile extends StatelessWidget {
     final a = activity;
     final color = a == null ? null : Color(a.color);
     final fill = fillFor(scheme, a, isActive, neon: neon);
-    final foreground = a == null
-        ? scheme.onSurfaceVariant
-        : isActive
-        ? (ThemeData.estimateBrightnessForColor(fill) == Brightness.dark
-              ? Colors.white
-              : Colors.black)
-        : neon
-        ? color!.withValues(alpha: 0.85)
-        : scheme.onSurface.withValues(alpha: 0.75);
+    final foreground = foregroundFor(scheme, a, isActive, neon: neon);
     final icon = a == null ? Icons.add : activityIcon(a.icon);
 
     return Semantics(

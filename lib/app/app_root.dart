@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -11,6 +13,7 @@ import '../services/goals/goal_service.dart';
 import '../services/history/entry_edit_service.dart';
 import '../services/history/history_service.dart';
 import '../services/tracking/tracking_service.dart';
+import '../services/widget/switcher_widget.dart';
 import '../util/clock.dart';
 import '../widgets/data/data_section.dart';
 import 'app.dart';
@@ -67,12 +70,17 @@ class AppRoot extends StatefulWidget {
     required this.clock,
     required this.services,
     this.files = const SystemBackupFiles(),
+    this.syncWidget = false,
   });
 
   final Database db;
   final Clock clock;
   final AppServices services;
   final BackupFiles files;
+
+  /// Keep the home-screen switcher (D49) in sync; on for the Android app,
+  /// off in tests.
+  final bool syncWidget;
 
   @override
   State<AppRoot> createState() => _AppRootState();
@@ -84,11 +92,43 @@ class _AppRootState extends State<AppRoot> {
   GlobalKey<ScaffoldMessengerState> _messenger = GlobalKey();
   late final _backup = BackupService(widget.db, widget.clock);
 
+  @override
+  void initState() {
+    super.initState();
+    _listen(_services);
+  }
+
+  /// Redraws the switcher whenever what it shows can have changed: the
+  /// running activity, the grid, or the look.
+  void _listen(AppServices s) {
+    if (!widget.syncWidget) return;
+    for (final source in [s.tracking, s.activities, s.settings]) {
+      source.addListener(_syncWidget);
+    }
+    _syncWidget();
+  }
+
+  void _unlisten(AppServices s) {
+    for (final source in [s.tracking, s.activities, s.settings]) {
+      source.removeListener(_syncWidget);
+    }
+  }
+
+  void _syncWidget() => unawaited(SwitcherWidget.sync(widget.db));
+
+  @override
+  void dispose() {
+    _unlisten(_services);
+    super.dispose();
+  }
+
   Future<void> _reload() async {
     final next = await AppServices.load(widget.db, widget.clock);
     if (!mounted) return;
     // The old services are not disposed: screens being torn down may still
     // have pending callbacks into them. They are simply dropped.
+    _unlisten(_services);
+    _listen(next);
     setState(() {
       _services = next;
       _generation++;
