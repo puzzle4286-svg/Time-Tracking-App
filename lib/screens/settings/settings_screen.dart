@@ -4,7 +4,9 @@ import '../../app/app_info.dart';
 import '../../app/settings_controller.dart';
 import '../../models/app_settings.dart';
 import '../../repositories/ui_state_store.dart';
+import '../../services/app_icon/app_icon_service.dart';
 import '../../widgets/data/data_section.dart';
+import '../../widgets/settings/app_icon_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -12,6 +14,7 @@ class SettingsScreen extends StatefulWidget {
     required this.settings,
     required this.uiState,
     this.data,
+    this.appIcon,
   });
 
   final SettingsController settings;
@@ -21,6 +24,9 @@ class SettingsScreen extends StatefulWidget {
 
   /// Export, backup and restore; the section is hidden when null.
   final DataActions? data;
+
+  /// Launcher icon choice; the section is hidden when null (not Android).
+  final AppIconService? appIcon;
 
   static const accentScrollKey = 'settings.accentScroll';
 
@@ -116,6 +122,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+            if (widget.appIcon case final appIcon?) ...[
+              const SizedBox(height: 24),
+              AppIconSection(service: appIcon),
+            ],
             if (widget.data case final data?) ...[
               const SizedBox(height: 24),
               DataSection(actions: data),

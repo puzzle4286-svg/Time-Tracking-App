@@ -549,3 +549,32 @@ with a tighter glow that fits inside the tile image).
   so nothing goes stale.
 - The background receiver is not exported, so only the widget's own taps
   can switch activities; other apps cannot.
+
+## D50 – Choosable launcher icon (developer request, 2026-11-12)
+Two launcher icons replace the default Flutter logo, both the 4 x 2 grid
+with one running tile (green, pause bars) in the activity palette:
+**Neon** (default; near-black, outlined tiles, glowing active tile) and
+**Flat** (dark slate, muted filled tiles, ringed active tile). Settings →
+App icon switches between them (Android only).
+- **One source**: `tool/generate_app_icons.py` (Pillow) writes the adaptive
+  icon vectors, PNG fallbacks for Android 7 (minSdk 24 predates adaptive
+  icons), the Settings previews (`assets/app_icons/`) and a shared
+  monochrome layer for Android 13 themed icons. The grid stays inside the
+  66 dp safe circle so round masks do not clip it.
+- **Switching**: two `activity-alias` launcher entries (`.IconNeon`,
+  `.IconFlat`) point at `MainActivity`; `AppIcon.kt` enables one and
+  disables the other (`DONT_KILL_APP`), new one first so there is always a
+  launcher entry. Android closes every screen opened through an entry when
+  it is disabled (`DONT_KILL_APP` only keeps the process), so switching
+  right away closed the app. Settings therefore only records the choice
+  (SharedPreferences) and `MainActivity.onStop` applies it once the user
+  has left the app; not while a picker the app opened is in front (tracked
+  via `startActivityForResult` / `onActivityResult`), which would lose the
+  backup / restore result. Leaving the app after a change ends its task, so
+  it starts fresh from the icon (the process and data are unaffected). Android keeps the choice across restarts and updates, so
+  nothing is stored in the database or backups. Alias names are stored by
+  Android and must never be renamed.
+- Trade-offs: some launchers take a moment to refresh, and a home-screen
+  shortcut to the old entry may disappear (re-add it). Updating from 0.1.0
+  moves the launcher entry from `MainActivity` to `.IconNeon` once, with the
+  same effect.

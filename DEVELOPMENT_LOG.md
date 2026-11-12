@@ -575,3 +575,29 @@ in the long-press sheet; a way to rearrange the 4 x 2 grid.
   fails without the fix; rearranging by tap and drag); affected tests
   pass; analyze clean.
 - Release build installed on the phone over the existing app (data kept).
+
+## 2026-11-12 – App icon (Neon / Flat), version 0.1.1
+
+**Requested**: a real app icon; the developer liked both grid drafts and
+asked for a choice in the app, Neon by default. Version 0.1.1.
+
+**Work completed**: `tool/generate_app_icons.py` generates both icons
+(adaptive vectors, monochrome layer, PNG fallbacks, Settings previews);
+two launcher activity-aliases switched by `AppIcon.kt` over the
+`time_tracker/app_icon` channel; `AppIconService` and the Settings "App
+icon" section (Android only) (D50).
+
+**Testing performed**
+- Widget tests with the channel mocked: default Neon, switching, stored
+  choice, unknown values; screen tests pass; analyze clean.
+- Phone: release build installed, the launcher lists `.IconNeon` only, no
+  errors in the log.
+
+**Problems and solutions**
+- Switching closed the app: disabling the launcher alias the app was opened
+  through finishes its activity (log: `wm_destroy_activity … IconNeon,
+  finish`; same process before and after). The choice is now applied in
+  `onStop`, after the user leaves the app.
+- Phone after the fix: Flat → Neon in Settings, the app stayed open with
+  "The new icon appears after you leave the app."; Home switched the
+  launcher entry to `.IconNeon` with no crash; the app reopened from it.

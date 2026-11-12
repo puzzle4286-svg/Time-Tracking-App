@@ -9,6 +9,7 @@ import '../screens/settings/settings_screen.dart';
 import '../services/activities/activity_service.dart';
 import '../services/analytics/insight_period.dart';
 import '../services/analytics/insights_service.dart';
+import '../services/app_icon/app_icon_service.dart';
 import '../services/goals/goal_service.dart';
 import '../services/history/entry_edit_service.dart';
 import '../services/history/history_service.dart';
@@ -32,6 +33,7 @@ class AppShell extends StatefulWidget {
     required this.db,
     required this.clock,
     this.data,
+    this.appIcon,
   });
 
   final TrackingService tracking;
@@ -48,6 +50,9 @@ class AppShell extends StatefulWidget {
 
   /// Export, backup and restore in Settings; omitted in some tests.
   final DataActions? data;
+
+  /// Launcher icon choice in Settings; Android only.
+  final AppIconService? appIcon;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -120,6 +125,7 @@ class _AppShellState extends State<AppShell> {
             settings: widget.settings,
             uiState: widget.uiState,
             data: widget.data,
+            appIcon: widget.appIcon,
           ),
         ),
       },

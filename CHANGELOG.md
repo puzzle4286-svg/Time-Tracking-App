@@ -77,6 +77,8 @@ explicitly under **Database**.
   switches without opening the app.
 - Rearrange grid (long-press an activity → Rearrange grid): drag a tile to
   another slot or tap two slots; occupied slots swap. History is unchanged.
+- App icon: the 4 x 2 grid in Neon (default) or Flat; switch in Settings →
+  App icon (Android). Replaces the Flutter logo. Version 0.1.1.
 - Main screen shows the running activity's goals under today's total: one
   bar per goal with green (between targets) and red (over the maximum)
   zones and labelled min / max marks.

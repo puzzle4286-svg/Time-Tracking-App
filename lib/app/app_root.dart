@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
@@ -7,6 +8,7 @@ import '../database/seed.dart';
 import '../repositories/settings_repository.dart';
 import '../repositories/ui_state_store.dart';
 import '../services/activities/activity_service.dart';
+import '../services/app_icon/app_icon_service.dart';
 import '../services/export/backup_files.dart';
 import '../services/export/backup_service.dart';
 import '../services/goals/goal_service.dart';
@@ -164,6 +166,7 @@ class _AppRootState extends State<AppRoot> {
           clock: widget.clock,
           onRestored: _reload,
         ),
+        appIcon: Platform.isAndroid ? const AppIconService() : null,
       ),
     );
   }

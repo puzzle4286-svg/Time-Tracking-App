@@ -20,11 +20,32 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+        </activity>
+        <!-- Launcher entries, one per app icon (D50). Exactly one is enabled;
+             Settings switches them through AppIcon.kt. Neon is the default.
+             Their names are stored by Android, so never rename them. -->
+        <activity-alias
+            android:name=".IconNeon"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher"
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-        </activity>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconFlat"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher_flat"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
         <!-- Home-screen task switcher (D49). -->
         <receiver
             android:name=".SwitcherWidgetProvider"

@@ -134,8 +134,10 @@ A phase is only checked off once its functionality is tested.
 - [x] Older backups (schema v4) upgraded on restore
 - [x] Optional Neon look with a switch in Settings (D48)
 - [x] Home-screen task switcher widget, one tap per switch (D49)
+- [x] Edit sheet clears the navigation bar; grid rearranging
+- [x] App icon: Neon (default) and Flat, choosable in Settings (D50); 0.1.1
 
-## Known issues
+## Known issues (accepted, no fix planned)
 - Very short entries are stretched to label height on the timeline, so the
   scale is locally non-linear around them (D24).
 - The launch splash is always the default dark colour; with Light selected
