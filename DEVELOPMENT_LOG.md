@@ -356,7 +356,8 @@ last; previous periods without data count zero.
 **Work completed**: `activityDistribution` gained `shown` and
 `fillActivityId`; `comparePeriods` compares full periods; shared
 `sortDefaultLast`; donut centre removed; truncation note replaced by a
-one-line "Time after … counts as Default".
+one-line "Time after … counts as Default", which was then removed at the
+developer's request.
 
 **Testing performed**
 - 222 tests pass in all seven timezones.

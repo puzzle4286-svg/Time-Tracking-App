@@ -780,7 +780,7 @@ void main() {
       expect(share(f.study), '0%');
       final defaultId = await roleId(f.db, 'default');
       expect(share(defaultId), '67%');
-      expect(find.byKey(const Key('future-as-default')), findsOneWidget);
+      expect(find.textContaining('counts as Default'), findsNothing);
 
       // Default is listed last.
       final dy = {
@@ -829,6 +829,8 @@ void main() {
       expect(find.text('This week vs Last week'), findsOneWidget);
       await tester.scrollUntilVisible(find.byTooltip('Previous'), -200);
 
+      await tester.ensureVisible(find.byTooltip('Previous'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Previous'));
       await settle(tester);
       await tester.pumpAndSettle();

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../services/analytics/insight_period.dart';
 import '../../services/analytics/insights_service.dart';
 import '../../util/clock.dart';
-import '../../util/date_format.dart';
 import '../../util/duration_format.dart';
 import '../../widgets/charts/comparison_bars.dart';
 import '../../widgets/charts/donut_chart.dart';
@@ -207,17 +206,6 @@ class _Distribution extends StatelessWidget {
           values: [for (final s in shares) s.duration.inSeconds.toDouble()],
           colors: [for (final s in shares) Color(s.activity.color)],
         ),
-        if (data.period.isInProgress(now) &&
-            data.period.unit != InsightUnit.all)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              'Time after ${data.period.unit == InsightUnit.day ? formatTimeOfDay(now) : formatMoment(now)} '
-              'counts as Default.',
-              key: const Key('future-as-default'),
-              style: text.bodySmall,
-            ),
-          ),
         const SizedBox(height: 16),
         for (final s in shares)
           Padding(

@@ -332,9 +332,9 @@ from the first entry to now and has no comparison. Year comparison uses the
 same logic as day/week/month (no new analytics feature).
 - **Full periods, always** (revised after review): the current period is shown
   in full; its not-yet-elapsed part counts as **Default** in Insights only
-  (never written to the database or shown in History). One line under the
-  donut says so ("Time after 14:20 counts as Default"), keeping spec 8.3's
-  "make incomplete periods clear" without cutting the comparison short.
+  (never written to the database or shown in History). No extra note is
+  shown (developer decision, overriding spec 8.3's "make incomplete periods
+  clear").
   Time before the first-ever entry is not counted.
 - **Every activity is listed** (grid activities and Default, plus any other
   activity with time in the period), even at 0m / 0%. Order: largest first,
