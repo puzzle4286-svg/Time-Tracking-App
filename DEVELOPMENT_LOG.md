@@ -614,3 +614,24 @@ Lifestring; internal identifiers kept so data and old backups keep working
 **Testing performed**
 - Export, screen and widget tests pass; analyze clean.
 - Phone: installed over 0.1.1 (data kept); the launcher label is Lifestring.
+
+## 2026-11-13 – Insights swipe, scroll position kept
+
+**Requested**: change the Insights period by swiping left or right; changing
+it should not reset the scroll position. Phone disconnected, so checked on
+the Linux build.
+
+**Work completed**: horizontal swipe on Insights (same rules as ‹ ›); the
+previous results stay, dimmed, while a new period loads (D38).
+
+**Problems and solutions**
+- The scroll reset came from the loading spinner replacing the charts: the
+  list became one spinner tall, so its offset was clamped to 0.
+
+**Testing performed**
+- Widget tests: swipe in both directions, limits, a short drag does
+  nothing; scroll offset unchanged during and after loading (fails on the
+  old code: 0 instead of 150).
+- New integration test on the real Linux build
+  (`integration_test/insights_swipe_test.dart`): swipe back and forward
+  with the list scrolled; label and offset as expected.

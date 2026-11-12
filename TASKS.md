@@ -137,6 +137,7 @@ A phase is only checked off once its functionality is tested.
 - [x] Edit sheet clears the navigation bar; grid rearranging
 - [x] App icon: Neon (default) and Flat, choosable in Settings (D50); 0.1.1
 - [x] Renamed to Lifestring (D51)
+- [x] Insights: swipe to change the period; scroll position kept (D38)
 
 ## Known issues (accepted, no fix planned)
 - Very short entries are stretched to label height on the timeline, so the

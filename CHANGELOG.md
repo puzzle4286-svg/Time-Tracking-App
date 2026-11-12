@@ -81,6 +81,8 @@ explicitly under **Database**.
   App icon (Android). Replaces the Flutter logo. Version 0.1.1.
 - Renamed to **Lifestring** (launcher, Settings, window title, export file
   names). Data, backups and the app ID are unchanged.
+- Insights: swipe left / right to change the period; changing it keeps the
+  scroll position.
 - Main screen shows the running activity's goals under today's total: one
   bar per goal with green (between targets) and red (over the maximum)
   zones and labelled min / max marks.

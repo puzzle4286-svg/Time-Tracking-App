@@ -340,6 +340,13 @@ Day / Week / Month / Year / All with ‹ › navigation drives both charts
 navigation goes via day 1 so 31 March − 1 month is February. "All time" runs
 from the first entry to now and has no comparison. Year comparison uses the
 same logic as day/week/month (no new analytics feature).
+- **Swipe** (developer request, 2026-11-13): a horizontal swipe anywhere on
+  Insights does what ‹ › do (left = next, right = previous, page-turn
+  direction), with the same limits; at least 64 px or 600 px/s, so vertical
+  scrolling and small drags never change the period. While the new period
+  loads, the previous results stay on screen, dimmed, under a thin progress
+  line, so the list keeps its height and its scroll position (it used to
+  jump to the top behind a loading spinner).
 - **Full periods, always** (revised after review): the current period is shown
   in full; its not-yet-elapsed part counts as **Default** in Insights only
   (never written to the database or shown in History). No extra note is

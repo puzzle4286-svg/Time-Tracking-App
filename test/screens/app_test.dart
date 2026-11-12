@@ -944,6 +944,77 @@ void main() {
     String periodLabel(WidgetTester tester) =>
         tester.widget<Text>(find.byKey(const Key('insights-period'))).data!;
 
+    Future<void> swipe(WidgetTester tester, double dx) async {
+      await tester.fling(
+        find.byKey(const Key('insights-list')),
+        Offset(dx, 0),
+        1000,
+      );
+      await settle(tester);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('swiping right goes back a period, left goes forward', (
+      tester,
+    ) async {
+      await openInsights(tester);
+      expect(periodLabel(tester), 'Today');
+      // Nothing after the current period.
+      await swipe(tester, -300);
+      expect(periodLabel(tester), 'Today');
+
+      await swipe(tester, 300);
+      expect(periodLabel(tester), 'Yesterday');
+      await swipe(tester, 300);
+      expect(periodLabel(tester), isNot('Yesterday'));
+      await swipe(tester, -300);
+      expect(periodLabel(tester), 'Yesterday');
+      await swipe(tester, -300);
+      expect(periodLabel(tester), 'Today');
+
+      // A short, slow drag is not a swipe.
+      await tester.timedDrag(
+        find.byKey(const Key('insights-list')),
+        const Offset(30, 0),
+        const Duration(milliseconds: 500),
+      );
+      await tester.pumpAndSettle();
+      expect(periodLabel(tester), 'Today');
+    });
+
+    testWidgets('changing the period keeps the scroll position', (
+      tester,
+    ) async {
+      await openInsights(tester);
+      await tester.tap(find.text('Week'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+      final list = find.descendant(
+        of: find.byKey(const Key('insights-list')),
+        matching: find.byType(Scrollable),
+      );
+      double offset() =>
+          tester.state<ScrollableState>(list.first).position.pixels;
+
+      await tester.drag(list.first, const Offset(0, -150));
+      await tester.pumpAndSettle();
+      final scrolled = offset();
+      expect(scrolled, greaterThan(0));
+
+      await tester.tap(find.byTooltip('Previous'));
+      // Also while the new period is still loading.
+      await tester.pump();
+      expect(offset(), scrolled);
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(periodLabel(tester), '2 – 8 Nov 2026');
+      expect(offset(), scrolled);
+
+      await swipe(tester, -300);
+      expect(periodLabel(tester), '9 – 15 Nov 2026');
+      expect(offset(), scrolled);
+    });
+
     testWidgets('distribution uses the full day; the rest counts as Default', (
       tester,
     ) async {

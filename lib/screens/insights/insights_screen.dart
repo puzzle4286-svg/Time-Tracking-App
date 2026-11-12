@@ -11,7 +11,8 @@ import '../../widgets/charts/donut_chart.dart';
 import '../../widgets/common/activity_dot.dart';
 
 /// Activity distribution and period comparison for one selected period.
-/// The period selector at the top drives both charts.
+/// The period selector at the top drives both charts; swiping left or right
+/// anywhere on the screen moves to the next or previous period, like ‹ ›.
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({
     super.key,
@@ -37,6 +38,13 @@ class InsightsScreen extends StatefulWidget {
 class _InsightsScreenState extends State<InsightsScreen> {
   InsightsData? _data;
   Timer? _ticker;
+
+  /// Horizontal distance of the drag in progress.
+  double _drag = 0;
+
+  /// A swipe this long, or this fast, changes the period.
+  static const double _swipeDistance = 64;
+  static const double _swipeVelocity = 600;
 
   @override
   void initState() {
@@ -79,12 +87,45 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
   void _select(InsightPeriod p) => widget.onPeriodChanged(p);
 
+  InsightPeriod? _previous() =>
+      widget.period.unit == InsightUnit.all ? null : widget.period.previous;
+
+  InsightPeriod? _next(DateTime now) {
+    final period = widget.period;
+    if (period.unit == InsightUnit.all ||
+        period.isInProgress(now) ||
+        period.next.isFuture(now)) {
+      return null;
+    }
+    return period.next;
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    final velocity = d.primaryVelocity ?? 0;
+    final distance = _drag;
+    _drag = 0;
+    final swipedLeft =
+        distance <= -_swipeDistance || velocity <= -_swipeVelocity;
+    final swipedRight =
+        distance >= _swipeDistance || velocity >= _swipeVelocity;
+    // Like turning pages: swipe left for the next period, right for the
+    // previous one.
+    final target = swipedLeft
+        ? _next(widget.clock.now())
+        : swipedRight
+        ? _previous()
+        : null;
+    if (target != null) _select(target);
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = widget.clock.now();
     final period = widget.period;
-    final data = _data?.period == period ? _data : null;
-    final isAll = period.unit == InsightUnit.all;
+    // While a newly selected period loads, the previous results stay (dimmed)
+    // so the list keeps its height and scroll position.
+    final data = _data;
+    final loading = data?.period != period;
     final isCurrent = period.isInProgress(now);
     final text = Theme.of(context).textTheme;
 
@@ -111,7 +152,10 @@ class _InsightsScreenState extends State<InsightsScreen> {
               IconButton(
                 tooltip: 'Previous',
                 icon: const Icon(Icons.chevron_left),
-                onPressed: isAll ? null : () => _select(period.previous),
+                onPressed: switch (_previous()) {
+                  final p? => () => _select(p),
+                  null => null,
+                },
               ),
               Expanded(
                 child: TextButton(
@@ -130,9 +174,10 @@ class _InsightsScreenState extends State<InsightsScreen> {
               IconButton(
                 tooltip: 'Next',
                 icon: const Icon(Icons.chevron_right),
-                onPressed: isAll || isCurrent || period.next.isFuture(now)
-                    ? null
-                    : () => _select(period.next),
+                onPressed: switch (_next(now)) {
+                  final p? => () => _select(p),
+                  null => null,
+                },
               ),
             ],
           ),
@@ -140,37 +185,62 @@ class _InsightsScreenState extends State<InsightsScreen> {
       ),
     );
 
-    return Column(
-      children: [
-        selector,
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            children: [
-              if (data == null)
-                const Padding(
-                  padding: EdgeInsets.all(48),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else ...[
-                _Section(
-                  title: 'Distribution',
-                  child: _Distribution(data: data, now: now),
-                ),
-                if (data.comparison != null) ...[
-                  const SizedBox(height: 16),
-                  _Section(
-                    title:
-                        '${period.relativeName(now)} vs '
-                        '${period.previous.relativeName(now)}',
-                    child: _Comparison(data: data, now: now),
-                  ),
-                ],
-              ],
-            ],
+    final shown = data?.period;
+    return GestureDetector(
+      key: const Key('insights-swipe'),
+      // Vertical drags still scroll the list; only horizontal ones swipe.
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (_) => _drag = 0,
+      onHorizontalDragUpdate: (d) => _drag += d.primaryDelta ?? 0,
+      onHorizontalDragEnd: _onDragEnd,
+      child: Column(
+        children: [
+          selector,
+          // Thin progress line while a period loads (keeps the layout still).
+          SizedBox(
+            height: 2,
+            child: loading && data != null
+                ? const LinearProgressIndicator()
+                : null,
           ),
-        ),
-      ],
+          Expanded(
+            child: ListView(
+              key: const Key('insights-list'),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              children: [
+                if (data == null || shown == null)
+                  const Padding(
+                    padding: EdgeInsets.all(48),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  AnimatedOpacity(
+                    opacity: loading ? 0.5 : 1,
+                    duration: const Duration(milliseconds: 150),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _Section(
+                          title: 'Distribution',
+                          child: _Distribution(data: data, now: now),
+                        ),
+                        if (data.comparison != null) ...[
+                          const SizedBox(height: 16),
+                          _Section(
+                            title:
+                                '${shown.relativeName(now)} vs '
+                                '${shown.previous.relativeName(now)}',
+                            child: _Comparison(data: data, now: now),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
