@@ -75,4 +75,27 @@ void main() {
     await service.update(f.study, name: 'Study', color: activityColors[2]);
     expect(service.suggestColor(), activityColors[3]);
   });
+
+  test('moving onto an occupied slot swaps the two activities', () async {
+    await service.move(f.freeTime, 3);
+    expect(service.atPosition(3)!.id, f.freeTime);
+    expect(service.atPosition(1)!.id, f.study);
+    expect(service.atPosition(2)!.id, f.gaming);
+  });
+
+  test('moving onto an empty slot frees the old one', () async {
+    await service.move(f.gaming, 8);
+    expect(service.atPosition(8)!.id, f.gaming);
+    expect(service.atPosition(2), isNull);
+    expect(service.live.map((a) => a.name), ['Free Time', 'Study', 'Gaming']);
+  });
+
+  test('refuses an out-of-range position or a non-grid activity', () async {
+    await expectLater(service.move(f.gaming, 0), throwsArgumentError);
+    await expectLater(service.move(f.gaming, 9), throwsArgumentError);
+    await expectLater(
+      service.move(service.defaultActivity.id, 4),
+      throwsStateError,
+    );
+  });
 }

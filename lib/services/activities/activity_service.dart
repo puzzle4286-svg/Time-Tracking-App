@@ -131,6 +131,27 @@ class ActivityService extends ChangeNotifier {
     await load();
   }
 
+  /// Moves grid activity [id] to [position]. An activity already there
+  /// swaps into the old slot; an empty slot simply receives it. History is
+  /// unaffected (entries reference the activity, not the slot).
+  Future<void> move(int id, int position) async {
+    final activity = byId(id);
+    if (activity == null) throw StateError('Activity $id is not live.');
+    if (position < 1 || position > Activity.gridSize) {
+      throw ArgumentError.value(position, 'position', 'Must be 1–8');
+    }
+    final from = activity.position!;
+    if (from == position) return;
+    final other = atPosition(position);
+    await _db.transaction((txn) async {
+      final repo = ActivityRepository(txn);
+      await repo.setPosition(id, null);
+      if (other != null) await repo.setPosition(other.id, from);
+      await repo.setPosition(id, position);
+    });
+    await load();
+  }
+
   void _checkName(String name) {
     final error = validateName(name);
     if (error != null) throw ArgumentError.value(name, 'name', error);

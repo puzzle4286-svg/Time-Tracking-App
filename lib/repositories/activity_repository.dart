@@ -87,6 +87,19 @@ class ActivityRepository {
     if (updated != 1) throw StateError('Activity $id is not editable.');
   }
 
+  /// Puts a live grid activity at [position] (null takes it off the grid
+  /// briefly, so two activities can swap without breaking the unique
+  /// position index).
+  Future<void> setPosition(int id, int? position) async {
+    final updated = await _db.update(
+      'activities',
+      {'position': position},
+      where: 'id = ? AND deleted_at IS NULL AND is_system = 0',
+      whereArgs: [id],
+    );
+    if (updated != 1) throw StateError('Activity $id cannot be moved.');
+  }
+
   /// Removes an activity from the grid but keeps its row, so history that
   /// still references it stays readable. Optionally renames it.
   Future<void> softDelete(int id, DateTime at, {String? rename}) async {

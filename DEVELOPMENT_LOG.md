@@ -549,3 +549,29 @@ New dependency `home_widget` 0.10.
   tests pass; analyze clean.
 - Phone: tap switched to Eating and back without opening the app, the
   widget redrew, the app showed the switch on open; no errors in the log.
+
+## 2026-11-12 – Edit sheet above the nav bar, grid rearranging
+
+**Requested**: the phone's navigation bar hid the "Delete activity" button
+in the long-press sheet; a way to rearrange the 4 x 2 grid.
+
+**Work completed**
+- The activity editor sheet pads its bottom by the larger of the keyboard
+  inset and the system bar padding (the app draws edge to edge, so the
+  sheet reached under the navigation bar).
+- `ActivityService.move` puts an activity in another slot, swapping with
+  the activity already there, in one transaction. New `ArrangeGridPage`
+  (from the editor's "Rearrange grid" button): drag and drop, or tap a tile
+  and then its destination.
+
+**Problems and solutions**
+- The unique live-position index rejects a direct swap, so the moved
+  activity is taken off the grid (position null) inside the transaction
+  first.
+
+**Testing performed**
+- New service tests (swap, move to an empty slot, invalid moves) and
+  widget tests (sheet buttons above a faked 144 px navigation bar; it
+  fails without the fix; rearranging by tap and drag); affected tests
+  pass; analyze clean.
+- Release build installed on the phone over the existing app (data kept).

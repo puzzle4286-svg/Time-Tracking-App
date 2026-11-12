@@ -12,6 +12,7 @@ import '../../widgets/activities/activity_editor_sheet.dart';
 import '../../widgets/activities/activity_tile.dart';
 import '../../widgets/activities/delete_activity_flow.dart';
 import '../goals/goals_page.dart';
+import 'arrange_grid_page.dart';
 import 'current_activity_header.dart';
 import 'home_goals.dart';
 
@@ -74,6 +75,11 @@ class HomeScreen extends StatelessWidget {
             tracking: tracking,
             clock: clock,
           ),
+        ),
+      ),
+      onArrange: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ArrangeGridPage(activities: activities),
         ),
       ),
       onDelete: () => runDeleteActivityFlow(

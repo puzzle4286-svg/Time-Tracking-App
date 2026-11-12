@@ -75,6 +75,8 @@ explicitly under **Database**.
   inactive tiles as dark outlines.
 - Home-screen task switcher widget (Android): the eight tiles; one tap
   switches without opening the app.
+- Rearrange grid (long-press an activity → Rearrange grid): drag a tile to
+  another slot or tap two slots; occupied slots swap. History is unchanged.
 - Main screen shows the running activity's goals under today's total: one
   bar per goal with green (between targets) and red (over the maximum)
   zones and labelled min / max marks.

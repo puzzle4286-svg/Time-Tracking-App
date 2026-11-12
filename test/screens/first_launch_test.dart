@@ -95,4 +95,76 @@ void main() {
     );
     expect(find.byIcon(Icons.add), findsNWidgets(8));
   });
+
+  testWidgets('the editor keeps its buttons above the navigation bar', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(bottom: 144);
+    tester.view.viewPadding = const FakeViewPadding(bottom: 144);
+    addTearDown(tester.view.reset);
+    await activities.create(position: 1, name: 'Reading', color: 0xFF4CAF50);
+    await pumpApp(tester);
+
+    await tester.longPress(find.byKey(const Key('activity-tile-1')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Delete activity'));
+    await tester.pumpAndSettle();
+    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    final navBarTop = screen.height - 144 / tester.view.devicePixelRatio;
+    expect(
+      tester.getRect(find.text('Delete activity')).bottom,
+      lessThanOrEqualTo(navBarTop),
+    );
+  });
+
+  testWidgets('tiles can be rearranged by tapping or dragging', (tester) async {
+    final reading = await activities.create(
+      position: 1,
+      name: 'Reading',
+      color: 0xFF4CAF50,
+    );
+    final sport = await activities.create(
+      position: 2,
+      name: 'Sport',
+      color: 0xFF2196F3,
+    );
+    await pumpApp(tester);
+
+    await tester.longPress(find.byKey(const Key('activity-tile-1')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Rearrange grid'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rearrange grid'));
+    await tester.pumpAndSettle();
+    expect(find.text('Arrange activities'), findsOneWidget);
+
+    // Tap Reading, then the slot holding Sport: they swap.
+    await tester.tap(find.byKey(const Key('arrange-slot-1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('arrange-slot-2')));
+    await tester.pumpAndSettle();
+    expect(activities.atPosition(1)!.id, sport.id);
+    expect(activities.atPosition(2)!.id, reading.id);
+
+    // Drag Reading onto the empty slot 8.
+    await tester.drag(
+      find.byKey(const Key('arrange-slot-2')),
+      tester.getCenter(find.byKey(const Key('arrange-slot-8'))) -
+          tester.getCenter(find.byKey(const Key('arrange-slot-2'))),
+    );
+    await tester.pumpAndSettle();
+    expect(activities.atPosition(8)!.id, reading.id);
+    expect(activities.atPosition(2), isNull);
+
+    // The home grid follows.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('activity-tile-8')),
+        matching: find.text('R'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

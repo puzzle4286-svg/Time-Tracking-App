@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../models/activity_colors.dart';
@@ -9,7 +11,8 @@ typedef ActivityDraft = ({String name, int color, String? icon});
 
 /// Bottom sheet for setting up an empty slot or editing an activity.
 /// Returns the entered values, or null if cancelled. With [onDelete], a
-/// "Delete activity" button closes the sheet and calls it.
+/// "Delete activity" button closes the sheet and calls it; [onGoals] and
+/// [onArrange] work the same way for "Goals" and "Rearrange grid".
 Future<ActivityDraft?> showActivityEditor(
   BuildContext context, {
   required String title,
@@ -18,6 +21,7 @@ Future<ActivityDraft?> showActivityEditor(
   String? initialIcon,
   VoidCallback? onDelete,
   VoidCallback? onGoals,
+  VoidCallback? onArrange,
 }) {
   return showModalBottomSheet<ActivityDraft>(
     context: context,
@@ -30,6 +34,7 @@ Future<ActivityDraft?> showActivityEditor(
       initialIcon: initialIcon,
       onDelete: onDelete,
       onGoals: onGoals,
+      onArrange: onArrange,
     ),
   );
 }
@@ -42,6 +47,7 @@ class _ActivityEditor extends StatefulWidget {
     required this.initialIcon,
     required this.onDelete,
     required this.onGoals,
+    required this.onArrange,
   });
 
   final String title;
@@ -50,6 +56,7 @@ class _ActivityEditor extends StatefulWidget {
   final String? initialIcon;
   final VoidCallback? onDelete;
   final VoidCallback? onGoals;
+  final VoidCallback? onArrange;
 
   @override
   State<_ActivityEditor> createState() => _ActivityEditorState();
@@ -82,7 +89,13 @@ class _ActivityEditorState extends State<_ActivityEditor> {
         16,
         0,
         16,
-        16 + MediaQuery.viewInsetsOf(context).bottom,
+        // Clear the keyboard, or else the system navigation bar (the app
+        // draws edge to edge, so the sheet reaches under it).
+        16 +
+            math.max(
+              MediaQuery.viewInsetsOf(context).bottom,
+              MediaQuery.viewPaddingOf(context).bottom,
+            ),
       ),
       child: Form(
         key: _formKey,
@@ -153,6 +166,17 @@ class _ActivityEditorState extends State<_ActivityEditor> {
                   },
                   icon: const Icon(Icons.flag_outlined),
                   label: const Text('Goals'),
+                ),
+              ],
+              if (widget.onArrange != null) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    widget.onArrange!();
+                  },
+                  icon: const Icon(Icons.swap_horiz),
+                  label: const Text('Rearrange grid'),
                 ),
               ],
               if (widget.onDelete != null) ...[
