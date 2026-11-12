@@ -825,16 +825,22 @@ void main() {
       await settle(tester);
       await tester.pumpAndSettle();
       expect(periodLabel(tester), '9 – 15 Nov 2026');
+      // The selector stays pinned at the top while the results scroll.
+      Offset selectorAt() => tester.getTopLeft(find.byTooltip('Previous'));
+      final pinned = selectorAt();
       await tester.scrollUntilVisible(find.text('This week vs Last week'), 200);
       expect(find.text('This week vs Last week'), findsOneWidget);
-      await tester.scrollUntilVisible(find.byTooltip('Previous'), -200);
+      expect(selectorAt(), pinned);
+      expect(find.byTooltip('Previous').hitTestable(), findsOneWidget);
 
-      await tester.ensureVisible(find.byTooltip('Previous'));
-      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Previous'));
       await settle(tester);
       await tester.pumpAndSettle();
       expect(periodLabel(tester), '2 – 8 Nov 2026');
+      await tester.scrollUntilVisible(
+        find.byKey(ValueKey('share-${f.freeTime}')),
+        -200,
+      );
       expect(
         tester.widget<Text>(find.byKey(ValueKey('share-${f.freeTime}'))).data,
         '0%',
@@ -844,10 +850,7 @@ void main() {
         200,
       );
       expect(find.text('Last week vs 26 Oct – 1 Nov 2026'), findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.byKey(const Key('insights-period')),
-        -200,
-      );
+      expect(selectorAt(), pinned);
 
       // Tapping the label returns to the current period.
       await tester.tap(find.byKey(const Key('insights-period')));
@@ -855,7 +858,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(periodLabel(tester), '9 – 15 Nov 2026');
 
-      await tester.scrollUntilVisible(find.text('All'), -200);
       await tester.tap(find.text('All'));
       await settle(tester);
       await tester.pumpAndSettle();

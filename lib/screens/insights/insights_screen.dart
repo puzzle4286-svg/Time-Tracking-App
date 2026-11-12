@@ -87,73 +87,88 @@ class _InsightsScreenState extends State<InsightsScreen> {
     final isCurrent = period.isInProgress(now);
     final text = Theme.of(context).textTheme;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      children: [
-        SegmentedButton<InsightUnit>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(value: InsightUnit.day, label: Text('Day')),
-            ButtonSegment(value: InsightUnit.week, label: Text('Week')),
-            ButtonSegment(value: InsightUnit.month, label: Text('Month')),
-            ButtonSegment(value: InsightUnit.year, label: Text('Year')),
-            ButtonSegment(value: InsightUnit.all, label: Text('All')),
-          ],
-          selected: {period.unit},
-          onSelectionChanged: (s) => _select(InsightPeriod(s.single, now)),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            IconButton(
-              tooltip: 'Previous',
-              icon: const Icon(Icons.chevron_left),
-              onPressed: isAll ? null : () => _select(period.previous),
-            ),
-            Expanded(
-              child: TextButton(
-                // Tapping the label returns to the current period.
-                onPressed: isCurrent
-                    ? null
-                    : () => _select(InsightPeriod(period.unit, now)),
-                child: Text(
-                  period.label(now),
-                  key: const Key('insights-period'),
-                  style: text.titleMedium,
-                  textAlign: TextAlign.center,
+    // The period selector stays fixed at the top; only the results scroll.
+    final selector = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Column(
+        children: [
+          SegmentedButton<InsightUnit>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: InsightUnit.day, label: Text('Day')),
+              ButtonSegment(value: InsightUnit.week, label: Text('Week')),
+              ButtonSegment(value: InsightUnit.month, label: Text('Month')),
+              ButtonSegment(value: InsightUnit.year, label: Text('Year')),
+              ButtonSegment(value: InsightUnit.all, label: Text('All')),
+            ],
+            selected: {period.unit},
+            onSelectionChanged: (s) => _select(InsightPeriod(s.single, now)),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Previous',
+                icon: const Icon(Icons.chevron_left),
+                onPressed: isAll ? null : () => _select(period.previous),
+              ),
+              Expanded(
+                child: TextButton(
+                  // Tapping the label returns to the current period.
+                  onPressed: isCurrent
+                      ? null
+                      : () => _select(InsightPeriod(period.unit, now)),
+                  child: Text(
+                    period.label(now),
+                    key: const Key('insights-period'),
+                    style: text.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              tooltip: 'Next',
-              icon: const Icon(Icons.chevron_right),
-              onPressed: isAll || isCurrent || period.next.isFuture(now)
-                  ? null
-                  : () => _select(period.next),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (data == null)
-          const Padding(
-            padding: EdgeInsets.all(48),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else ...[
-          _Section(
-            title: 'Distribution',
-            child: _Distribution(data: data, now: now),
+              IconButton(
+                tooltip: 'Next',
+                icon: const Icon(Icons.chevron_right),
+                onPressed: isAll || isCurrent || period.next.isFuture(now)
+                    ? null
+                    : () => _select(period.next),
+              ),
+            ],
           ),
-          if (data.comparison != null) ...[
-            const SizedBox(height: 16),
-            _Section(
-              title:
-                  '${period.relativeName(now)} vs '
-                  '${period.previous.relativeName(now)}',
-              child: _Comparison(data: data, now: now),
-            ),
-          ],
         ],
+      ),
+    );
+
+    return Column(
+      children: [
+        selector,
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            children: [
+              if (data == null)
+                const Padding(
+                  padding: EdgeInsets.all(48),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
+                _Section(
+                  title: 'Distribution',
+                  child: _Distribution(data: data, now: now),
+                ),
+                if (data.comparison != null) ...[
+                  const SizedBox(height: 16),
+                  _Section(
+                    title:
+                        '${period.relativeName(now)} vs '
+                        '${period.previous.relativeName(now)}',
+                    child: _Comparison(data: data, now: now),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
