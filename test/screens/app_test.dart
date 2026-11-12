@@ -46,6 +46,7 @@ void main() {
           edits: EntryEditService(f.db, f.clock, f.service),
           goals: GoalService(f.db, f.clock),
           uiState: uiState,
+          db: f.db,
           clock: f.clock,
         ),
       ),
@@ -745,14 +746,127 @@ void main() {
     });
   });
 
+  group('insights', () {
+    // Monday 9 Nov: Free Time 09–10, Gaming 10–12, Free Time 12–now(14).
+    // Sunday 8 Nov is before install, so last week is empty.
+    Future<void> openInsights(WidgetTester tester) async {
+      f.clock.set(DateTime(2026, 11, 9, 10));
+      await f.service.switchTo(f.gaming);
+      f.clock.set(DateTime(2026, 11, 9, 12));
+      await f.service.switchTo(f.freeTime);
+      f.clock.set(DateTime(2026, 11, 9, 14));
+      await pumpApp(tester);
+      await tester.tap(find.text('Insights'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+    }
+
+    String periodLabel(WidgetTester tester) =>
+        tester.widget<Text>(find.byKey(const Key('insights-period'))).data!;
+
+    testWidgets('distribution of today with shares', (tester) async {
+      await openInsights(tester);
+      expect(periodLabel(tester), 'Today');
+      expect(
+        tester.widget<Text>(find.byKey(const Key('distribution-total'))).data,
+        '5h 0m',
+      );
+      String share(int id) =>
+          tester.widget<Text>(find.byKey(ValueKey('share-$id'))).data!;
+      expect(share(f.freeTime), '60%');
+      expect(share(f.gaming), '40%');
+    });
+
+    testWidgets('in-progress comparison is marked', (tester) async {
+      await openInsights(tester);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('comparison-truncated')),
+        200,
+      );
+      expect(find.text('Today vs Yesterday'), findsOneWidget);
+      expect(find.byKey(const Key('comparison-truncated')), findsOneWidget);
+    });
+
+    testWidgets('the period selector drives both charts', (tester) async {
+      await openInsights(tester);
+      // Next is disabled for the current period.
+      expect(
+        tester
+            .widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.chevron_right),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.text('Week'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(periodLabel(tester), '9 – 15 Nov 2026');
+      await tester.scrollUntilVisible(find.text('This week vs Last week'), 200);
+      expect(find.text('This week vs Last week'), findsOneWidget);
+      await tester.scrollUntilVisible(find.byTooltip('Previous'), -200);
+
+      await tester.tap(find.byTooltip('Previous'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(periodLabel(tester), '2 – 8 Nov 2026');
+      expect(find.text('Nothing tracked in this period.'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Last week vs 26 Oct – 1 Nov 2026'),
+        200,
+      );
+      expect(find.text('Last week vs 26 Oct – 1 Nov 2026'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('insights-period')),
+        -200,
+      );
+
+      // Tapping the label returns to the current period.
+      await tester.tap(find.byKey(const Key('insights-period')));
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(periodLabel(tester), '9 – 15 Nov 2026');
+
+      await tester.tap(find.text('All'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(periodLabel(tester), 'All time');
+      expect(find.textContaining(' vs '), findsNothing); // no comparison
+    });
+
+    testWidgets('Info in History opens that day in Insights', (tester) async {
+      f.clock.set(DateTime(2026, 11, 10, 9)); // Tuesday
+      await f.service.reconcile();
+      await pumpApp(tester);
+      await tester.tap(find.text('History'));
+      await settle(tester);
+      await tester.dragUntilVisible(
+        find.byKey(ValueKey('day-info-${DateTime(2026, 11, 9)}')),
+        find.byKey(const Key('history-list')),
+        const Offset(0, 300),
+      );
+      final info = find.byKey(ValueKey('day-info-${DateTime(2026, 11, 9)}'));
+      await tester.ensureVisible(info);
+      await tester.pumpAndSettle();
+      await tester.tap(info);
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(periodLabel(tester), 'Yesterday');
+      expect(
+        tester.widget<Text>(find.byKey(const Key('distribution-total'))).data,
+        '15h 0m',
+      );
+    });
+  });
+
   testWidgets('bottom navigation reaches every tab', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.text('History'));
     await settle(tester);
     expect(find.byKey(const Key('history-list')), findsOneWidget);
     await tester.tap(find.text('Insights'));
-    await tester.pumpAndSettle();
-    expect(find.text('Insights are coming soon.'), findsOneWidget);
+    await settle(tester);
+    expect(find.byKey(const Key('insights-period')), findsOneWidget);
     await tester.tap(find.text('Track'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('current-activity-name')), findsOneWidget);

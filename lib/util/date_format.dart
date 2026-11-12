@@ -14,6 +14,24 @@ const _months = [
   'Dec',
 ];
 
+const _monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+String monthName(int month) => _monthNames[month - 1];
+String monthShort(int month) => _months[month - 1];
+
 /// Local 24-hour clock time, e.g. `09:05`.
 String formatTimeOfDay(DateTime t) {
   final local = t.toLocal();

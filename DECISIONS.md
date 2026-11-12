@@ -317,3 +317,24 @@ left / "over by", paused goals dimmed) and a full-screen editor. Progress is
 recomputed from entries on open, on tracking/goal changes and every 15 s.
 Goals are only for grid activities (not Default). Goals of a deleted
 activity stay in the database untouched (they reference the kept row).
+
+## D37 – Charts without a chart package
+The donut is a ~60-line `CustomPainter`; the comparison is horizontal paired
+bars built from ordinary widgets (names fit beside bars on a phone, which
+vertical bar charts handle poorly). This keeps the dependency count at
+`sqflite` + `path` and avoids version churn of a chart library.
+
+## D38 – Insights: one global period selector
+Day / Week / Month / Year / All with ‹ › navigation drives both charts
+(developer request). Local calendar periods; weeks start on Monday; month
+navigation goes via day 1 so 31 March − 1 month is February. "All time" runs
+from the first entry to now and has no comparison. Year comparison uses the
+same logic as day/week/month (no new analytics feature).
+- **Distribution**: shares of *tracked* time (gaps excluded), largest first;
+  Default and Unavailable are their own items.
+- **Comparison**: selected period vs the previous one. If the selected period
+  is in progress, it is counted up to now and the previous one only up to the
+  same elapsed time; a note states the cut-off moment.
+- Recomputed from entries on every change and every 30 s for periods in
+  progress. The selection lives in `AppShell`, so History's "Info" opens that
+  day (D32 implemented).

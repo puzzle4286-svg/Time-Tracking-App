@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../repositories/ui_state_store.dart';
 import '../screens/history/history_screen.dart';
@@ -6,6 +7,8 @@ import '../screens/home/home_screen.dart';
 import '../screens/insights/insights_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../services/activities/activity_service.dart';
+import '../services/analytics/insight_period.dart';
+import '../services/analytics/insights_service.dart';
 import '../services/goals/goal_service.dart';
 import '../services/history/entry_edit_service.dart';
 import '../services/history/history_service.dart';
@@ -25,6 +28,7 @@ class AppShell extends StatefulWidget {
     required this.edits,
     required this.goals,
     required this.uiState,
+    required this.db,
     required this.clock,
   });
 
@@ -35,6 +39,9 @@ class AppShell extends StatefulWidget {
   final EntryEditService edits;
   final GoalService goals;
   final UiStateStore uiState;
+
+  /// Read access for Insights.
+  final DatabaseExecutor db;
   final Clock clock;
 
   @override
@@ -44,6 +51,24 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   late final AppLifecycleListener _lifecycle;
   int _index = 0;
+
+  /// Selected Insights period; kept here so History can open a day in it.
+  late InsightPeriod _insightsPeriod = InsightPeriod(
+    InsightUnit.day,
+    widget.clock.now(),
+  );
+
+  /// Everything that can change Insights numbers.
+  late final Listenable _dataChanges = Listenable.merge([
+    widget.tracking,
+    widget.edits,
+    widget.activities,
+  ]);
+
+  void _openDayInsights(DateTime day) => setState(() {
+    _insightsPeriod = InsightPeriod(InsightUnit.day, day);
+    _index = 2;
+  });
 
   @override
   void initState() {
@@ -75,9 +100,16 @@ class _AppShellState extends State<AppShell> {
           edits: widget.edits,
           activities: widget.activities,
           uiState: widget.uiState,
+          onOpenDay: _openDayInsights,
           clock: widget.clock,
         ),
-        2 => const InsightsScreen(),
+        2 => InsightsScreen(
+          insights: InsightsService(widget.db, widget.clock),
+          period: _insightsPeriod,
+          onPeriodChanged: (p) => setState(() => _insightsPeriod = p),
+          changes: _dataChanges,
+          clock: widget.clock,
+        ),
         _ => SafeArea(
           child: SettingsScreen(
             settings: widget.settings,

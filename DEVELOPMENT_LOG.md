@@ -320,3 +320,29 @@ empty" replaced by an activity choice; fill dialog is an activity list.
 - Emulator: migration to v4; created "every day from 00:00, min 1 h, max
   2 h" for Developing; card showed 1h 2m of 1h 0m · 103% and 57m left,
   matching the entries (Developing 00:05:00–01:07:18).
+
+## 2026-11-12 – Phase 6: insights
+
+**Requested addition**: a global period selector that steps back/forward and
+drives all charts.
+
+**Work completed**
+- `InsightPeriod` (ranges, shift, labels, relative names), pure
+  `activityDistribution` and `comparePeriods`, `InsightsService`.
+- `DonutChart` (CustomPainter) and `ComparisonBars`; Insights screen;
+  History "Info" → Insights day.
+
+**Decisions**: no chart dependency (D37); comparison of in-progress periods
+cut at the same elapsed point (D38).
+
+**Problems and solutions**
+- Widget tests could not find off-screen sections of the lazily built list;
+  tests now scroll to them. The Info-link test tapped a barely visible
+  button; it now ensures visibility first.
+- "73h 34m into the period" was hard to read on the emulator; the note now
+  names the cut-off moment of the previous period.
+
+**Testing performed**
+- 223 tests pass in all seven timezones.
+- Emulator: Today (66% / 34%, "Today vs Yesterday" with note) and This week
+  (Gaming / Free Time / Developing / Default) with real data.

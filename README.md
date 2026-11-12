@@ -6,7 +6,7 @@ Eight fixed activity buttons. Exactly one activity is always active; tapping
 another one switches to it. Tracking is purely timestamp-based, so it survives
 the app being closed, killed, or the phone restarting — no background service.
 
-> Status: **Phase 5 – goals complete**. See [TASKS.md](TASKS.md).
+> Status: **Phase 6 – insights complete**. See [TASKS.md](TASKS.md).
 
 ## Features (planned for v1)
 
@@ -15,7 +15,7 @@ the app being closed, killed, or the phone restarting — no background service.
 - Activity editing, deletion with history preservation, replacement
 - Full historical entry editing (change, split, delete, conflict warnings)
 - Flexible goals per activity (any period, minimum and/or maximum)
-- Insights: daily timeline, activity distribution, period comparison
+- History timeline; Insights with activity distribution and period comparison
 - Light, dark and black (OLED) themes; fourteen accent palettes
 - CSV / JSON export, full backup and restore
 
@@ -24,7 +24,7 @@ Out of scope for v1: sync, accounts, backend, desktop builds, notifications.
 ## Technology
 
 - Flutter (stable) / Dart, Material 3
-- SQLite via `sqflite`
+- SQLite via `sqflite`; charts drawn with Flutter itself (no chart package)
 - State: Flutter's built-in `ChangeNotifier` (no state-management package)
 
 See [DECISIONS.md](DECISIONS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).

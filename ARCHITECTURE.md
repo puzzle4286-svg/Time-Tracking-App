@@ -1,7 +1,7 @@
 # Architecture
 
-Status: Phases 1–5 implemented (storage, seeding, theme, tracking, main UI,
-history timeline, activity deletion, history editing, goals).
+Status: Phases 1–6 implemented (storage, seeding, theme, tracking, main UI,
+history timeline, activity deletion, history editing, goals, insights).
 Goals and analytics sections describe the planned design.
 
 ## Layers
@@ -80,7 +80,12 @@ Rules:
 | `lib/app/app_info.dart` | App name and version constants |
 | `lib/screens/home/` | `HomeScreen`, `CurrentActivityHeader` (1 s display ticker) |
 | `lib/screens/settings/settings_screen.dart` | Appearance, accent, about |
-| `lib/screens/insights/insights_screen.dart` | Placeholder until Phase 6 |
+| `lib/screens/insights/insights_screen.dart` | Period selector, distribution, comparison |
+| `lib/services/analytics/insight_period.dart` | Day/week/month/year/all ranges, navigation, labels |
+| `lib/services/analytics/distribution.dart` | `activityDistribution` – pure |
+| `lib/services/analytics/comparison.dart` | `comparePeriods` – pure, equivalent spans |
+| `lib/services/analytics/insights_service.dart` | Loads entries once per selection |
+| `lib/widgets/charts/` | `DonutChart` (CustomPainter), `ComparisonBars` |
 | `lib/widgets/activities/` | `ActivityTile`, `showActivityEditor` sheet |
 | `lib/util/timestamps.dart` | The only storage conversion: UTC epoch µs ⇄ `DateTime` |
 | `lib/util/date_format.dart` | `formatTimeOfDay` (`09:05`), `formatDayLabel` (`Today`, `Mon, 9 Nov 2026`) |

@@ -49,6 +49,7 @@ void main() {
         edits: EntryEditService(db, clock, tracking),
         goals: GoalService(db, clock),
         uiState: uiState,
+        db: db,
         clock: clock,
       ),
     ),

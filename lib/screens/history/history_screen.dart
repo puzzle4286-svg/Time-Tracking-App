@@ -31,9 +31,13 @@ class HistoryScreen extends StatefulWidget {
     required this.activities,
     required this.uiState,
     required this.clock,
+    required this.onOpenDay,
   });
 
   final HistoryService history;
+
+  /// Opens Insights for a day (the "Info" link in each day header).
+  final ValueChanged<DateTime> onOpenDay;
 
   /// Edits made from this screen; also listened to, like [activities]
   /// (renames and deletions change how history is shown).
@@ -385,6 +389,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     clock: widget.clock,
                   ),
                   sectionKey: _sectionKey(day),
+                  onInfo: () => widget.onOpenDay(day),
                   day: localDay(day),
                   entries: _cache[day],
                   now: now,
@@ -402,6 +407,7 @@ class _DaySection extends StatelessWidget {
   const _DaySection({
     super.key,
     required this.sectionKey,
+    required this.onInfo,
     required this.onEntryTap,
     required this.day,
     required this.entries,
@@ -410,6 +416,7 @@ class _DaySection extends StatelessWidget {
 
   /// Used to measure the section's on-screen position.
   final GlobalKey sectionKey;
+  final VoidCallback onInfo;
   final ValueChanged<DayEntry> onEntryTap;
   final TimeRange day;
   final List<DayEntry>? entries;
@@ -433,7 +440,6 @@ class _DaySection extends StatelessWidget {
               color: scheme.surfaceContainer,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.centerLeft,
-              // "Info" will later open this day's Insights; text only for now.
               child: Row(
                 children: [
                   Expanded(
@@ -442,11 +448,14 @@ class _DaySection extends StatelessWidget {
                       style: text.titleSmall,
                     ),
                   ),
-                  Text(
-                    'Info',
-                    style: text.labelLarge?.copyWith(color: scheme.primary),
+                  // Opens this day in Insights.
+                  TextButton.icon(
+                    key: ValueKey('day-info-${day.start}'),
+                    onPressed: onInfo,
+                    iconAlignment: IconAlignment.end,
+                    icon: const Icon(Icons.chevron_right, size: 18),
+                    label: const Text('Info'),
                   ),
-                  Icon(Icons.chevron_right, size: 18, color: scheme.primary),
                 ],
               ),
             ),

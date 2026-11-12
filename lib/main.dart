@@ -49,6 +49,7 @@ Future<void> main() async {
         edits: EntryEditService(db, clock, tracking),
         goals: GoalService(db, clock),
         uiState: await UiStateStore.load(db),
+        db: db,
         clock: clock,
       ),
     ),

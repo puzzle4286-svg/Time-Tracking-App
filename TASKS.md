@@ -1,6 +1,6 @@
 # Tasks
 
-**Current phase:** Phase 5 – Goals (complete, awaiting review). Next: Phase 6 – Insights
+**Current phase:** Phase 6 – Insights (complete, awaiting review). Next: Phase 7 – Export and backup
 
 A phase is only checked off once its functionality is tested.
 
@@ -92,8 +92,14 @@ A phase is only checked off once its functionality is tested.
 
 ## Phase 6 – Insights
 - [x] Daily timeline with date navigation → delivered as the History tab (D24)
-- [ ] Distribution donut (day/week/month/year/all)
-- [ ] Period comparison bars (day/week/month), incomplete periods flagged
+- [x] Global period selector (day/week/month/year/all, ‹ ›) (D38)
+- [x] Distribution donut with durations and percentages
+- [x] Period comparison bars; in-progress periods compared to the same point
+      and clearly marked
+- [x] History "Info" opens that day in Insights
+- [x] Tests: ranges, navigation, labels, DST day length, distribution,
+      comparison (full / truncated / one-sided), UI flows
+- [x] Emulator: day and week views with real data
 
 ## Phase 7 – Export and backup
 - [ ] CSV export of time entries
@@ -106,11 +112,9 @@ A phase is only checked off once its functionality is tested.
 - [ ] Documentation and changelog update
 
 ## Known issues
-- Day header "Info ›" has no action yet (D32).
 - Grid tiles show no names for now (D23); identify by colour.
 - Very short entries are stretched to label height on the timeline, so the
   scale is locally non-linear around them (D24).
 - "Jump to date" far into the past loads every day in between (one query per
   day); fine for now, could become a single range query.
-- Insights tab is a placeholder until Phase 6.
 - Android launch splash is white while the default theme is dark (cosmetic; Phase 8).

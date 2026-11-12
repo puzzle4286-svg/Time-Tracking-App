@@ -51,6 +51,12 @@ explicitly under **Database**.
   days, weeks or months from a chosen local start) and a minimum, a maximum,
   or both; progress bars with percentage, remaining time and exceeded state.
 
+- Insights: period selector (day / week / month / year / all time, step back
+  and forward), activity distribution donut with durations and percentages,
+  and comparison with the previous period (in-progress periods compared up to
+  the same point, clearly marked).
+- History's "Info" opens that day in Insights.
+
 ### Changed
 - Time is never left empty: freed time and deleted entries always go to an
   activity (list of activities, neighbour marked, Default last).
