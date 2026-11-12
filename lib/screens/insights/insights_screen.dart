@@ -8,6 +8,7 @@ import '../../util/clock.dart';
 import '../../util/duration_format.dart';
 import '../../widgets/charts/comparison_bars.dart';
 import '../../widgets/charts/donut_chart.dart';
+import '../../widgets/common/activity_dot.dart';
 
 /// Activity distribution and period comparison for one selected period.
 /// The period selector at the top drives both charts.
@@ -227,10 +228,7 @@ class _Distribution extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 6,
-                  backgroundColor: Color(s.activity.color),
-                ),
+                ActivityDot(color: Color(s.activity.color)),
                 const SizedBox(width: 10),
                 Expanded(child: Text(s.activity.name)),
                 Text(formatTotal(s.duration)),

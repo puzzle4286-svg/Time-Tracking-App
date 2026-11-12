@@ -25,8 +25,40 @@ class DayTimeline extends StatelessWidget {
   /// One label line plus padding.
   static const double minBlockHeight = 30;
 
-  /// Blocks at least this tall show name and times on separate lines.
+  /// Blocks at least this tall show name and times on separate lines, if
+  /// both lines also fit at the current text size (see [_twoLineFits]).
   static const double _twoLineHeight = 48;
+
+  /// Vertical space around the label: the strip's padding (4 + 4) and the
+  /// 1 px gap below each block.
+  static const double _labelChrome = 9;
+
+  /// Whether name and times fit on two lines in [height]. Measured with the
+  /// system text scale: on a phone with larger text (e.g. 1.15x) the fixed
+  /// threshold alone overflowed by a few pixels.
+  static bool _twoLineFits(
+    BuildContext context,
+    double height,
+    TextStyle? nameStyle,
+    TextStyle? timesStyle,
+  ) {
+    if (height < _twoLineHeight) return false;
+    final scaler = MediaQuery.textScalerOf(context);
+    double line(TextStyle? style) {
+      final tp = TextPainter(
+        text: TextSpan(text: 'Hg', style: style),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final h = tp.height;
+      tp.dispose();
+      return h;
+    }
+
+    return line(nameStyle) + line(timesStyle) + _labelChrome <= height;
+  }
+
   static const double _timeGutter = 52;
 
   final TimeRange day;
@@ -172,7 +204,13 @@ class DayTimeline extends StatelessWidget {
             onTap: onEntryTap == null ? null : () => onEntryTap!(e),
             child: EntryStrip(
               color: color,
-              child: block.height >= _twoLineHeight
+              child:
+                  _twoLineFits(
+                    context,
+                    block.height,
+                    name.style,
+                    timesText.style,
+                  )
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [name, timesText],

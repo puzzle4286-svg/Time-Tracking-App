@@ -18,6 +18,8 @@ class SettingsController extends ChangeNotifier {
   Future<void> setAccent(AccentPalette accent) =>
       _update(_settings.copyWith(accent: accent));
 
+  Future<void> setNeon(bool neon) => _update(_settings.copyWith(neon: neon));
+
   Future<void> _update(AppSettings next) async {
     // Persist first so the UI never shows a setting that was not saved.
     await _repository.save(next);

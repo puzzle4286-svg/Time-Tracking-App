@@ -186,7 +186,9 @@ History tab, at the developer's request. Design:
   come from calendar fields (`DayTimeline.gridMarks`), so a skipped DST hour
   has no line and a repeated hour is marked once.
 - Each entry is a tinted row with a coloured left edge; label is
-  "name  start – end · duration" (two lines when the block is tall enough).
+  "name  start – end · duration" (two lines when the block is tall enough;
+  "enough" is measured with the system text scale, since a fixed 48 px
+  overflowed with the phone's 1.15x font size).
 - Day heights depend on entries, so "Jump to date" loads the days in
   between before computing the offset; "Now" scrolls back to the bottom.
 - The Android overscroll stretch is disabled app-wide
@@ -455,12 +457,14 @@ mirroring the migration (v5: `icon: null`). This replaces the D40 rule that
 only the current version was accepted. Every future migration that touches a
 backed-up table needs a row upgrade; the column test fails otherwise.
 
-## D46 – Active tile: full colour, ring and glow; others muted
+## D46 – Active tile: full colour and ring; others muted
 Pause/play icons were replaced by the activity icon (D45), so the active
 state is shown by colour instead: the active tile is filled with its full
-colour, has a 3 px ring and a soft glow in its colour; inactive tiles are
+colour and has a 3 px ring; inactive tiles are
 muted to a 28 % tint of their colour over the surface, with a dimmer icon.
 The change animates over 200 ms. Screen readers still get "…, active".
+The soft glow it first had was taken out of the default look and moved to
+the optional Neon look (D48), at the developer's request (2026-11-12).
 
 ## D47 – Goals on the main screen (revised 2026-11-12)
 Only the **running activity's** enabled goals are shown, directly under the
@@ -479,3 +483,31 @@ in long periods sat at the left edge. The rejected designs were equal-width
 steps (0 → min → max → over) and a ring gauge with a status sentence.
 `GoalService.gridProgress(activityId:)` loads the goals with one entry query;
 the list reloads on any change and every 15 s.
+
+## D48 – Optional Neon look (developer request, 2026-11-12)
+Settings → Appearance has a **Neon** switch (off by default), stored as the
+`neon` setting (`true` / `false`; anything else reads as off). It works with
+every appearance mode and accent and changes no colours, only adds glow:
+- Active tile: two-layer glow in its colour (tight halo plus wide soft one).
+  Inactive tiles become dark (10 % tint over the surface) with a thin outline
+  and icon in their colour, like unlit neon tubes.
+- Header: the timer glows in the accent colour, the activity dot in its own.
+- Goals on the main screen: blurred copy of the fill under the bar; past the
+  maximum the red part and the tracked time glow red.
+- Insights: blurred copy under each donut segment (all glows drawn before
+  the segments, so none covers a neighbour); the current period's
+  comparison bars glow, the faded previous ones stay flat.
+- Activity dots (header, goals, Insights list, entry editor and pickers):
+  one shared `ActivityDot` widget with a strong glow, since a weak one is
+  invisible at 10–16 px. Colour and accent swatches are not activity dots
+  and stay flat.
+- Glow is skipped on bars shorter than they are tall (it would look like a
+  blob).
+- Entry strips (History, dialogs): the coloured left edge glows.
+- Navigation bar: the selected icon glows in the accent colour.
+The flag travels as a `ThemeExtension` (`Neon` in
+`lib/app/theme/neon.dart`), so widgets ask `Neon.of(context)` and nothing
+passes settings around; with it off every helper returns no shadows, so the
+default look is unchanged. Glow is strongest on Dark and Black; on Light it
+is subtle. Backups need no change: settings rows are copied as they are
+(D40).

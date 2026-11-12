@@ -127,11 +127,12 @@ A phase is only checked off once its functionality is tested.
 
 ## After v1 (developer requests, 2026-11-12)
 - [x] Activity icons in the editor, shown on tiles (schema v5, D45)
-- [x] Active tile highlighted by colour, ring and glow; others muted (D46)
+- [x] Active tile highlighted by colour and ring; others muted (D46)
 - [x] Goals on the main screen (D47): three bar designs compared, A kept
       (zones, vivid red); only the running activity's goals, under the
       header, goal name instead of activity name
 - [x] Older backups (schema v4) upgraded on restore
+- [x] Optional Neon look with a switch in Settings (D48)
 
 ## Known issues
 - Grid tiles show icons or initials, not full names (D45).

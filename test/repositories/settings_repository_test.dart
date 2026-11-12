@@ -20,6 +20,7 @@ void main() {
     final s = await repo.load();
     expect(s.appearance, const AppSettings().appearance);
     expect(s.accent, const AppSettings().accent);
+    expect(s.neon, isFalse);
   });
 
   test('round-trips saved settings', () async {
@@ -27,16 +28,21 @@ void main() {
       const AppSettings(
         appearance: AppearanceMode.black,
         accent: AccentPalette.rose,
+        neon: true,
       ),
     );
     final s = await repo.load();
     expect(s.appearance, AppearanceMode.black);
     expect(s.accent, AccentPalette.rose);
+    expect(s.neon, isTrue);
   });
 
   test('unknown stored values fall back to defaults', () async {
     await db.insert('settings', {'key': 'appearance', 'value': 'sepia'});
-    expect((await repo.load()).appearance, const AppSettings().appearance);
+    await db.insert('settings', {'key': 'neon', 'value': 'maybe'});
+    final s = await repo.load();
+    expect(s.appearance, const AppSettings().appearance);
+    expect(s.neon, isFalse);
   });
 
   test('controller persists changes and notifies', () async {
@@ -46,10 +52,12 @@ void main() {
 
     await controller.setAppearance(AppearanceMode.light);
     await controller.setAccent(AccentPalette.amber);
+    await controller.setNeon(true);
 
-    expect(notified, 2);
+    expect(notified, 3);
     final stored = await repo.load();
     expect(stored.appearance, AppearanceMode.light);
     expect(stored.accent, AccentPalette.amber);
+    expect(stored.neon, isTrue);
   });
 }

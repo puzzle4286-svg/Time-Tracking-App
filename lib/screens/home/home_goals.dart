@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../app/theme/neon.dart';
 import '../../services/activities/activity_service.dart';
 import '../../services/goals/goal_progress.dart';
 import '../../services/goals/goal_service.dart';
 import '../../services/tracking/tracking_service.dart';
 import '../../util/date_format.dart';
 import '../../util/duration_format.dart';
+import '../../widgets/common/activity_dot.dart';
 import '../../widgets/goals/goal_bars.dart';
 import '../../widgets/goals/goal_text.dart';
 
@@ -110,11 +112,7 @@ class _GoalRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
+              ActivityDot(color: color, size: 10),
               const SizedBox(width: 8),
               // The goal's name if it has one; the activity is the one
               // shown in the header, so its name is not repeated.
@@ -131,6 +129,7 @@ class _GoalRow extends StatelessWidget {
                 style: text.titleSmall?.copyWith(
                   color: over ? goalOverColor : null,
                   fontWeight: FontWeight.w600,
+                  shadows: over ? Neon.textGlow(context, goalOverColor) : null,
                 ),
               ),
             ],

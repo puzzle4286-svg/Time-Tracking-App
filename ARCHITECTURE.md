@@ -67,7 +67,8 @@ Rules:
 | `lib/app/app_root.dart` | `AppServices.load`; `AppRoot` reloads everything after a restore |
 | `lib/app/app.dart` | Root `MaterialApp`, rebuilds on settings change |
 | `lib/app/settings_controller.dart` | `ChangeNotifier` for settings; persists before notifying |
-| `lib/app/theme/app_theme.dart` | `buildTheme(mode, accent)` |
+| `lib/app/theme/app_theme.dart` | `buildTheme(mode, accent, neon:)` |
+| `lib/app/theme/neon.dart` | `Neon` theme extension and glow helpers (D48) |
 | `lib/database/schema.dart` | Ordered migration list; `schemaVersion` |
 | `lib/database/app_database.dart` | `openAppDatabase(factory, path)` |
 | `lib/database/seed.dart` | `ensureSeeded(db, now)` – idempotent first-launch setup |
@@ -154,7 +155,7 @@ goals(                             -- v4
   created_at INTEGER NOT NULL      -- UTC epoch microseconds
 )
 
-settings(key TEXT PRIMARY KEY, value TEXT NOT NULL)   -- theme_mode, accent
+settings(key TEXT PRIMARY KEY, value TEXT NOT NULL)   -- appearance, accent, neon, ui.*
 ```
 
 All timestamps are UTC epoch microseconds (v2 migrated v1 milliseconds ×1000).

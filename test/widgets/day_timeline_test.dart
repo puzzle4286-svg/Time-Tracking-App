@@ -66,6 +66,45 @@ void main() {
     );
   });
 
+  testWidgets('labels fit their blocks with enlarged system text', (
+    tester,
+  ) async {
+    // The phone used 1.15x; two lines did not fit blocks just over 48 px.
+    for (final scale in [1.0, 1.15, 1.3, 2.0]) {
+      for (var seconds = 11 * 60; seconds <= 16 * 60; seconds += 15) {
+        final start = DateTime(2026, 11, 9, 9);
+        await tester.pumpWidget(
+          MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: DayTimeline(
+                    day: day,
+                    entries: [
+                      dayEntry(
+                        1,
+                        'Developing',
+                        start,
+                        start.add(Duration(seconds: seconds)),
+                      ),
+                    ],
+                    now: DateTime(2026, 11, 10),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'scale $scale, ${seconds}s',
+        );
+      }
+    }
+  });
+
   testWidgets('a running entry ends at now; today ends at now', (tester) async {
     final now = DateTime(2026, 11, 9, 14);
     await pump(tester, [

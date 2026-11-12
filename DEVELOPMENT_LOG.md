@@ -490,3 +490,34 @@ name and without the activity name.
   under the header). Analyze clean.
 - Emulator: all three designs in the over-maximum state; then design A with
   the developer's own two Gaming goals under the header.
+
+## 2026-11-12 – Device testing, Neon look, History text scale
+
+**Requested**: test the build on the developer's phone (Fairphone 5,
+Android 15) over adb; remove the tile glow, then bring it back as an
+optional Neon look with a switch; glowing activity dots; fix a sub-pixel
+overflow in History.
+
+**Work completed**: Neon switch in Settings → Appearance (D48): `Neon`
+theme extension, glow on the active tile, timer, goal bars, donut,
+comparison bars, entry edges, selected tab and every activity dot (shared
+`ActivityDot`); inactive tiles as dark outlines. History decides between
+one- and two-line labels by measuring the text at the system text scale.
+
+**Problems and solutions**
+- The phone uses 1.15x system font size; the fixed 48 px two-line
+  threshold overflowed by up to ~2 px. Reproduced in a widget test.
+- Adding the Neon switch made Settings taller, so the data-section tests
+  tapped "Restore from backup" under the navigation bar; they now scroll it
+  fully into view.
+- Glow on very short bars and drawing order in the donut looked wrong on
+  the device; short bars no longer glow, donut glows are drawn first.
+
+**Testing performed**
+- Affected tests only: settings, theme, screens, widgets (all pass);
+  analyze clean.
+- Phone: setup of activities with icons, active highlight, goal bar under
+  and over the maximum, background/resume and force-stop/relaunch, History,
+  Insights, Light/Blue, JSON backup and restore through the system dialogs,
+  CSV export (file contents checked with adb). Neon checked on Track,
+  History and Insights with the developer's own data (not changed).

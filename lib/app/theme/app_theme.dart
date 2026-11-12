@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../models/app_settings.dart';
+import 'neon.dart';
 
 /// Builds the Material 3 theme for an appearance mode and accent palette.
-ThemeData buildTheme(AppearanceMode mode, AccentPalette accent) {
+/// [neon] adds the [Neon] extension that widgets use for their glow.
+ThemeData buildTheme(
+  AppearanceMode mode,
+  AccentPalette accent, {
+  bool neon = false,
+}) {
   final brightness = mode == AppearanceMode.light
       ? Brightness.light
       : Brightness.dark;
@@ -26,5 +32,18 @@ ThemeData buildTheme(AppearanceMode mode, AccentPalette accent) {
     colorScheme: scheme,
     scaffoldBackgroundColor: scheme.surface,
     visualDensity: VisualDensity.standard,
+    extensions: [Neon(enabled: neon)],
+    navigationBarTheme: neon
+        ? NavigationBarThemeData(
+            iconTheme: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.selected)
+                  ? IconThemeData(
+                      color: scheme.onSecondaryContainer,
+                      shadows: Neon.textGlowFor(scheme.primary),
+                    )
+                  : IconThemeData(color: scheme.onSurfaceVariant),
+            ),
+          )
+        : null,
   );
 }

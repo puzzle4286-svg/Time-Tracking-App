@@ -68,8 +68,11 @@ explicitly under **Database**.
 
 - Activity icons: choose one of 32 icons in the activity editor; tiles show
   it (or the name's first letter) instead of pause/play.
-- The active tile is shown in full colour with a ring and glow; other tiles
+- The active tile is shown in full colour with a ring; other tiles
   are muted.
+- Neon switch in Settings → Appearance: glowing active tile, timer, goal
+  bars, donut, comparison bars, activity dots, entry edges and selected tab;
+  inactive tiles as dark outlines.
 - Main screen shows the running activity's goals under today's total: one
   bar per goal with green (between targets) and red (over the maximum)
   zones and labelled min / max marks.

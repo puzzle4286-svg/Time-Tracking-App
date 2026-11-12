@@ -10,6 +10,7 @@ class SettingsRepository {
 
   static const _appearanceKey = 'appearance';
   static const _accentKey = 'accent';
+  static const _neonKey = 'neon';
 
   /// Loads settings; missing or unknown values fall back to defaults.
   Future<AppSettings> load() async {
@@ -29,6 +30,11 @@ class SettingsRepository {
         values[_accentKey],
         defaults.accent,
       ),
+      neon: switch (values[_neonKey]) {
+        'true' => true,
+        'false' => false,
+        _ => defaults.neon,
+      },
     );
   }
 
@@ -37,6 +43,7 @@ class SettingsRepository {
     for (final MapEntry(:key, :value) in {
       _appearanceKey: settings.appearance.name,
       _accentKey: settings.accent.name,
+      _neonKey: settings.neon.toString(),
     }.entries) {
       batch.insert('settings', {
         'key': key,

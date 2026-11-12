@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/neon.dart';
 import '../../services/analytics/comparison.dart';
 import '../../util/duration_format.dart';
 
@@ -71,6 +72,7 @@ class ComparisonBars extends StatelessWidget {
                   value: r.current,
                   max: max,
                   color: Color(r.activity.color),
+                  glow: true,
                 ),
                 const SizedBox(height: 3),
                 _Bar(
@@ -100,17 +102,23 @@ class _Bar extends StatelessWidget {
     required this.value,
     required this.max,
     required this.color,
+    this.glow = false,
   });
 
   final Duration value;
   final Duration max;
   final Color color;
 
+  /// Glows with Neon (D48); only the current period's bar does, so the
+  /// faded previous one stays clearly secondary.
+  final bool glow;
+
   @override
   Widget build(BuildContext context) {
     final fraction = max == Duration.zero
         ? 0.0
         : value.inMicroseconds / max.inMicroseconds;
+    const height = 12.0;
     return Row(
       children: [
         Expanded(
@@ -119,10 +127,14 @@ class _Bar extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Container(
                 width: c.maxWidth * fraction,
-                height: 12,
+                height: height,
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(3),
+                  // Not for bars shorter than they are tall (a blob).
+                  boxShadow: glow && c.maxWidth * fraction > height
+                      ? Neon.boxGlow(context, color, strength: 0.6)
+                      : null,
                 ),
               ),
             ),

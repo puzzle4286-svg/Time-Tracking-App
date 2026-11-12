@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../app/theme/neon.dart';
 import '../../models/activity.dart';
 import '../../services/tracking/tracking_service.dart';
 import '../../util/clock.dart';
 import '../../util/duration_format.dart';
+import '../../widgets/common/activity_dot.dart';
 
 /// Shows the active activity, its session duration and today's total.
 ///
@@ -74,14 +76,7 @@ class _CurrentActivityHeaderState extends State<CurrentActivityHeader> {
         children: [
           Row(
             children: [
-              Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: Color(widget.activity.color),
-                  shape: BoxShape.circle,
-                ),
-              ),
+              ActivityDot(color: Color(widget.activity.color), size: 14),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -101,6 +96,7 @@ class _CurrentActivityHeaderState extends State<CurrentActivityHeader> {
               fontFeatures: tabular,
               color: scheme.primary,
               fontWeight: FontWeight.w500,
+              shadows: Neon.textGlow(context, scheme.primary),
             ),
           ),
           Text(

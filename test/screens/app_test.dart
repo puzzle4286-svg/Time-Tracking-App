@@ -369,6 +369,51 @@ void main() {
     expect(stored.accent, AccentPalette.rose);
   });
 
+  testWidgets('neon switch adds the glow and persists', (tester) async {
+    BoxDecoration frame(int position) =>
+        tester
+                .widget<AnimatedContainer>(
+                  find.descendant(
+                    of: find.byKey(Key('activity-tile-$position')),
+                    matching: find.byKey(const Key('tile-frame')),
+                  ),
+                )
+                .decoration!
+            as BoxDecoration;
+
+    await pumpApp(tester);
+    final active = activeTiles(tester).single;
+    final inactive = active == 1 ? 2 : 1;
+    expect(frame(active).boxShadow, isNull);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('neon-switch')));
+    await settle(tester);
+    await tester.pumpAndSettle();
+    expect((await SettingsRepository(f.db).load()).neon, isTrue);
+
+    await tester.tap(find.text('Track'));
+    await tester.pumpAndSettle();
+    expect(frame(active).boxShadow, isNotEmpty);
+    // Inactive tiles: no glow, a thin outline in their own colour.
+    expect(frame(inactive).boxShadow, isNull);
+    expect(frame(inactive).border, isNotNull);
+    final duration = tester.widget<Text>(
+      find.byKey(const Key('session-duration')),
+    );
+    expect(duration.style?.shadows, isNotEmpty);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('neon-switch')));
+    await settle(tester);
+    await tester.tap(find.text('Track'));
+    await tester.pumpAndSettle();
+    expect(frame(active).boxShadow, isNull);
+    expect(frame(inactive).border, isNull);
+  });
+
   testWidgets('grid is 2 rows x 4 columns, positions 1-4 on top', (
     tester,
   ) async {

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/neon.dart';
 import '../../models/activity.dart';
 import '../../models/activity_icons.dart';
 
 /// One of the eight compact grid buttons.
 ///
-/// The active activity is shown in its full colour with a ring and a soft
-/// glow; all others are muted (a faint tint of their colour), so the active
-/// one stands out at a glance. The tile shows the activity's icon, or the
-/// first letter of its name without one. [activity] is null for an empty
-/// slot (shows "+").
+/// The active activity is shown in its full colour with a ring; all others
+/// are muted (a faint tint of their colour), so the active one stands out at
+/// a glance. With Neon (D48) the active tile glows in its colour and the
+/// others are dark with a thin outline and icon in their colour. The tile
+/// shows the activity's icon, or the first letter of its name without one.
+/// [activity] is null for an empty slot (shows "+").
 class ActivityTile extends StatelessWidget {
   const ActivityTile({
     super.key,
@@ -31,25 +33,40 @@ class ActivityTile extends StatelessWidget {
   static const _duration = Duration(milliseconds: 200);
 
   /// Fill colour for [activity] in the given state (exposed for tests).
-  static Color fillFor(ColorScheme scheme, Activity? activity, bool active) {
+  static Color fillFor(
+    ColorScheme scheme,
+    Activity? activity,
+    bool active, {
+    bool neon = false,
+  }) {
     if (activity == null) return Colors.transparent;
     final color = Color(activity.color);
-    return active
-        ? color
-        : Color.lerp(scheme.surfaceContainerHigh, color, mutedTint)!;
+    if (active) return color;
+    return Color.lerp(
+      neon ? scheme.surface : scheme.surfaceContainerHigh,
+      color,
+      neon ? neonTint : mutedTint,
+    )!;
   }
+
+  /// Inactive tile tint with Neon: darker, the outline carries the colour.
+  static const double neonTint = 0.10;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final neon = Neon.of(context);
     final a = activity;
-    final fill = fillFor(scheme, a, isActive);
+    final color = a == null ? null : Color(a.color);
+    final fill = fillFor(scheme, a, isActive, neon: neon);
     final foreground = a == null
         ? scheme.onSurfaceVariant
         : isActive
         ? (ThemeData.estimateBrightnessForColor(fill) == Brightness.dark
               ? Colors.white
               : Colors.black)
+        : neon
+        ? color!.withValues(alpha: 0.85)
         : scheme.onSurface.withValues(alpha: 0.75);
     final icon = a == null ? Icons.add : activityIcon(a.icon);
 
@@ -69,21 +86,17 @@ class ActivityTile extends StatelessWidget {
               ? Border.all(color: scheme.onSurface, width: 3)
               : a == null
               ? Border.all(color: scheme.outlineVariant)
+              : neon
+              ? Border.all(color: color!.withValues(alpha: 0.6), width: 1.5)
               : null,
-          boxShadow: isActive && a != null
-              ? [
-                  BoxShadow(
-                    color: Color(a.color).withValues(alpha: 0.55),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
+          boxShadow: isActive && neon ? Neon.boxGlowFor(color!) : null,
         ),
         child: Material(
           color: fill,
           animationDuration: _duration,
-          borderRadius: BorderRadius.circular(_radius - (isActive ? 3 : 0)),
+          borderRadius: BorderRadius.circular(
+            _radius - (isActive ? 3 : (neon && a != null ? 1.5 : 0)),
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,

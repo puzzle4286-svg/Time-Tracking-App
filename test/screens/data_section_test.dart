@@ -61,6 +61,9 @@ void main() {
       100,
       scrollable: find.byType(Scrollable).first,
     );
+    // Fully into view: just "visible" can leave it under the navigation bar.
+    await tester.ensureVisible(find.text('Restore from backup'));
+    await tester.pumpAndSettle();
   }
 
   String currentActivity(WidgetTester tester) =>

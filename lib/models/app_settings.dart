@@ -30,14 +30,22 @@ class AppSettings {
   const AppSettings({
     this.appearance = AppearanceMode.dark,
     this.accent = AccentPalette.teal,
+    this.neon = false,
   });
 
   final AppearanceMode appearance;
   final AccentPalette accent;
 
-  AppSettings copyWith({AppearanceMode? appearance, AccentPalette? accent}) =>
-      AppSettings(
-        appearance: appearance ?? this.appearance,
-        accent: accent ?? this.accent,
-      );
+  /// Neon look: glowing highlights (D48).
+  final bool neon;
+
+  AppSettings copyWith({
+    AppearanceMode? appearance,
+    AccentPalette? accent,
+    bool? neon,
+  }) => AppSettings(
+    appearance: appearance ?? this.appearance,
+    accent: accent ?? this.accent,
+    neon: neon ?? this.neon,
+  );
 }

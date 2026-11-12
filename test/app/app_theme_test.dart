@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:time_tracker/app/theme/app_theme.dart';
+import 'package:time_tracker/app/theme/neon.dart';
 import 'package:time_tracker/models/app_settings.dart';
 
 void main() {
@@ -34,6 +35,19 @@ void main() {
   test('dark mode is not black', () {
     final theme = buildTheme(AppearanceMode.dark, AccentPalette.teal);
     expect(theme.colorScheme.surface, isNot(Colors.black));
+  });
+
+  test('neon is off by default and carried in the theme when on', () {
+    final plain = buildTheme(AppearanceMode.dark, AccentPalette.teal);
+    final neon = buildTheme(
+      AppearanceMode.dark,
+      AccentPalette.teal,
+      neon: true,
+    );
+    expect(plain.extension<Neon>()?.enabled, isFalse);
+    expect(neon.extension<Neon>()?.enabled, isTrue);
+    // Neon adds glow only; colours stay the same.
+    expect(neon.colorScheme, plain.colorScheme);
   });
 
   test('accent is independent of appearance mode', () {

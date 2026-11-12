@@ -8,6 +8,7 @@ import '../../services/history/history_service.dart';
 import '../../util/clock.dart';
 import '../../util/date_format.dart';
 import '../../util/duration_format.dart';
+import '../common/activity_dot.dart';
 import '../common/date_time_picker.dart';
 import 'entry_strip.dart';
 
@@ -70,10 +71,7 @@ class _EntrySheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ListTile(
-              leading: CircleAvatar(
-                radius: 8,
-                backgroundColor: Color(item.activity.color),
-              ),
+              leading: ActivityDot(color: Color(item.activity.color), size: 16),
               title: Text(item.activity.name, style: text.titleLarge),
               subtitle: Text(
                 '${_span(e)} · ${formatEntryDuration(e.durationAt(now))}',
@@ -130,7 +128,7 @@ class _EntryFlow {
               onPressed: () => Navigator.of(context).pop(a.id),
               child: Row(
                 children: [
-                  CircleAvatar(radius: 8, backgroundColor: Color(a.color)),
+                  ActivityDot(color: Color(a.color), size: 16),
                   const SizedBox(width: 12),
                   Expanded(child: Text(a.name)),
                   if (a.id == entry.activityId) const Icon(Icons.check),
@@ -582,7 +580,7 @@ class _ActivityRadioList extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               title: Row(
                 children: [
-                  CircleAvatar(radius: 7, backgroundColor: Color(a.color)),
+                  ActivityDot(color: Color(a.color), size: 14),
                   const SizedBox(width: 10),
                   Expanded(child: Text(labelFor?.call(a) ?? a.name)),
                 ],

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../app/theme/neon.dart';
 import '../../services/goals/goal_progress.dart';
 import '../../util/duration_format.dart';
 
@@ -48,6 +49,7 @@ class GoalBar extends StatelessWidget {
         painter: _ZonesPainter(
           progress,
           _GoalColors(theme.colorScheme, color),
+          neon: Neon.of(context),
           theme.textTheme.labelSmall!.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -93,11 +95,14 @@ void _label(
 
 /// Linear bar with tinted zones and labelled marks.
 class _ZonesPainter extends CustomPainter {
-  _ZonesPainter(this.p, this.c, this.labelStyle);
+  _ZonesPainter(this.p, this.c, this.labelStyle, {this.neon = false});
 
   final GoalProgress p;
   final _GoalColors c;
   final TextStyle labelStyle;
+
+  /// Paints a blurred copy of the fill under the bar (D48).
+  final bool neon;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -106,13 +111,30 @@ class _ZonesPainter extends CustomPainter {
     final end = linearScaleEnd(p);
     double x(Duration d) => linearFraction(d, end) * w;
     final bar = RRect.fromLTRBR(0, 2, w, 2 + h, const Radius.circular(6));
+    final t = x(p.tracked);
+    final maxX = p.maximum == null ? null : x(p.maximum!);
+    final within = maxX == null ? t : math.min(t, maxX);
+    // Outside the clip, so the glow spills around the bar. Not for fills
+    // shorter than the bar is tall: their glow would be a blob at the start.
+    if (neon && t > h) {
+      final glow = Paint()..maskFilter = Neon.painterGlow;
+      canvas.drawRRect(
+        RRect.fromLTRBR(0, 2, within, 2 + h, const Radius.circular(6)),
+        glow..color = c.fill.withValues(alpha: 0.8),
+      );
+      if (maxX != null && t > maxX) {
+        canvas.drawRect(
+          Rect.fromLTRB(maxX, 2, t, 2 + h),
+          glow..color = c.over.withValues(alpha: 0.9),
+        );
+      }
+    }
     canvas
       ..drawRRect(bar, Paint()..color = c.track)
       ..save()
       ..clipRRect(bar);
     // Zones: between the targets is "good", beyond the maximum is "over".
     final minX = p.minimum == null ? null : x(p.minimum!);
-    final maxX = p.maximum == null ? null : x(p.maximum!);
     if (minX != null) {
       canvas.drawRect(
         Rect.fromLTRB(minX, 2, maxX ?? w, 2 + h),
@@ -126,8 +148,6 @@ class _ZonesPainter extends CustomPainter {
       );
     }
     // Fill, inset so the zone tint stays visible as a frame.
-    final t = x(p.tracked);
-    final within = maxX == null ? t : math.min(t, maxX);
     final fillRect = RRect.fromLTRBR(0, 4, within, h, const Radius.circular(4));
     canvas.drawRRect(fillRect, Paint()..color = c.fill);
     if (maxX != null && t > maxX) {
@@ -150,5 +170,5 @@ class _ZonesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ZonesPainter old) =>
-      old.p.tracked != p.tracked || old.c.fill != c.fill;
+      old.p.tracked != p.tracked || old.c.fill != c.fill || old.neon != neon;
 }
