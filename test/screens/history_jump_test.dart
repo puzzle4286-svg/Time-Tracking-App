@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:time_tracker/repositories/ui_state_store.dart';
 import 'package:time_tracker/screens/history/history_screen.dart';
 import 'package:time_tracker/services/activities/activity_service.dart';
@@ -12,7 +11,7 @@ import '../support/tracking_fixture.dart';
 
 /// Counts how History loads its days.
 class CountingHistory extends HistoryService {
-  CountingHistory(Database db) : super(db);
+  CountingHistory(super.db);
 
   int dayQueries = 0;
   int rangeQueries = 0;

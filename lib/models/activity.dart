@@ -34,6 +34,7 @@ class Activity {
     required this.createdAt,
     required this.deletedAt,
     this.role,
+    this.icon,
   });
 
   static const int gridRows = 2;
@@ -54,6 +55,9 @@ class Activity {
 
   final SystemRole? role;
 
+  /// Key into `activityIcons`, or null for no icon.
+  final String? icon;
+
   bool get isDeleted => deletedAt != null;
   bool get isDefault => role == SystemRole.defaultActivity;
 
@@ -69,5 +73,6 @@ class Activity {
     createdAt: fromStoredTimestamp(row['created_at']! as int),
     deletedAt: fromStoredTimestampOrNull(row['deleted_at']),
     role: SystemRole.parse(row['role']),
+    icon: row['icon'] as String?,
   );
 }

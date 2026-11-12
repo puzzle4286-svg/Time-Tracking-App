@@ -66,6 +66,14 @@ explicitly under **Database**.
 - Linux desktop build runs with its own database in
   `~/.local/share/time_tracker` (for development).
 
+- Activity icons: choose one of 32 icons in the activity editor; tiles show
+  it (or the name's first letter) instead of pause/play.
+- The active tile is shown in full colour with a ring and glow; other tiles
+  are muted.
+- Main screen shows the running activity's goals under today's total: one
+  bar per goal with green (between targets) and red (over the maximum)
+  zones and labelled min / max marks.
+- Backups from schema v4 can still be restored after the v5 update.
 - Insights: the period selector stays pinned at the top while the charts
   scroll.
 - History: jumping to a date far back (or reopening at a saved position)
@@ -113,3 +121,4 @@ explicitly under **Database**.
 - Schema v3: `activities.role` marks built-in activities; adds "Default" to
   existing installs.
 - Schema v4: `goals` table.
+- Schema v5: `activities.icon` (nullable text key of the tile icon).

@@ -3,15 +3,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:time_tracker/app/app.dart';
 import 'package:time_tracker/app/app_shell.dart';
 import 'package:time_tracker/app/settings_controller.dart';
+import 'package:time_tracker/models/activity_icons.dart';
 import 'package:time_tracker/models/app_settings.dart';
 import 'package:time_tracker/models/goal.dart';
 import 'package:time_tracker/repositories/settings_repository.dart';
 import 'package:time_tracker/repositories/ui_state_store.dart';
+import 'package:time_tracker/screens/home/home_goals.dart';
 import 'package:time_tracker/screens/home/home_screen.dart';
 import 'package:time_tracker/services/activities/activity_service.dart';
 import 'package:time_tracker/services/goals/goal_service.dart';
 import 'package:time_tracker/services/history/entry_edit_service.dart';
 import 'package:time_tracker/services/history/history_service.dart';
+import 'package:time_tracker/widgets/activities/activity_tile.dart';
+import 'package:time_tracker/widgets/goals/goal_bars.dart';
 
 import '../support/matchers.dart';
 import '../support/test_database.dart';
@@ -54,6 +58,24 @@ void main() {
     );
   }
 
+  /// Grid positions whose tile is shown as active.
+  List<int> activeTiles(WidgetTester tester) => [
+    for (var p = 1; p <= 8; p++)
+      if (tester
+          .widget<ActivityTile>(find.byKey(Key('activity-tile-$p')))
+          .isActive)
+        p,
+  ];
+
+  Color tileFill(WidgetTester tester, int position) => tester
+      .widget<Material>(
+        find.descendant(
+          of: find.byKey(Key('activity-tile-$position')),
+          matching: find.byType(Material),
+        ),
+      )
+      .color!;
+
   String textOf(WidgetTester tester, String key) =>
       tester.widget<Text>(find.byKey(Key(key))).data!;
 
@@ -72,8 +94,11 @@ void main() {
       expect(find.byKey(Key('activity-tile-$p')), findsOneWidget);
     }
     expect(find.byIcon(Icons.add), findsNWidgets(5));
-    expect(find.byIcon(Icons.pause_rounded), findsOneWidget); // Free Time
-    expect(find.byIcon(Icons.play_arrow_rounded), findsNWidgets(2));
+    // No icons set: tiles show the first letter; Free Time is active.
+    for (final letter in ['F', 'G', 'S']) {
+      expect(find.text(letter), findsOneWidget);
+    }
+    expect(activeTiles(tester), [1]);
   });
 
   testWidgets('every grid tile fills an equal cell', (tester) async {
@@ -85,26 +110,27 @@ void main() {
     expect(sizes, hasLength(1));
   });
 
-  testWidgets('grid is compact and icons follow the active state', (
+  testWidgets('grid is compact and the highlight follows the active one', (
     tester,
   ) async {
     await pumpApp(tester);
     final tile = tester.getSize(find.byKey(const Key('activity-tile-1')));
     expect(tile.height, HomeScreen.tileHeight);
 
-    final gaming = find.byKey(const Key('activity-tile-2'));
-    await tester.tap(gaming);
+    await tester.tap(find.byKey(const Key('activity-tile-2')));
     await settle(tester);
+    expect(activeTiles(tester), [2]);
+    // Active: full colour; others: muted tint.
+    final context = tester.element(find.byKey(const Key('activity-tile-2')));
+    final scheme = Theme.of(context).colorScheme;
+    expect(tileFill(tester, 2), Color(activities.byId(f.gaming)!.color));
     expect(
-      find.descendant(of: gaming, matching: find.byIcon(Icons.pause_rounded)),
-      findsOneWidget,
+      tileFill(tester, 1),
+      ActivityTile.fillFor(scheme, activities.byId(f.freeTime), false),
     );
     expect(
-      find.descendant(
-        of: find.byKey(const Key('activity-tile-1')),
-        matching: find.byIcon(Icons.play_arrow_rounded),
-      ),
-      findsOneWidget,
+      tileFill(tester, 1),
+      isNot(Color(activities.byId(f.freeTime)!.color)),
     );
   });
 
@@ -150,6 +176,110 @@ void main() {
 
     expect(textOf(tester, 'current-activity-name'), 'Leisure');
     expect(activities.byId(f.freeTime)!.name, 'Leisure');
+  });
+
+  testWidgets(
+    'an icon chosen in the editor shows on the tile; None clears it',
+    (tester) async {
+      await pumpApp(tester);
+      final tile = find.byKey(const Key('activity-tile-2'));
+      expect(
+        find.descendant(of: tile, matching: find.text('G')),
+        findsOneWidget,
+      );
+
+      Future<void> pickIcon(String key) async {
+        await tester.longPress(tile);
+        await tester.pumpAndSettle();
+        final option = find.byKey(Key('icon-option-$key'));
+        await tester.ensureVisible(option);
+        await tester.pumpAndSettle();
+        await tester.tap(option);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Save'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+      }
+
+      await pickIcon('gaming');
+      expect(activities.byId(f.gaming)!.icon, 'gaming');
+      expect(
+        find.descendant(
+          of: tile,
+          matching: find.byIcon(activityIcons['gaming']!),
+        ),
+        findsOneWidget,
+      );
+
+      await pickIcon('none');
+      expect(activities.byId(f.gaming)!.icon, isNull);
+      expect(
+        find.descendant(of: tile, matching: find.text('G')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('the running activity\'s goals show under the header', (
+    tester,
+  ) async {
+    final goalService = GoalService(f.db, f.clock);
+    GoalDraft daily({String? name, Duration? min, Duration? max}) => GoalDraft(
+      name: name,
+      unit: GoalUnit.day,
+      length: 1,
+      anchor: GoalAnchor.fromLocal(DateTime(2026, 11, 9)),
+      minimum: min,
+      maximum: max,
+    );
+    final limit = await goalService.create(
+      f.gaming,
+      daily(
+        name: 'Limit',
+        min: const Duration(minutes: 30),
+        max: const Duration(hours: 2),
+      ),
+    );
+    final unnamed = await goalService.create(
+      f.gaming,
+      daily(max: const Duration(hours: 3)),
+    );
+    final study = await goalService.create(
+      f.study,
+      daily(min: const Duration(hours: 1)),
+    );
+    await pumpApp(tester);
+    await settle(tester);
+    // Free Time runs and has no goals.
+    expect(find.byType(GoalBar), findsNothing);
+
+    await tester.tap(find.byKey(const Key('activity-tile-2'))); // Gaming
+    await settle(tester);
+    f.clock.advance(const Duration(minutes: 45));
+    await tester.pump(HomeGoals.refresh);
+    await settle(tester);
+    expect(find.byKey(ValueKey('home-goal-${limit.id}')), findsOneWidget);
+    expect(find.byKey(ValueKey('home-goal-${unnamed.id}')), findsOneWidget);
+    expect(find.byKey(ValueKey('home-goal-${study.id}')), findsNothing);
+    expect(find.byType(GoalBar), findsNWidgets(2));
+    // Goal name only; the activity name is not repeated next to the dot.
+    expect(find.text('Limit'), findsOneWidget);
+    expect(find.text('Gaming · Limit'), findsNothing);
+    expect(textOf(tester, 'home-goal-tracked-${limit.id}'), '45m');
+    expect(find.textContaining('min 30m · max 2h 0m · until'), findsOneWidget);
+    // Right under the header, well above the grid.
+    expect(
+      tester.getTopLeft(find.byKey(ValueKey('home-goal-${limit.id}'))).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const Key('activity-tile-1'))).dy / 2,
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('activity-tile-3'))); // Study
+    await settle(tester);
+    expect(find.byKey(ValueKey('home-goal-${study.id}')), findsOneWidget);
+    expect(find.byKey(ValueKey('home-goal-${limit.id}')), findsNothing);
   });
 
   testWidgets('empty name is rejected in the editor', (tester) async {
@@ -432,6 +562,8 @@ void main() {
     Future<void> openDelete(WidgetTester tester, int position) async {
       await tester.longPress(find.byKey(Key('activity-tile-$position')));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Delete activity'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Delete activity'));
       await tester.pumpAndSettle();
     }
@@ -649,6 +781,8 @@ void main() {
       await tester.longPress(
         find.byKey(const Key('activity-tile-2')),
       ); // Gaming
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Goals'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Goals'));
       await settle(tester);

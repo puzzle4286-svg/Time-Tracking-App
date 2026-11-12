@@ -448,3 +448,45 @@ in the History screen, calendar-difference day index (D44).
 - History service, year-of-history widget test (one range query, < 10
   single-day loads) and History screen tests: 33 tests in all seven
   timezones. Benchmarks in D44 (throwaway test, not committed).
+
+## 2026-11-12 – Activity icons, active highlight, goals on the main screen
+
+**Requested**: icon choice for activities shown on tiles instead of
+pause/play; a different way to show the active activity; goal progress on
+the main screen as one bar scaled to the period with min/max marks.
+
+**Work completed**: schema v5 with `activities.icon` and backup row upgrade
+(D45); muted / full-colour tiles with ring and glow (D46); `HomeGoals`,
+`GoalPeriodBar`, `GoalService.gridProgress` (D47). Editor sheet scrolls.
+
+**Problems and solutions**
+- The editor sheet got taller, so its lower buttons are off screen in the
+  800×600 widget tests; tests scroll them into view (on phones the sheet
+  scrolls).
+- The schema bump would have made existing v4 backups unrestorable; added
+  row upgrades for older backups.
+
+**Testing performed**
+- Only the affected tests: screens (app, first launch, data section),
+  database, export, goal service, activities, new bar and icon tests
+  (105 + new, all pass); analyze clean.
+- Emulator (existing database): v4 → v5 migration kept the data; icon picker,
+  book icon on the active tile with glow, muted Gaming tile; a daily min 1 h /
+  max 2 h goal shown as one bar with marks near the left edge.
+
+## 2026-11-12 – Goal bar design chosen
+
+**Requested**: try three bar designs; then keep A with a more vivid red,
+show it under today's total, only for the running activity, with the goal
+name and without the activity name.
+
+**Work completed**: `goal_bars.dart` with designs A (zones), B (steps) and C
+(ring) shown side by side; after the choice, B and C removed, vivid
+`goalOverColor`, `gridProgress(activityId:)`, list aligned to the top.
+
+**Testing performed**
+- Affected tests only: bar geometry, goal service, main-screen goal widget
+  test (only the running activity's goals, switching activities, position
+  under the header). Analyze clean.
+- Emulator: all three designs in the over-maximum state; then design A with
+  the developer's own two Gaming goals under the header.

@@ -151,4 +151,53 @@ void main() {
     expect(await goals.goalsFor(f.gaming), isEmpty);
     expect(notified, 3);
   });
+
+  test(
+    'gridProgress: enabled goals of grid activities, in grid order',
+    () async {
+      final weekly = GoalDraft(
+        unit: GoalUnit.week,
+        length: 1,
+        anchor: GoalAnchor.fromLocal(DateTime(2026, 11, 9)),
+        maximum: const Duration(hours: 1),
+      );
+      final study = await goals.create(
+        f.study,
+        daily(min: const Duration(hours: 1)),
+      );
+      final gaming = await goals.create(f.gaming, weekly);
+      await goals.create(
+        f.gaming,
+        GoalDraft(
+          unit: GoalUnit.day,
+          length: 1,
+          anchor: GoalAnchor.fromLocal(DateTime(2026, 11, 9)),
+          minimum: const Duration(minutes: 5),
+          enabled: false,
+        ),
+      );
+      final freeTime = await goals.create(
+        f.freeTime,
+        daily(min: const Duration(hours: 1)),
+      );
+      await f.db.update('activities', {
+        'deleted_at': 1,
+        'position': null,
+      }, where: 'id = ${f.freeTime}');
+
+      final items = await goals.gridProgress();
+      // Gaming (position 2) before Study (3); paused and deleted are left out.
+      expect(items.map((p) => p.goal.id), [gaming.id, study.id]);
+      expect(items.map((p) => p.goal.id), isNot(contains(freeTime.id)));
+      expect(items[0].tracked, const Duration(hours: 2));
+      expect(items[0].maximumExceeded, isTrue);
+      expect(items[1].tracked, const Duration(hours: 1));
+      expect(items[1].minimumReached, isTrue);
+
+      // Main screen: only the running activity's goals.
+      final studyOnly = await goals.gridProgress(activityId: f.study);
+      expect(studyOnly.map((p) => p.goal.id), [study.id]);
+      expect(await goals.gridProgress(activityId: f.freeTime), isEmpty);
+    },
+  );
 }

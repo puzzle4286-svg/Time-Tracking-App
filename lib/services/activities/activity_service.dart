@@ -95,6 +95,7 @@ class ActivityService extends ChangeNotifier {
     required int position,
     required String name,
     required int color,
+    String? icon,
   }) async {
     _checkName(name);
     if (position < 1 || position > Activity.gridSize) {
@@ -108,20 +109,25 @@ class ActivityService extends ChangeNotifier {
       color: color,
       position: position,
       createdAt: _clock.now(),
+      icon: icon,
     );
     await load();
     return byId(id)!;
   }
 
-  /// Renames / recolours an activity. History follows automatically because
-  /// entries reference the activity by id.
+  /// Renames / recolours an activity and sets its [icon] (null clears it).
+  /// History follows automatically because entries reference the activity
+  /// by id.
   Future<void> update(
     int id, {
     required String name,
     required int color,
+    String? icon,
   }) async {
     _checkName(name);
-    await ActivityRepository(_db).update(id, name: name.trim(), color: color);
+    await ActivityRepository(
+      _db,
+    ).update(id, name: name.trim(), color: color, icon: icon);
     await load();
   }
 

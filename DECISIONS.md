@@ -158,6 +158,8 @@ tap, which keeps interactions predictable.
 `package_info_plus`. It must be kept in sync with `pubspec.yaml`.
 
 ## D23 – Grid is 2 rows × 4 columns (developer request, 2026-11-11)
+*Tile content superseded by D45/D46: tiles now show the activity's icon (or
+its initial) and the active one is highlighted instead of pause/play.*
 Positions 1–4 form the top row, 5–8 the bottom row. Revised after review:
 tiles are compact (64 dp tall, about a quarter of the earlier grid) and sit at
 the bottom of the screen. Each tile is filled with the activity's colour and
@@ -438,3 +440,42 @@ Measured with a year of 30 switches a day (10 960 entries, desktop, debug):
 Insights day 36 ms, year 85 ms, all 46 ms; backup 157 ms (1.4 MB); restore
 0.9 s; CSV export 0.8 s. Phones are a few times slower; every regular screen
 stays well under a second. Export and restore are one-off actions.
+
+## D45 – Activity icons (schema v5)
+`activities.icon` (TEXT, nullable) stores a key from `activityIcons`
+(`lib/models/activity_icons.dart`, 32 general-purpose Material icons: work,
+study, reading, fitness, sleep, food, commute, gaming, social, …). A key
+rather than a code point keeps the database independent of the icon font and
+lets Flutter tree-shake icons (the map is `const`). Unknown keys (from a newer
+version) show like "no icon". Without an icon a tile shows the first letter
+of the name. Existing activities get no icon in the migration.
+Backups now accept older schema versions from `minimumBackupSchemaVersion`
+(4) on: `_rowUpgrades[n]` brings a backup's raw rows from version n-1 to n,
+mirroring the migration (v5: `icon: null`). This replaces the D40 rule that
+only the current version was accepted. Every future migration that touches a
+backed-up table needs a row upgrade; the column test fails otherwise.
+
+## D46 – Active tile: full colour, ring and glow; others muted
+Pause/play icons were replaced by the activity icon (D45), so the active
+state is shown by colour instead: the active tile is filled with its full
+colour, has a 3 px ring and a soft glow in its colour; inactive tiles are
+muted to a 28 % tint of their colour over the surface, with a dimmer icon.
+The change animates over 200 ms. Screen readers still get "…, active".
+
+## D47 – Goals on the main screen (revised 2026-11-12)
+Only the **running activity's** enabled goals are shown, directly under the
+header (today's total), read-only; editing stays behind the tile's long
+press. Each row: the activity's colour dot, the goal's name if it has one
+(the activity name is not repeated, the header shows it), the time tracked
+in the current period, one bar, and "targets · until <period end>".
+The bar (design A of three compared side by side; the developer chose it)
+is linear from 0 to 25 % beyond the largest target. Between minimum and
+maximum it is tinted green, beyond the maximum red; the targets have
+labelled marks (white minimum, red maximum). The fill uses the activity
+colour and turns red past the maximum. The red is a fixed vivid
+`goalOverColor` (#FF1744) because the dark theme's error colour is too pale.
+The first version (bar spanning the whole period) was dropped: small targets
+in long periods sat at the left edge. The rejected designs were equal-width
+steps (0 → min → max → over) and a ring gauge with a status sentence.
+`GoalService.gridProgress(activityId:)` loads the goals with one entry query;
+the list reloads on any change and every 15 s.

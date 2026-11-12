@@ -91,7 +91,10 @@ Rules:
 | `lib/services/analytics/comparison.dart` | `comparePeriods` – pure, equivalent spans |
 | `lib/services/analytics/insights_service.dart` | Loads entries once per selection |
 | `lib/widgets/charts/` | `DonutChart` (CustomPainter), `ComparisonBars` |
-| `lib/widgets/activities/` | `ActivityTile`, `showActivityEditor` sheet |
+| `lib/widgets/activities/` | `ActivityTile` (icon, active highlight), `showActivityEditor` sheet (name, colour, icon) |
+| `lib/models/activity_icons.dart` | Icon keys ⇄ Material icons for tiles |
+| `lib/screens/home/home_goals.dart` | Goal progress list on the main screen |
+| `lib/widgets/goals/goal_bars.dart` | `GoalBar`: linear bar with target zones and labelled marks |
 | `lib/util/timestamps.dart` | The only storage conversion: UTC epoch µs ⇄ `DateTime` |
 | `lib/util/date_format.dart` | `formatTimeOfDay` (`09:05`), `formatDayLabel` (`Today`, `Mon, 9 Nov 2026`) |
 | `lib/services/history/history_service.dart` | `entriesForDay` (clipped `DayEntry`s), `firstDay` |

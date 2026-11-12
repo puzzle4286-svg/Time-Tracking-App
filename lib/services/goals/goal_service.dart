@@ -108,6 +108,24 @@ class GoalService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Progress of every enabled goal of the grid activities, in grid order;
+  /// only [activityId]'s if given (main screen). One entry query covers all
+  /// current periods.
+  Future<List<GoalProgress>> gridProgress({int? activityId}) async {
+    final goals = await GoalRepository(
+      _db,
+    ).enabledOnGrid(activityId: activityId);
+    if (goals.isEmpty) return const [];
+    final now = _clock.now();
+    final periods = [for (final g in goals) currentGoalPeriod(g, now)];
+    final from = periods
+        .map((p) => p.start)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+    final to = periods.map((p) => p.end).reduce((a, b) => a.isAfter(b) ? a : b);
+    final entries = await TimeEntryRepository(_db).overlapping(from, to);
+    return [for (final g in goals) goalProgress(g, entries, now)];
+  }
+
   /// Progress of [goal] in its current period.
   Future<GoalProgress> progress(Goal goal) async {
     final now = _clock.now();

@@ -19,6 +19,21 @@ class GoalRepository {
     return rows.map(Goal.fromRow).toList();
   }
 
+  /// Enabled goals of activities currently on the grid, in grid order;
+  /// only those of [activityId] if given.
+  Future<List<Goal>> enabledOnGrid({int? activityId}) async {
+    final rows = await _db.rawQuery(
+      '''
+      SELECT g.* FROM goals g JOIN activities a ON a.id = g.activity_id
+      WHERE g.enabled = 1 AND a.deleted_at IS NULL AND a.position IS NOT NULL
+        ${activityId == null ? '' : 'AND g.activity_id = ?'}
+      ORDER BY a.position, g.id
+    ''',
+      [?activityId],
+    );
+    return rows.map(Goal.fromRow).toList();
+  }
+
   Future<Goal?> byId(int id) async {
     final rows = await _db.query('goals', where: 'id = ?', whereArgs: [id]);
     return rows.isEmpty ? null : Goal.fromRow(rows.single);

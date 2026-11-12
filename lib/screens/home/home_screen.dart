@@ -13,6 +13,7 @@ import '../../widgets/activities/activity_tile.dart';
 import '../../widgets/activities/delete_activity_flow.dart';
 import '../goals/goals_page.dart';
 import 'current_activity_header.dart';
+import 'home_goals.dart';
 
 /// Main screen: current activity on top, a compact grid (2 rows × 4
 /// columns, positions 1–4 on top) at the bottom, within thumb reach.
@@ -53,6 +54,7 @@ class HomeScreen extends StatelessWidget {
         position: position,
         name: draft.name,
         color: draft.color,
+        icon: draft.icon,
       ),
     );
   }
@@ -63,6 +65,7 @@ class HomeScreen extends StatelessWidget {
       title: 'Edit activity',
       initialName: activity.name,
       initialColor: activity.color,
+      initialIcon: activity.icon,
       onGoals: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => GoalsPage(
@@ -83,8 +86,12 @@ class HomeScreen extends StatelessWidget {
     if (draft == null || !context.mounted) return;
     await _guard(
       context,
-      () =>
-          activities.update(activity.id, name: draft.name, color: draft.color),
+      () => activities.update(
+        activity.id,
+        name: draft.name,
+        color: draft.color,
+        icon: draft.icon,
+      ),
     );
   }
 
@@ -121,7 +128,18 @@ class HomeScreen extends StatelessWidget {
                 activity: active,
                 clock: clock,
               ),
-              const Spacer(),
+              // The running activity's goals, right under the header
+              // (scrolls when there are many).
+              Expanded(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: HomeGoals(
+                    goals: goals,
+                    tracking: tracking,
+                    activities: activities,
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                 child: Column(

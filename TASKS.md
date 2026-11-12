@@ -125,8 +125,16 @@ A phase is only checked off once its functionality is tested.
 - [x] History: jump to date / restored position load all days in one range
       query and one rebuild (D44)
 
+## After v1 (developer requests, 2026-11-12)
+- [x] Activity icons in the editor, shown on tiles (schema v5, D45)
+- [x] Active tile highlighted by colour, ring and glow; others muted (D46)
+- [x] Goals on the main screen (D47): three bar designs compared, A kept
+      (zones, vivid red); only the running activity's goals, under the
+      header, goal name instead of activity name
+- [x] Older backups (schema v4) upgraded on restore
+
 ## Known issues
-- Grid tiles show no names for now (D23); identify by colour.
+- Grid tiles show icons or initials, not full names (D45).
 - Very short entries are stretched to label height on the timeline, so the
   scale is locally non-linear around them (D24).
 - The launch splash is always the default dark colour; with Light selected

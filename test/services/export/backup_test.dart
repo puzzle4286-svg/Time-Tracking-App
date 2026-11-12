@@ -178,7 +178,10 @@ void main() {
         (j) => j['formatVersion'] = backupFormatVersion + 1,
         'newer',
       );
-      expectRejected((j) => j['schemaVersion'] = schemaVersion - 1, 'older');
+      expectRejected(
+        (j) => j['schemaVersion'] = minimumBackupSchemaVersion - 1,
+        'older',
+      );
       expectRejected((j) => j.remove('schemaVersion'), 'no version');
     });
 
@@ -242,6 +245,27 @@ void main() {
       }, 'ends before');
     });
   });
+
+  test(
+    'a backup from schema v4 (before icons) is upgraded and restores',
+    () async {
+      await f.db.update('activities', {
+        'icon': 'reading',
+      }, where: 'id = ${f.study}');
+      final json =
+          jsonDecode(utf8.decode((await backup.createBackup()).encode()))
+              as Map<String, Object?>;
+      json['schemaVersion'] = 4;
+      for (final row in (json['tables']! as Map)['activities']! as List) {
+        (row as Map).remove('icon');
+      }
+      final data = BackupData.parse(utf8.encode(jsonEncode(json)));
+      await backup.restore(data);
+      final icons = (await f.db.query('activities')).map((r) => r['icon']);
+      expect(icons, everyElement(isNull));
+      expect(await f.db.query('activities'), hasLength(5));
+    },
+  );
 
   test('a backup the database rejects changes nothing', () async {
     final before = await dump(f.db);

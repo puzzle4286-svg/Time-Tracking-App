@@ -36,6 +36,7 @@ const Map<String, List<BackupColumn>> backupTables = {
     BackupColumn('created_at', _int),
     BackupColumn('deleted_at', _int, nullable: true),
     BackupColumn('role', _text, nullable: true),
+    BackupColumn('icon', _text, nullable: true),
   ],
   'time_entries': [
     BackupColumn('id', _int),
@@ -60,6 +61,26 @@ const Map<String, List<BackupColumn>> backupTables = {
   ],
   'settings': [BackupColumn('key', _text), BackupColumn('value', _text)],
 };
+
+/// Oldest schema version a backup can have (backups exist since v4).
+const minimumBackupSchemaVersion = 4;
+
+/// Upgrades the raw tables of a backup made at schema version `n - 1` to
+/// version `n`, mirroring `migrations[n]`. Needed for every migration that
+/// changes a backed-up table.
+final Map<int, void Function(Map<String, Object?> tables)> _rowUpgrades = {
+  5: (tables) {
+    for (final row in _rawRows(tables, 'activities')) {
+      row.putIfAbsent('icon', () => null);
+    }
+  },
+};
+
+Iterable<Map<String, Object?>> _rawRows(
+  Map<String, Object?> tables,
+  String table,
+) => (tables[table] is List ? tables[table]! as List : const <Object?>[])
+    .whereType<Map<String, Object?>>();
 
 /// The backup file could not be used. [message] is shown to the user.
 class BackupFormatException implements Exception {
@@ -147,7 +168,8 @@ class BackupData {
         'Update the app to restore it.',
       );
     }
-    if (formatVersion < backupFormatVersion || version < schemaVersion) {
+    if (formatVersion < backupFormatVersion ||
+        version < minimumBackupSchemaVersion) {
       throw const BackupFormatException(
         'The backup was made by an older version of the app that is not '
         'supported.',
@@ -160,6 +182,10 @@ class BackupData {
     final rawTables = json['tables'];
     if (rawTables is! Map<String, Object?>) {
       throw const BackupFormatException('The backup contains no data.');
+    }
+    // Bring rows from an older app version up to the current schema.
+    for (var v = version + 1; v <= schemaVersion; v++) {
+      _rowUpgrades[v]?.call(rawTables);
     }
     final unknown = rawTables.keys.where((k) => !backupTables.containsKey(k));
     if (unknown.isNotEmpty) {

@@ -58,6 +58,7 @@ class ActivityRepository {
     required int? position,
     required DateTime createdAt,
     SystemRole? role,
+    String? icon,
   }) {
     return _db.insert('activities', {
       'name': name,
@@ -65,19 +66,21 @@ class ActivityRepository {
       'position': position,
       'is_system': role == null ? 0 : 1,
       'role': role?.value,
+      'icon': icon,
       'created_at': toStoredTimestamp(createdAt),
     });
   }
 
-  /// Updates a live activity's name and colour.
+  /// Updates a live activity's name, colour and icon (null clears it).
   Future<void> update(
     int id, {
     required String name,
     required int color,
+    String? icon,
   }) async {
     final updated = await _db.update(
       'activities',
-      {'name': name, 'color': color},
+      {'name': name, 'color': color, 'icon': icon},
       where: 'id = ? AND deleted_at IS NULL AND is_system = 0',
       whereArgs: [id],
     );

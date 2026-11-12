@@ -104,6 +104,8 @@ const Map<int, List<String>> migrations = {
     ''',
     'CREATE INDEX goals_activity ON goals(activity_id)',
   ],
+  // v5: optional tile icon, a key from `activityIcons` (null = none).
+  5: ['ALTER TABLE activities ADD COLUMN icon TEXT'],
 };
 
 int get schemaVersion => migrations.keys.reduce((a, b) => a > b ? a : b);

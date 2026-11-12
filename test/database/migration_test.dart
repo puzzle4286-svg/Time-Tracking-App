@@ -85,4 +85,38 @@ void main() {
     final open = await TimeEntryRepository(db).openEntry();
     expect(open!.start, DateTime.utc(2026, 11, 9, 9, 30));
   });
+
+  test('v4 -> v5 adds an empty icon to existing activities', () async {
+    final dir = await Directory.systemTemp.createTemp('migration');
+    addTearDown(() => dir.delete(recursive: true));
+    final path = p.join(dir.path, 'app.db');
+    sqfliteFfiInit();
+    final v4 = await databaseFactoryFfiNoIsolate.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 4,
+        onCreate: (db, _) async {
+          for (var v = 1; v <= 4; v++) {
+            for (final s in migrations[v]!) {
+              await db.execute(s);
+            }
+          }
+        },
+      ),
+    );
+    await v4.insert('activities', {
+      'name': 'Reading',
+      'color': 7,
+      'position': 1,
+      'created_at': 1,
+    });
+    await v4.close();
+
+    final db = await openTestDatabase(path);
+    addTearDown(db.close);
+    final row = (await db.query('activities')).single;
+    expect(row['name'], 'Reading');
+    expect(row.containsKey('icon'), isTrue);
+    expect(row['icon'], isNull);
+  });
 }

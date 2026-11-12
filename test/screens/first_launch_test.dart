@@ -62,7 +62,8 @@ void main() {
       'Default',
     );
     expect(find.byIcon(Icons.add), findsNWidgets(8));
-    expect(find.byIcon(Icons.pause_rounded), findsNothing); // not on grid
+    // Default is never on the grid, so no tile is highlighted.
+    expect(find.byKey(const Key('tile-frame')), findsNWidgets(8));
   });
 
   testWidgets('the only grid activity can be deleted while running; '
@@ -78,6 +79,8 @@ void main() {
     await pumpApp(tester);
 
     await tester.longPress(find.byKey(const Key('activity-tile-1')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Delete activity'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete activity'));
     await tester.pumpAndSettle();
