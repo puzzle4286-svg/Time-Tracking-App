@@ -111,20 +111,23 @@ A phase is only checked off once its functionality is tested.
       columns, every validation rule, rollback on database rejection,
       tracking after restore, UI flows (export, cancel, replace, invalid file)
 - [x] Integration test on the Linux desktop build (real app, database file)
-- [ ] Manual check of the real system dialogs (Linux portal, Android)
+- [x] Manual check of the real system dialogs (Linux portal by the developer;
+      Android Storage Access Framework on the emulator)
 
 ## Phase 8 – Final testing and polish
-- [ ] Full test run, analyze, device/emulator testing
-- [ ] Lifecycle, persistence, theme, navigation checks
-- [ ] Documentation and changelog update
+- [x] Insights period selector pinned at the top (developer request)
+- [x] Full test run (245 tests, seven timezones), analyze, emulator testing
+- [x] Lifecycle (background/resume, force-stop/relaunch), persistence,
+      Light/Dark themes, navigation checked on the emulator
+- [x] Dark launch splash and startup window instead of white (D43)
+- [x] Unused `libsqlite3.so` left out of the Android APK (D43)
+- [x] Documentation and changelog update
+- [x] History: jump to date / restored position load all days in one range
+      query and one rebuild (D44)
 
 ## Known issues
 - Grid tiles show no names for now (D23); identify by colour.
 - Very short entries are stretched to label height on the timeline, so the
   scale is locally non-linear around them (D24).
-- "Jump to date" far into the past loads every day in between (one query per
-  day); fine for now, could become a single range query.
-- `sqflite_common_ffi` (needed for Linux, D39) bundles its own `libsqlite3.so`
-  into the Android APK too, about 1.7 MB per ABI and unused there. Look at the
-  `sqlite3` package's build options in Phase 8.
-- Android launch splash is white while the default theme is dark (cosmetic; Phase 8).
+- The launch splash is always the default dark colour; with Light selected
+  it shows dark briefly before the app's first frame (D43).

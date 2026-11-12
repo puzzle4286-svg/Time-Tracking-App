@@ -109,6 +109,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return _loading[day] ??= _fetch(day);
   }
 
+  /// Loads every day from today back to [lastIndex] that is not loaded yet,
+  /// with one query and one rebuild (jumping a year back stays fast).
+  Future<void> _ensureLoadedUpTo(int lastIndex) async {
+    final days = [for (var i = 0; i <= lastIndex; i++) _dayAt(i)];
+    final missing = [
+      for (final d in days)
+        if (!_cache.containsKey(d) && !_loading.containsKey(d)) d,
+    ];
+    if (missing.isNotEmpty) {
+      final fetch = _fetchRange(missing.last, missing.first, missing.toSet());
+      for (final d in missing) {
+        _loading[d] = fetch;
+      }
+    }
+    await Future.wait([for (final d in days) ?_loading[d]]);
+  }
+
+  Future<void> _fetchRange(
+    DateTime oldest,
+    DateTime newest,
+    Set<DateTime> days,
+  ) async {
+    final generation = _generation;
+    final byDay = await widget.history.entriesForDays(oldest, newest);
+    if (!mounted || generation != _generation) return;
+    _keepingPosition(() {
+      for (final d in days) {
+        _cache[d] = byDay[d] ?? const [];
+        _loading.remove(d);
+      }
+    });
+  }
+
   Future<void> _fetch(DateTime day) async {
     final generation = _generation;
     final entries = await widget.history.entriesForDay(day);
@@ -155,13 +188,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return DateTime(t.year, t.month, t.day - i);
   }
 
+  /// Days between today and [t]'s local day (0 for today or later).
+  /// Counted on calendar dates in UTC, so DST days do not skew it.
   int _indexOf(DateTime t) {
-    final day = startOfLocalDay(t);
-    var i = 0;
-    while (_dayAt(i).isAfter(day)) {
-      i++;
-    }
-    return i;
+    final d = t.toLocal();
+    final today = _today();
+    final days = DateTime.utc(
+      today.year,
+      today.month,
+      today.day,
+    ).difference(DateTime.utc(d.year, d.month, d.day)).inDays;
+    return days < 0 ? 0 : days;
   }
 
   int get _dayCount {
@@ -294,10 +331,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _scrollToAnchor(DateTime t) async {
-    final target = _indexOf(t);
-    for (var i = 0; i <= target; i++) {
-      await _ensureLoaded(_dayAt(i));
-    }
+    await _ensureLoadedUpTo(_indexOf(t));
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _jumpTo(_offsetForAnchor(t, widget.clock.now()));
@@ -327,9 +361,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     // Put the picked day's header at the top: anchor the bottom edge at the
     // moment that lies one viewport below the day start.
     final target = _indexOf(picked);
-    for (var i = 0; i <= target; i++) {
-      await _ensureLoaded(_dayAt(i));
-    }
+    await _ensureLoadedUpTo(target);
     if (!mounted || !_scroll.hasClients) return;
     var offset = 0.0;
     for (var i = 0; i <= target; i++) {

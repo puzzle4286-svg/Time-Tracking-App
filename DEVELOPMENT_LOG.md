@@ -402,3 +402,49 @@ Linux `main.dart` opens the database through FFI in
   restore → "Backup restored", original data back.
 - Not yet done: real system dialogs (XDG portal on Linux, Storage Access
   Framework on Android).
+
+## 2026-11-12 – Phase 8: final testing and polish
+
+**Work completed**
+- Insights period selector pinned above the scrolling results.
+- Dark launch splash / startup window; `libsqlite3.so` excluded from the
+  APK (D43).
+- ARCHITECTURE, TASKS, CHANGELOG and decisions updated.
+
+**Problems and solutions**
+- The emulator had been reset since the last session (the app's first
+  install time was the install made in this phase), so it started empty;
+  not caused by the app.
+- The unused SQLite library could not be avoided through the `sqlite3`
+  package's options without breaking Linux and tests; excluded in Gradle
+  instead.
+
+**Testing performed**
+- `flutter analyze` clean; 245 tests pass in all seven timezones (run once).
+- Emulator (Pixel_10_Pro, debug): dark startup screen on cold launch; set up
+  and started an activity; background → resume and force-stop → relaunch
+  both continued the timer from the stored start; backup saved to Downloads
+  through the system save dialog (file contents checked with adb); Light
+  theme; restore through the system picker (JSON filter) → confirmation
+  "1 activity, 2 time entries, 0 goals" → Dark and the running activity back,
+  "Backup restored"; History and Insights render.
+
+## 2026-11-12 – History range loading and scalability check
+
+**Requested**: fix slow "Jump to date" (expected use: a year or more); is
+the app scalable to a year of entries?
+
+**Work completed**: `HistoryService.entriesForDays`, `_ensureLoadedUpTo`
+in the History screen, calendar-difference day index (D44).
+
+**Problems and solutions**
+- The first version took 951 ms for a year because of per-entry local-time
+  conversions; precomputed day boundaries and integer comparison: 142 ms.
+- The equivalence test compared the new code with itself once
+  `entriesForDay` delegated to it; it now uses the repository's SQL overlap
+  query per day as the reference.
+
+**Testing performed**
+- History service, year-of-history widget test (one range query, < 10
+  single-day loads) and History screen tests: 33 tests in all seven
+  timezones. Benchmarks in D44 (throwaway test, not committed).

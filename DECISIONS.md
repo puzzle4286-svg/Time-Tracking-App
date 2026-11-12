@@ -405,3 +405,36 @@ up without rounding (revised 2026-11-12 at the developer's request; was
 `end` / `end_utc_us`, and its duration runs to the export time. RFC 4180
 quoting with CRLF line ends; UTF-8 without a BOM. Entries are already split
 at midnight (D6), so each row belongs to one day.
+
+## D43 – Android launch screen and packaging (Phase 8)
+- The native launch screen, the Android 12+ splash and the window behind
+  Flutter during startup all use `@color/launch_background` (#0E1513, the
+  default dark teal background) instead of white. They are shown before the
+  app can read the saved appearance from the database, so they always match
+  the default theme. Users with Light see a dark launch screen briefly; storing
+  the appearance for Android natively was not worth the extra code.
+  `values-night` was removed because the launch theme no longer depends on the
+  system dark mode.
+- `sqflite_common_ffi` (needed for Linux, D39) bundles its own `libsqlite3.so`.
+  On Android, sqflite uses the system SQLite through Java and never loads it,
+  so `android/app/build.gradle.kts` excludes `**/libsqlite3.so` from the APK
+  (about 1.7 MB per ABI). Switching the `sqlite3` package to a system library
+  instead was rejected: neither the Linux app nor `flutter test` has SQLite
+  loaded already, so that would break both.
+
+## D44 – History loads long ranges in one query (2026-11-12)
+Jumping to a date and restoring the saved History position used to load
+every day in between separately (two queries and one rebuild per day; about
+730 queries for a year). `HistoryService.entriesForDays(first, last)` now
+reads the whole range with one overlap query and assigns entries to days in
+Dart; the screen loads all missing days with it and rebuilds once.
+`entriesForDay` delegates to it, so there is one overlap rule. Day boundaries
+are computed once per day and entries are matched by integer comparison,
+because local-time conversions dominate the cost (a year of 11 000 entries:
+951 ms with per-entry conversions, 142 ms now, on the desktop). The day index
+is a calendar-date difference instead of a loop.
+
+Measured with a year of 30 switches a day (10 960 entries, desktop, debug):
+Insights day 36 ms, year 85 ms, all 46 ms; backup 157 ms (1.4 MB); restore
+0.9 s; CSV export 0.8 s. Phones are a few times slower; every regular screen
+stays well under a second. Export and restore are one-off actions.

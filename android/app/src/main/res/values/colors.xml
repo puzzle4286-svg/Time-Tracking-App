@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Background of the default (dark, teal) theme. The native launch
+         screen cannot read the saved appearance, so it always matches the
+         default. Keep in sync with lib/app/theme/app_theme.dart. -->
+    <color name="launch_background">#FF0E1513</color>
+</resources>

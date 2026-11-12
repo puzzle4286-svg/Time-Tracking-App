@@ -25,6 +25,15 @@ android {
         versionName = flutter.versionName
     }
 
+    packaging {
+        jniLibs {
+            // sqflite_common_ffi (needed for the Linux build, D39) bundles its
+            // own SQLite. On Android, sqflite uses the system SQLite through
+            // Java and never loads this library, so it is left out (D43).
+            excludes += "**/libsqlite3.so"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

@@ -66,6 +66,13 @@ explicitly under **Database**.
 - Linux desktop build runs with its own database in
   `~/.local/share/time_tracker` (for development).
 
+- Insights: the period selector stays pinned at the top while the charts
+  scroll.
+- History: jumping to a date far back (or reopening at a saved position)
+  loads the days in between with one query instead of one per day.
+- Android: dark launch splash and startup window (no white flash); unused
+  SQLite library no longer packaged.
+
 ### Changed
 - Time is never left empty: freed time and deleted entries always go to an
   activity (list of activities, neighbour marked, Default last).

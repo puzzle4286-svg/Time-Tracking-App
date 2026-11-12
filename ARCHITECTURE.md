@@ -31,8 +31,10 @@ Rules:
 
 ## Data flow
 
-1. `main.dart` opens the database, creates repositories and services, and runs
-   tracking reconciliation before the first frame.
+1. `main.dart` opens the database (FFI on Linux, D39); `AppServices.load`
+   seeds, creates the services and runs tracking reconciliation before the
+   first frame. After a restore, `AppRoot` loads them again and rebuilds the
+   whole tree (D41).
 2. `AppShell`'s `AppLifecycleListener` re-runs reconciliation on resume; the
    header's ticker re-runs it when `ActiveSession.dayEnd` is reached.
 3. A tap calls `TrackingService.switchTo(activityId)` → one transaction →
@@ -61,7 +63,8 @@ Rules:
 
 | Path | Purpose |
 |---|---|
-| `lib/main.dart` | Opens DB, seeds, loads settings, runs app |
+| `lib/main.dart` | Opens DB (platform factory and path), runs `AppRoot` |
+| `lib/app/app_root.dart` | `AppServices.load`; `AppRoot` reloads everything after a restore |
 | `lib/app/app.dart` | Root `MaterialApp`, rebuilds on settings change |
 | `lib/app/settings_controller.dart` | `ChangeNotifier` for settings; persists before notifying |
 | `lib/app/theme/app_theme.dart` | `buildTheme(mode, accent)` |
@@ -79,8 +82,10 @@ Rules:
 | `lib/app/app_shell.dart` | Bottom navigation; reconcile on resume |
 | `lib/app/app_info.dart` | App name and version constants |
 | `lib/screens/home/` | `HomeScreen`, `CurrentActivityHeader` (1 s display ticker) |
-| `lib/screens/settings/settings_screen.dart` | Appearance, accent, about |
-| `lib/screens/insights/insights_screen.dart` | Period selector, distribution, comparison |
+| `lib/screens/settings/settings_screen.dart` | Appearance, accent, data, about |
+| `lib/services/export/` | CSV export, backup format and validation, restore, file dialogs |
+| `lib/widgets/data/data_section.dart` | Settings "Data": export, backup, restore flows |
+| `lib/screens/insights/insights_screen.dart` | Pinned period selector, distribution, comparison |
 | `lib/services/analytics/insight_period.dart` | Day/week/month/year/all ranges, navigation, labels |
 | `lib/services/analytics/distribution.dart` | `activityDistribution` – pure |
 | `lib/services/analytics/comparison.dart` | `comparePeriods` – pure, equivalent spans |

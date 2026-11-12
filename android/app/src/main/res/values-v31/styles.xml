@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The app defaults to a dark theme whatever the system setting, so the
+         launch and startup window are dark too (no white flash). -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <!-- Android 12+ system splash screen. -->
+        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+    </style>
+    <!-- Behind the Flutter UI while it initializes (database load). -->
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@color/launch_background</item>
+    </style>
+</resources>
