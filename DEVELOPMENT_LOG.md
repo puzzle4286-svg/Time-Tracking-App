@@ -298,3 +298,25 @@ empty" replaced by an activity choice; fill dialog is an activity list.
   list "Free Time / Developing (following) / Default", chose Default →
   Default 23:30:00–23:32:57, no gap. Fresh-install behaviour verified by
   widget test only (not wiping the emulator's data).
+
+## 2026-11-12 – Phase 5: goals
+
+**Work completed**
+- `Goal` model with a calendar-field anchor; schema v4; repository.
+- `goalPeriodAt` (hour/day/week/month, any length, DST-aware, month-end
+  clamping, works before the anchor) and `goalProgress` (min/max/both).
+- `GoalService` with validation (also enforced by table CHECKs).
+- Goals page with live progress cards and a full-screen editor, reached via
+  long-press → Goals.
+
+**Problems and solutions**
+- The editor's validation message sat at the bottom of the form, out of view
+  on short screens (found by a widget test); moved to the top.
+
+**Testing performed**
+- 204 tests pass in all seven timezones (36 new goal tests incl. a year-long
+  sweep over six rules, the three spec examples, DST in the local zone, and
+  four UI flows).
+- Emulator: migration to v4; created "every day from 00:00, min 1 h, max
+  2 h" for Developing; card showed 1h 2m of 1h 0m · 103% and 57m left,
+  matching the entries (Developing 00:05:00–01:07:18).

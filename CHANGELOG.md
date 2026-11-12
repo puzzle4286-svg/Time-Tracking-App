@@ -47,6 +47,10 @@ explicitly under **Database**.
 - Built-in "Default" activity: running on first launch with all eight slots
   empty; offered (last) wherever time must be reassigned.
 
+- Goals: any number per activity, each with a recurring period (N hours,
+  days, weeks or months from a chosen local start) and a minimum, a maximum,
+  or both; progress bars with percentage, remaining time and exceeded state.
+
 ### Changed
 - Time is never left empty: freed time and deleted entries always go to an
   activity (list of activities, neighbour marked, Default last).
@@ -86,3 +90,4 @@ explicitly under **Database**.
   unchanged.
 - Schema v3: `activities.role` marks built-in activities; adds "Default" to
   existing installs.
+- Schema v4: `goals` table.

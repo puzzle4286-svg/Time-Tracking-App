@@ -1,6 +1,6 @@
 # Tasks
 
-**Current phase:** Phase 4 – Activity and history management (complete, awaiting review). Next: Phase 5 – Goals
+**Current phase:** Phase 5 – Goals (complete, awaiting review). Next: Phase 6 – Insights
 
 A phase is only checked off once its functionality is tested.
 
@@ -79,11 +79,16 @@ A phase is only checked off once its functionality is tested.
       with confirmation (removed + shortened, then Gaming merged)
 
 ## Phase 5 – Goals
-- [ ] Goal model + repository (schema v4)
-- [ ] Period calculation (hours / days / weeks / months, anchored)
-- [ ] Min / max / both progress
-- [ ] Goal editor UI
-- [ ] Tests: lengths, anchors, transitions, DST, sessions crossing boundaries
+- [x] Goal model + repository (schema v4)
+- [x] Period calculation (hours / days / weeks / months, anchored; D9)
+- [x] Min / max / both progress, computed from entries only
+- [x] Goals page (long-press → Goals) and goal editor (D36)
+- [x] Tests: lengths, anchors, before-anchor, transitions, month clamping,
+      DST, year-long sweep (every instant in exactly one period, periods
+      contiguous), spec examples, sessions crossing boundaries, validation,
+      progress after history edits, UI flows
+- [x] Emulator: created a daily min 1 h / max 2 h goal; progress matched the
+      recorded entries
 
 ## Phase 6 – Insights
 - [x] Daily timeline with date navigation → delivered as the History tab (D24)

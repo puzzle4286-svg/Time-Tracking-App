@@ -8,6 +8,7 @@ import 'package:time_tracker/database/seed.dart';
 import 'package:time_tracker/repositories/settings_repository.dart';
 import 'package:time_tracker/repositories/ui_state_store.dart';
 import 'package:time_tracker/services/activities/activity_service.dart';
+import 'package:time_tracker/services/goals/goal_service.dart';
 import 'package:time_tracker/services/history/entry_edit_service.dart';
 import 'package:time_tracker/services/history/history_service.dart';
 import 'package:time_tracker/services/tracking/tracking_service.dart';
@@ -46,6 +47,7 @@ void main() {
         settings: settings,
         history: HistoryService(db),
         edits: EntryEditService(db, clock, tracking),
+        goals: GoalService(db, clock),
         uiState: uiState,
         clock: clock,
       ),

@@ -5,11 +5,13 @@ import 'package:flutter/services.dart';
 
 import '../../models/activity.dart';
 import '../../services/activities/activity_service.dart';
+import '../../services/goals/goal_service.dart';
 import '../../services/tracking/tracking_service.dart';
 import '../../util/clock.dart';
 import '../../widgets/activities/activity_editor_sheet.dart';
 import '../../widgets/activities/activity_tile.dart';
 import '../../widgets/activities/delete_activity_flow.dart';
+import '../goals/goals_page.dart';
 import 'current_activity_header.dart';
 
 /// Main screen: current activity on top, a compact grid (2 rows × 4
@@ -19,11 +21,13 @@ class HomeScreen extends StatelessWidget {
     super.key,
     required this.tracking,
     required this.activities,
+    required this.goals,
     required this.clock,
   });
 
   final TrackingService tracking;
   final ActivityService activities;
+  final GoalService goals;
   final Clock clock;
 
   /// Compact buttons, so the grid takes little space at the bottom.
@@ -59,6 +63,16 @@ class HomeScreen extends StatelessWidget {
       title: 'Edit activity',
       initialName: activity.name,
       initialColor: activity.color,
+      onGoals: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => GoalsPage(
+            activity: activity,
+            goals: goals,
+            tracking: tracking,
+            clock: clock,
+          ),
+        ),
+      ),
       onDelete: () => runDeleteActivityFlow(
         context,
         activity: activity,

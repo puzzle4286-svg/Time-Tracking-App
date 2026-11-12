@@ -78,6 +78,32 @@ const Map<int, List<String>> migrations = {
       ON activities(role) WHERE role IS NOT NULL
     ''',
   ],
+  // v4: goals. The period start is a local calendar rule stored as fields
+  // (not an instant); targets are durations in microseconds.
+  4: [
+    '''
+    CREATE TABLE goals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      activity_id INTEGER NOT NULL
+        REFERENCES activities(id) ON DELETE RESTRICT,
+      name TEXT,
+      period_unit TEXT NOT NULL
+        CHECK (period_unit IN ('hour', 'day', 'week', 'month')),
+      period_length INTEGER NOT NULL CHECK (period_length >= 1),
+      anchor_year INTEGER NOT NULL,
+      anchor_month INTEGER NOT NULL CHECK (anchor_month BETWEEN 1 AND 12),
+      anchor_day INTEGER NOT NULL CHECK (anchor_day BETWEEN 1 AND 31),
+      anchor_minute INTEGER NOT NULL CHECK (anchor_minute BETWEEN 0 AND 1439),
+      min_us INTEGER CHECK (min_us IS NULL OR min_us > 0),
+      max_us INTEGER CHECK (max_us IS NULL OR max_us > 0),
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at INTEGER NOT NULL,
+      CHECK (min_us IS NOT NULL OR max_us IS NOT NULL),
+      CHECK (min_us IS NULL OR max_us IS NULL OR min_us <= max_us)
+    )
+    ''',
+    'CREATE INDEX goals_activity ON goals(activity_id)',
+  ],
 };
 
 int get schemaVersion => migrations.keys.reduce((a, b) => a > b ? a : b);

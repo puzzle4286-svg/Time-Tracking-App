@@ -1,7 +1,7 @@
 # Architecture
 
-Status: Phases 1–4 implemented (storage, seeding, theme, tracking, main UI,
-history timeline, activity deletion, history editing).
+Status: Phases 1–5 implemented (storage, seeding, theme, tracking, main UI,
+history timeline, activity deletion, history editing, goals).
 Goals and analytics sections describe the planned design.
 
 ## Layers
@@ -94,9 +94,16 @@ Rules:
 | `lib/widgets/entries/entry_editor_sheet.dart` | History entry actions and their dialogs |
 | `lib/widgets/common/date_time_picker.dart` | Date + time picking (local bounds) that keeps unchanged seconds |
 | `lib/widgets/entries/entry_strip.dart` | Shared entry look (tinted, coloured left bar) for timeline and dialogs |
+| `lib/models/goal.dart` | `Goal`, `GoalUnit`, `GoalAnchor` (local calendar rule) |
+| `lib/repositories/goal_repository.dart` | Goal SQL |
+| `lib/services/goals/goal_period.dart` | `goalPeriodAt` – pure period calculation |
+| `lib/services/goals/goal_progress.dart` | `goalProgress` – min/max progress from entries |
+| `lib/services/goals/goal_service.dart` | Create / update / delete with validation; progress |
+| `lib/screens/goals/goals_page.dart` | Goals of one activity with live progress |
+| `lib/widgets/goals/` | `GoalCard`, `GoalEditorPage`, descriptions |
 | `lib/repositories/ui_state_store.dart` | Persisted UI conveniences (scroll positions), `ui.*` keys in `settings` |
 
-## Database (schema v3 implemented; goals planned as v4)
+## Database (schema v4)
 
 ```sql
 activities(
@@ -121,17 +128,17 @@ time_entries(
 UNIQUE INDEX one_open_entry ON time_entries((1)) WHERE end_utc IS NULL
 INDEX on time_entries(start_utc)
 
-goals(
+goals(                             -- v4
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   activity_id INTEGER NOT NULL REFERENCES activities(id) ON DELETE RESTRICT,
   name TEXT,
   period_unit TEXT NOT NULL,       -- hour | day | week | month
   period_length INTEGER NOT NULL,  -- >= 1
-  anchor_local TEXT NOT NULL,      -- ISO local wall-clock, e.g. 2026-11-09T00:00
-  min_ms INTEGER,
-  max_ms INTEGER,
+  anchor_year, anchor_month, anchor_day INTEGER NOT NULL,
+  anchor_minute INTEGER NOT NULL,  -- local start, minute of day (0–1439)
+  min_us INTEGER, max_us INTEGER,  -- durations (µs); at least one, min <= max
   enabled INTEGER NOT NULL DEFAULT 1,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL      -- UTC epoch microseconds
 )
 
 settings(key TEXT PRIMARY KEY, value TEXT NOT NULL)   -- theme_mode, accent

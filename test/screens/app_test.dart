@@ -4,10 +4,12 @@ import 'package:time_tracker/app/app.dart';
 import 'package:time_tracker/app/app_shell.dart';
 import 'package:time_tracker/app/settings_controller.dart';
 import 'package:time_tracker/models/app_settings.dart';
+import 'package:time_tracker/models/goal.dart';
 import 'package:time_tracker/repositories/settings_repository.dart';
 import 'package:time_tracker/repositories/ui_state_store.dart';
 import 'package:time_tracker/screens/home/home_screen.dart';
 import 'package:time_tracker/services/activities/activity_service.dart';
+import 'package:time_tracker/services/goals/goal_service.dart';
 import 'package:time_tracker/services/history/entry_edit_service.dart';
 import 'package:time_tracker/services/history/history_service.dart';
 
@@ -42,6 +44,7 @@ void main() {
           settings: settings,
           history: HistoryService(f.db),
           edits: EntryEditService(f.db, f.clock, f.service),
+          goals: GoalService(f.db, f.clock),
           uiState: uiState,
           clock: f.clock,
         ),
@@ -636,6 +639,109 @@ void main() {
       await openHistoryWithEntries(tester);
       expect(find.text('Info'), findsWidgets);
       expect(find.textContaining('tracked'), findsNothing);
+    });
+  });
+
+  group('goals', () {
+    Future<void> openGoals(WidgetTester tester) async {
+      await tester.longPress(
+        find.byKey(const Key('activity-tile-2')),
+      ); // Gaming
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Goals'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('add a daily minimum goal and see its progress', (
+      tester,
+    ) async {
+      // Gaming ran 10:00–11:30 today (install Monday 09:00).
+      f.clock.set(DateTime(2026, 11, 9, 10));
+      await f.service.switchTo(f.gaming);
+      f.clock.set(DateTime(2026, 11, 9, 11, 30));
+      await f.service.switchTo(f.freeTime);
+      await pumpApp(tester);
+      await openGoals(tester);
+      expect(find.text('Goals · Gaming'), findsOneWidget);
+      expect(find.text('No goals yet.'), findsOneWidget);
+
+      await tester.tap(find.text('Add goal'));
+      await tester.pumpAndSettle();
+      expect(find.text('New goal'), findsOneWidget);
+      // Defaults: every 1 day from 00:00, minimum 1 h.
+      await tester.enterText(find.byKey(const Key('Minimum-h')), '2');
+      await tester.tap(find.text('Save'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Every day from 00:00'), findsOneWidget);
+      expect(find.text('Minimum'), findsOneWidget);
+      expect(find.text('1h 30m of 2h 0m · 75% · 30m to go'), findsOneWidget);
+    });
+
+    testWidgets('maximum progress and exceeding it', (tester) async {
+      f.clock.set(DateTime(2026, 11, 9, 10));
+      await f.service.switchTo(f.gaming); // running
+      f.clock.set(DateTime(2026, 11, 9, 11));
+      await GoalService(f.db, f.clock).create(
+        f.gaming,
+        GoalDraft(
+          unit: GoalUnit.day,
+          length: 1,
+          anchor: GoalAnchor.fromLocal(DateTime(2026, 11, 9)),
+          maximum: const Duration(hours: 2),
+        ),
+      );
+      await pumpApp(tester);
+      await openGoals(tester);
+      expect(find.text('1h 0m of 2h 0m used · 1h 0m left'), findsOneWidget);
+
+      // Two more hours pass while Gaming runs; the page refreshes itself.
+      f.clock.set(DateTime(2026, 11, 9, 13));
+      await tester.pump(const Duration(seconds: 16));
+      await settle(tester);
+      expect(find.text('Maximum exceeded'), findsOneWidget);
+      expect(find.text('3h 0m of 2h 0m · over by 1h 0m'), findsOneWidget);
+    });
+
+    testWidgets('a goal needs a minimum or a maximum', (tester) async {
+      await pumpApp(tester);
+      await openGoals(tester);
+      await tester.tap(find.text('Add goal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('Minimum-toggle')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(find.text('Set a minimum, a maximum, or both'), findsOneWidget);
+      expect(find.text('New goal'), findsOneWidget); // still open
+    });
+
+    testWidgets('edit and delete a goal', (tester) async {
+      await GoalService(f.db, f.clock).create(
+        f.gaming,
+        GoalDraft(
+          name: 'Limit games',
+          unit: GoalUnit.week,
+          length: 1,
+          anchor: GoalAnchor.fromLocal(DateTime(2026, 11, 9)),
+          maximum: const Duration(hours: 10),
+        ),
+      );
+      await pumpApp(tester);
+      await openGoals(tester);
+      expect(find.text('Limit games'), findsOneWidget);
+      expect(find.text('Every week from Monday 00:00'), findsOneWidget);
+
+      await tester.tap(find.text('Limit games'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Delete goal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('No goals yet.'), findsOneWidget);
     });
   });
 

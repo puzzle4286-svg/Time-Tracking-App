@@ -65,12 +65,19 @@ the row stays. The three deletion options map to:
 Foreign keys use `ON DELETE RESTRICT`, so entries can never be cascade-deleted.
 Consequence: renaming a live activity also renames its history (intended).
 
-## D9 – Goal periods: unit + length + local anchor
+## D9 – Goal periods: unit + length + local anchor (implemented Phase 5)
 A goal period is `length × unit` (`hour`, `day`, `week`, `month`) anchored at a
-local wall-clock datetime. Hours are fixed durations from the anchor instant;
-days/weeks/months step in the local calendar (DST-safe, month-end clamped).
-This covers "24 h from 00:00", "7 days from Monday 00:00", "month from the 1st"
-and arbitrary periods without hardcoding daily/weekly/monthly.
+local wall-clock start. Hours are fixed durations from the anchor instant;
+days/weeks/months step in the local calendar (DST-safe: such periods can be
+23/25 h longer or shorter; month starts on the 29th–31st are clamped to the
+month's last day). This covers "24 h from 00:00", "7 days from Monday 00:00",
+"month from the 1st" and arbitrary periods without hardcoding.
+The anchor is stored as calendar fields (`anchor_year/month/day/minute`),
+not as a timestamp or string: it is a recurring local rule, so "Monday
+00:00" keeps meaning local Monday if the timezone changes. Targets are
+stored as durations in microseconds. `goalPeriodAt` (pure) estimates the
+period index from the calendar distance and then settles it exactly, which
+works for any instant, before or after the anchor.
 
 ## D10 – Product defaults (confirmed with developer, 2026-11-11)
 - Positions 2–8 start empty ("Tap to set up"); empty slots cannot be active.
@@ -301,3 +308,12 @@ activity, otherwise the adjacent neighbour, otherwise Default. Deleting an
 entry with no adjacent neighbour asks which activity takes over its time
 (implemented as changing that entry's activity). Recovery after a missing
 open entry falls back to Default.
+
+## D36 – Goals UI lives behind the activity editor
+To keep the main screen uncluttered (spec 5.2), goals are reached via
+long-press → "Goals": a page per activity with one card per goal (period,
+minimum bar with percentage / "to go" / "reached", maximum bar with used /
+left / "over by", paused goals dimmed) and a full-screen editor. Progress is
+recomputed from entries on open, on tracking/goal changes and every 15 s.
+Goals are only for grid activities (not Default). Goals of a deleted
+activity stay in the database untouched (they reference the kept row).

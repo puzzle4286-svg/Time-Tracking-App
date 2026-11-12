@@ -10,6 +10,7 @@ import 'database/seed.dart';
 import 'repositories/settings_repository.dart';
 import 'repositories/ui_state_store.dart';
 import 'services/activities/activity_service.dart';
+import 'services/goals/goal_service.dart';
 import 'services/history/entry_edit_service.dart';
 import 'services/history/history_service.dart';
 import 'services/tracking/tracking_service.dart';
@@ -46,6 +47,7 @@ Future<void> main() async {
         settings: settings,
         history: HistoryService(db),
         edits: EntryEditService(db, clock, tracking),
+        goals: GoalService(db, clock),
         uiState: await UiStateStore.load(db),
         clock: clock,
       ),

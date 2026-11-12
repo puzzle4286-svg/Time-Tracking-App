@@ -15,6 +15,7 @@ Future<ActivityDraft?> showActivityEditor(
   required String initialName,
   required int initialColor,
   VoidCallback? onDelete,
+  VoidCallback? onGoals,
 }) {
   return showModalBottomSheet<ActivityDraft>(
     context: context,
@@ -25,6 +26,7 @@ Future<ActivityDraft?> showActivityEditor(
       initialName: initialName,
       initialColor: initialColor,
       onDelete: onDelete,
+      onGoals: onGoals,
     ),
   );
 }
@@ -35,12 +37,14 @@ class _ActivityEditor extends StatefulWidget {
     required this.initialName,
     required this.initialColor,
     required this.onDelete,
+    required this.onGoals,
   });
 
   final String title;
   final String initialName;
   final int initialColor;
   final VoidCallback? onDelete;
+  final VoidCallback? onGoals;
 
   @override
   State<_ActivityEditor> createState() => _ActivityEditorState();
@@ -124,6 +128,17 @@ class _ActivityEditorState extends State<_ActivityEditor> {
             ),
             const SizedBox(height: 24),
             FilledButton(onPressed: _save, child: const Text('Save')),
+            if (widget.onGoals != null) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  widget.onGoals!();
+                },
+                icon: const Icon(Icons.flag_outlined),
+                label: const Text('Goals'),
+              ),
+            ],
             if (widget.onDelete != null) ...[
               const SizedBox(height: 8),
               TextButton.icon(
