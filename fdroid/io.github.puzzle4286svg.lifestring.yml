@@ -5,14 +5,14 @@ Categories:
   - Time
 License: GPL-3.0-or-later
 AuthorName: puzzle4286-svg
-SourceCode: https://github.com/puzzle4286-svg/Time-Tracking-App
-IssueTracker: https://github.com/puzzle4286-svg/Time-Tracking-App/issues
-Changelog: https://github.com/puzzle4286-svg/Time-Tracking-App/blob/HEAD/CHANGELOG.md
+SourceCode: https://github.com/puzzle4286-svg/lifestring
+IssueTracker: https://github.com/puzzle4286-svg/lifestring/issues
+Changelog: https://github.com/puzzle4286-svg/lifestring/blob/HEAD/CHANGELOG.md
 
 AutoName: Lifestring
 
 RepoType: git
-Repo: https://github.com/puzzle4286-svg/Time-Tracking-App.git
+Repo: https://github.com/puzzle4286-svg/lifestring.git
 
 Builds:
   - versionName: 0.2.0
