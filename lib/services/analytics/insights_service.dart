@@ -44,9 +44,23 @@ class InsightsService {
       range.end,
     );
 
+    // Every grid activity and Default are listed, even with no time.
+    final defaultId = activities.values.firstWhere((a) => a.isDefault).id;
+    final shown = [
+      for (final a in activities.values)
+        if (a.canTakeTime) a.id,
+    ];
+
     return InsightsData(
       period: period,
-      distribution: activityDistribution(loaded, range, now, activities),
+      distribution: activityDistribution(
+        loaded,
+        range,
+        now,
+        activities,
+        shown: shown,
+        fillActivityId: defaultId,
+      ),
       comparison: previous == null
           ? null
           : comparePeriods(
@@ -55,6 +69,8 @@ class InsightsService {
               previous: previous,
               now: now,
               activities: activities,
+              shown: shown,
+              fillActivityId: defaultId,
             ),
     );
   }

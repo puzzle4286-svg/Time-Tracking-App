@@ -143,7 +143,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
         else ...[
           _Section(
             title: 'Distribution',
-            child: _Distribution(data: data),
+            child: _Distribution(data: data, now: now),
           ),
           if (data.comparison != null) ...[
             const SizedBox(height: 16),
@@ -186,9 +186,10 @@ class _Section extends StatelessWidget {
 }
 
 class _Distribution extends StatelessWidget {
-  const _Distribution({required this.data});
+  const _Distribution({required this.data, required this.now});
 
   final InsightsData data;
+  final DateTime now;
 
   static String _percent(double f) {
     final p = f * 100;
@@ -200,30 +201,23 @@ class _Distribution extends StatelessWidget {
   Widget build(BuildContext context) {
     final shares = data.distribution;
     final text = Theme.of(context).textTheme;
-    if (shares.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: Text('Nothing tracked in this period.')),
-      );
-    }
-    final total = shares.fold(Duration.zero, (a, s) => a + s.duration);
     return Column(
       children: [
         DonutChart(
           values: [for (final s in shares) s.duration.inSeconds.toDouble()],
           colors: [for (final s in shares) Color(s.activity.color)],
-          center: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                formatTotal(total),
-                key: const Key('distribution-total'),
-                style: text.titleLarge,
-              ),
-              Text('tracked', style: text.bodySmall),
-            ],
-          ),
         ),
+        if (data.period.isInProgress(now) &&
+            data.period.unit != InsightUnit.all)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              'Time after ${data.period.unit == InsightUnit.day ? formatTimeOfDay(now) : formatMoment(now)} '
+              'counts as Default.',
+              key: const Key('future-as-default'),
+              style: text.bodySmall,
+            ),
+          ),
         const SizedBox(height: 16),
         for (final s in shares)
           Padding(
@@ -265,31 +259,10 @@ class _Comparison extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = data.comparison!;
-    final text = Theme.of(context).textTheme;
     final period = data.period;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (c.truncated)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${period.relativeName(now)} is still in progress, so '
-                    '${period.previous.relativeName(now).toLowerCase()} is '
-                    'counted only up to the same point '
-                    '(${formatMoment(c.previousRange.end)}).',
-                    key: const Key('comparison-truncated'),
-                    style: text.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-          ),
         if (c.rows.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),

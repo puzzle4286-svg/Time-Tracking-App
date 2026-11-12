@@ -94,8 +94,8 @@ A phase is only checked off once its functionality is tested.
 - [x] Daily timeline with date navigation → delivered as the History tab (D24)
 - [x] Global period selector (day/week/month/year/all, ‹ ›) (D38)
 - [x] Distribution donut with durations and percentages
-- [x] Period comparison bars; in-progress periods compared to the same point
-      and clearly marked
+- [x] Period comparison bars over full periods; rest of the current period
+      counts as Default (Insights only); every activity listed, Default last
 - [x] History "Info" opens that day in Insights
 - [x] Tests: ranges, navigation, labels, DST day length, distribution,
       comparison (full / truncated / one-sided), UI flows

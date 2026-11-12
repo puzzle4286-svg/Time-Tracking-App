@@ -6,126 +6,159 @@ import 'package:time_tracker/services/analytics/distribution.dart';
 import 'package:time_tracker/services/tracking/time_range.dart';
 
 void main() {
-  Activity a(int id, String name, {SystemRole? role}) => Activity(
-    id: id,
-    name: name,
-    color: 0,
-    position: role == null ? id : null,
-    isSystem: role != null,
-    createdAt: DateTime(2026),
-    deletedAt: null,
-    role: role,
-  );
+  Activity a(int id, String name, {SystemRole? role, int? position}) =>
+      Activity(
+        id: id,
+        name: name,
+        color: 0,
+        position: role == null ? position ?? id : null,
+        isSystem: role != null,
+        createdAt: DateTime(2026),
+        deletedAt: null,
+        role: role,
+      );
+  const work = 1, gaming = 2, reading = 5, unavailable = 3, def = 4;
   final activities = {
-    1: a(1, 'Work'),
-    2: a(2, 'Gaming'),
-    3: a(3, 'Unavailable', role: SystemRole.unavailable),
-    4: a(4, 'Default', role: SystemRole.defaultActivity),
+    work: a(work, 'Work'),
+    gaming: a(gaming, 'Gaming'),
+    reading: a(reading, 'Reading'),
+    unavailable: a(unavailable, 'Unavailable', role: SystemRole.unavailable),
+    def: a(def, 'Default', role: SystemRole.defaultActivity),
   };
+  const shown = [work, gaming, reading, def];
   var id = 0;
   TimeEntry e(int activity, DateTime s, DateTime? t) =>
       TimeEntry(id: ++id, activityId: activity, start: s, end: t);
   DateTime d(int day, int h, [int m = 0]) => DateTime(2026, 11, day, h, m);
 
+  List<(String, int)> rows(List<ActivityShare> s) => [
+    for (final x in s) (x.activity.name, x.duration.inHours),
+  ];
+
   group('distribution', () {
-    final day = localDay(d(12, 0));
-    final now = d(12, 18);
+    final today = localDay(d(12, 0));
+    final now = d(12, 14);
     final entries = [
-      e(1, d(11, 20), d(12, 2)), // 2 h inside the day
-      e(2, d(12, 2), d(12, 8)), // 6 h
-      e(3, d(12, 8), d(12, 9)), // 1 h Unavailable
-      e(4, d(12, 9), d(12, 10)), // 1 h Default
-      e(1, d(12, 10), null), // running: 8 h until now
+      e(work, d(11, 20), d(12, 2)), // 2 h inside today
+      e(gaming, d(12, 2), d(12, 8)), // 6 h
+      e(unavailable, d(12, 8), d(12, 9)), // 1 h
+      e(def, d(12, 9), d(12, 10)), // 1 h
+      e(work, d(12, 10), null), // running: 4 h until now
     ];
 
-    test('per activity, largest first, clipped to the range', () {
-      final shares = activityDistribution(entries, day, now, activities);
-      expect(shares.map((s) => (s.activity.name, s.duration.inHours)), [
-        ('Work', 10),
+    test('the rest of today counts as Default; the full day is used', () {
+      final s = activityDistribution(
+        entries,
+        today,
+        now,
+        activities,
+        shown: shown,
+        fillActivityId: def,
+      );
+      expect(rows(s), [
+        ('Work', 6), // tie with Gaming: grid order
         ('Gaming', 6),
         ('Unavailable', 1),
-        ('Default', 1),
+        ('Reading', 0), // unused activities are listed
+        ('Default', 11), // 1 h recorded + 10 h until midnight, always last
+      ]);
+      expect(
+        s.fold(Duration.zero, (t, x) => t + x.duration),
+        const Duration(hours: 24),
+      );
+      expect(s.fold<double>(0, (t, x) => t + x.fraction), closeTo(1, 1e-9));
+    });
+
+    test('past periods are not filled', () {
+      final s = activityDistribution(
+        entries,
+        localDay(d(11, 0)),
+        now,
+        activities,
+        shown: shown,
+        fillActivityId: def,
+      );
+      expect(rows(s), [
+        ('Work', 4),
+        ('Gaming', 0),
+        ('Reading', 0),
+        ('Default', 0),
       ]);
     });
 
-    test('fractions are shares of tracked time and add up to 1', () {
-      final shares = activityDistribution(entries, day, now, activities);
-      expect(shares.first.fraction, closeTo(10 / 18, 1e-9));
-      expect(
-        shares.fold<double>(0, (s, x) => s + x.fraction),
-        closeTo(1, 1e-9),
+    test('a period with no data lists every activity with zero', () {
+      final s = activityDistribution(
+        const [],
+        localDay(d(1, 0)),
+        now,
+        activities,
+        shown: shown,
+        fillActivityId: def,
       );
+      expect(s.map((x) => x.duration), everyElement(Duration.zero));
+      expect(s.map((x) => x.fraction), everyElement(0));
+      expect(s.last.activity.name, 'Default');
     });
 
-    test('gaps are not counted as tracked time', () {
-      final gappy = [e(1, d(12, 1), d(12, 2)), e(2, d(12, 5), d(12, 6))];
-      final shares = activityDistribution(gappy, day, now, activities);
-      expect(shares.map((s) => s.fraction), [0.5, 0.5]);
-    });
-
-    test('empty range', () {
-      expect(activityDistribution(const [], day, now, activities), isEmpty);
+    test('equal durations keep grid order', () {
+      final s = activityDistribution(
+        [e(gaming, d(10, 1), d(10, 2)), e(work, d(10, 2), d(10, 3))],
+        localDay(d(10, 0)),
+        now,
+        activities,
+        shown: shown,
+      );
+      expect(s.take(2).map((x) => x.activity.name), ['Work', 'Gaming']);
     });
   });
 
   group('comparison', () {
     final entries = [
-      // Wednesday 11 Nov
-      e(1, d(11, 8), d(11, 12)), // Work 4 h (2 h before 10:00)
-      e(2, d(11, 12), d(11, 16)), // Gaming 4 h
-      // Thursday 12 Nov
-      e(1, d(12, 8), d(12, 9)), // Work 1 h
-      e(2, d(12, 9), null), // Gaming running
+      e(work, d(11, 8), d(11, 12)), // Wed: Work 4 h
+      e(gaming, d(11, 12), d(11, 16)), // Wed: Gaming 4 h
+      e(work, d(12, 8), d(12, 9)), // Thu: Work 1 h
+      e(gaming, d(12, 9), null), // Thu: Gaming running
     ];
 
-    test('a finished period is compared in full', () {
+    test('full periods; the rest of today is Default; Default last', () {
+      final c = comparePeriods(
+        entries: entries,
+        current: localDay(d(12, 0)),
+        previous: localDay(d(11, 0)),
+        now: d(12, 10),
+        activities: activities,
+        shown: shown,
+        fillActivityId: def,
+      );
+      expect(c.previousRange.end, d(12, 0)); // not cut short
+      expect(
+        [
+          for (final r in c.rows)
+            (r.activity.name, r.current.inHours, r.previous.inHours),
+        ],
+        [
+          ('Work', 1, 4),
+          ('Gaming', 1, 4),
+          ('Reading', 0, 0),
+          ('Default', 14, 0),
+        ],
+      );
+    });
+
+    test('a previous period without data counts zero for everything', () {
       final c = comparePeriods(
         entries: entries,
         current: localDay(d(11, 0)),
-        previous: localDay(d(10, 0)),
+        previous: localDay(d(10, 0)), // before any entry
         now: d(12, 10),
         activities: activities,
+        shown: shown,
+        fillActivityId: def,
       );
-      expect(c.truncated, isFalse);
-      expect(c.rows.map((r) => (r.activity.name, r.current, r.previous)), [
-        ('Work', const Duration(hours: 4), Duration.zero),
-        ('Gaming', const Duration(hours: 4), Duration.zero),
-      ]);
-    });
-
-    test('an unfinished period compares to the same point of the previous', () {
-      final c = comparePeriods(
-        entries: entries,
-        current: localDay(d(12, 0)),
-        previous: localDay(d(11, 0)),
-        now: d(12, 10),
-        activities: activities,
-      );
-      expect(c.truncated, isTrue);
-      expect(c.previousRange.end, d(11, 10));
       final work = c.rows.firstWhere((r) => r.activity.name == 'Work');
-      final gaming = c.rows.firstWhere((r) => r.activity.name == 'Gaming');
-      expect(
-        (work.current, work.previous),
-        (const Duration(hours: 1), const Duration(hours: 2)),
-      );
-      expect(
-        (gaming.current, gaming.previous),
-        (const Duration(hours: 1), Duration.zero),
-      );
-      expect(work.difference, const Duration(hours: -1));
-    });
-
-    test('activities present in only one period are listed with zero', () {
-      final c = comparePeriods(
-        entries: [e(1, d(11, 8), d(11, 9))],
-        current: localDay(d(12, 0)),
-        previous: localDay(d(11, 0)),
-        now: d(13, 0),
-        activities: activities,
-      );
-      expect(c.rows.single.current, Duration.zero);
-      expect(c.rows.single.previous, const Duration(hours: 1));
+      expect(work.previous, Duration.zero);
+      expect(work.difference, const Duration(hours: 4));
+      expect(c.rows.map((r) => r.activity.name), hasLength(4));
     });
   });
 }

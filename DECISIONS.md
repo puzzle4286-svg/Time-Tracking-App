@@ -330,11 +330,19 @@ Day / Week / Month / Year / All with ‹ › navigation drives both charts
 navigation goes via day 1 so 31 March − 1 month is February. "All time" runs
 from the first entry to now and has no comparison. Year comparison uses the
 same logic as day/week/month (no new analytics feature).
-- **Distribution**: shares of *tracked* time (gaps excluded), largest first;
-  Default and Unavailable are their own items.
-- **Comparison**: selected period vs the previous one. If the selected period
-  is in progress, it is counted up to now and the previous one only up to the
-  same elapsed time; a note states the cut-off moment.
+- **Full periods, always** (revised after review): the current period is shown
+  in full; its not-yet-elapsed part counts as **Default** in Insights only
+  (never written to the database or shown in History). One line under the
+  donut says so ("Time after 14:20 counts as Default"), keeping spec 8.3's
+  "make incomplete periods clear" without cutting the comparison short.
+  Time before the first-ever entry is not counted.
+- **Every activity is listed** (grid activities and Default, plus any other
+  activity with time in the period), even at 0m / 0%. Order: largest first,
+  ties by grid position, **Default always last**.
+- **Distribution**: shares of the counted time; no total in the donut centre
+  (it would almost always read 24 h for a day).
+- **Comparison**: selected period vs the previous one, both full. A previous
+  period without data counts zero for every activity (difference "+1h 5m").
 - Recomputed from entries on every change and every 30 s for periods in
   progress. The selection lives in `AppShell`, so History's "Info" opens that
   day (D32 implemented).

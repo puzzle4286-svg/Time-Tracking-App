@@ -346,3 +346,19 @@ cut at the same elapsed point (D38).
 - 223 tests pass in all seven timezones.
 - Emulator: Today (66% / 34%, "Today vs Yesterday" with note) and This week
   (Gaming / Free Time / Developing / Default) with real data.
+
+## 2026-11-12 – Insights review
+
+**Requested**: list unused activities; full periods instead of truncating;
+rest of today as Default (Insights only); no donut total; Default always
+last; previous periods without data count zero.
+
+**Work completed**: `activityDistribution` gained `shown` and
+`fillActivityId`; `comparePeriods` compares full periods; shared
+`sortDefaultLast`; donut centre removed; truncation note replaced by a
+one-line "Time after … counts as Default".
+
+**Testing performed**
+- 222 tests pass in all seven timezones.
+- Emulator: Today = Free Time 4%, Gaming 3%, Developing 0%, Default 92%
+  (rest of the day); "Today vs Yesterday" over full days, Default last.

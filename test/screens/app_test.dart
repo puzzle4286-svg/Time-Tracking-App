@@ -14,6 +14,7 @@ import 'package:time_tracker/services/history/entry_edit_service.dart';
 import 'package:time_tracker/services/history/history_service.dart';
 
 import '../support/matchers.dart';
+import '../support/test_database.dart';
 import '../support/tracking_fixture.dart';
 
 void main() {
@@ -764,27 +765,49 @@ void main() {
     String periodLabel(WidgetTester tester) =>
         tester.widget<Text>(find.byKey(const Key('insights-period'))).data!;
 
-    testWidgets('distribution of today with shares', (tester) async {
+    testWidgets('distribution uses the full day; the rest counts as Default', (
+      tester,
+    ) async {
       await openInsights(tester);
       expect(periodLabel(tester), 'Today');
-      expect(
-        tester.widget<Text>(find.byKey(const Key('distribution-total'))).data,
-        '5h 0m',
-      );
+      expect(find.byKey(const Key('distribution-total')), findsNothing);
       String share(int id) =>
           tester.widget<Text>(find.byKey(ValueKey('share-$id'))).data!;
-      expect(share(f.freeTime), '60%');
-      expect(share(f.gaming), '40%');
+      // 00:00–09:00 before install is not counted; 09–14 tracked, 14–24
+      // Default: Free Time 3 h / 15 h, Gaming 2 h, Default 10 h, Study 0.
+      expect(share(f.freeTime), '20%');
+      expect(share(f.gaming), '13%');
+      expect(share(f.study), '0%');
+      final defaultId = await roleId(f.db, 'default');
+      expect(share(defaultId), '67%');
+      expect(find.byKey(const Key('future-as-default')), findsOneWidget);
+
+      // Default is listed last.
+      final dy = {
+        for (final id in [f.freeTime, f.gaming, f.study, defaultId])
+          id: tester.getTopLeft(find.byKey(ValueKey('share-$id'))).dy,
+      };
+      expect(
+        dy[defaultId],
+        greaterThan(
+          dy.values
+              .where((v) => v != dy[defaultId])
+              .reduce((a, b) => a > b ? a : b),
+        ),
+      );
     });
 
-    testWidgets('in-progress comparison is marked', (tester) async {
+    testWidgets('comparison lists every activity; empty previous is zero', (
+      tester,
+    ) async {
       await openInsights(tester);
       await tester.scrollUntilVisible(
-        find.byKey(const Key('comparison-truncated')),
+        find.byKey(ValueKey('bar-previous-${f.study}')),
         200,
       );
       expect(find.text('Today vs Yesterday'), findsOneWidget);
-      expect(find.byKey(const Key('comparison-truncated')), findsOneWidget);
+      expect(find.text('+3h 0m'), findsOneWidget); // Free Time vs nothing
+      expect(find.textContaining('still in progress'), findsNothing);
     });
 
     testWidgets('the period selector drives both charts', (tester) async {
@@ -810,7 +833,10 @@ void main() {
       await settle(tester);
       await tester.pumpAndSettle();
       expect(periodLabel(tester), '2 – 8 Nov 2026');
-      expect(find.text('Nothing tracked in this period.'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(ValueKey('share-${f.freeTime}'))).data,
+        '0%',
+      );
       await tester.scrollUntilVisible(
         find.text('Last week vs 26 Oct – 1 Nov 2026'),
         200,
@@ -827,6 +853,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(periodLabel(tester), '9 – 15 Nov 2026');
 
+      await tester.scrollUntilVisible(find.text('All'), -200);
       await tester.tap(find.text('All'));
       await settle(tester);
       await tester.pumpAndSettle();
@@ -852,9 +879,10 @@ void main() {
       await settle(tester);
       await tester.pumpAndSettle();
       expect(periodLabel(tester), 'Yesterday');
+      // Monday 09:00–24:00 was Free Time only.
       expect(
-        tester.widget<Text>(find.byKey(const Key('distribution-total'))).data,
-        '15h 0m',
+        tester.widget<Text>(find.byKey(ValueKey('share-${f.freeTime}'))).data,
+        '100%',
       );
     });
   });

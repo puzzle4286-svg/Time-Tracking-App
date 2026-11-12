@@ -23,70 +23,55 @@ class PeriodComparison {
     required this.currentRange,
     required this.previousRange,
     required this.rows,
-    required this.truncated,
   });
 
-  /// The ranges actually compared (the previous one may be cut short).
   final TimeRange currentRange;
   final TimeRange previousRange;
 
-  /// Every activity present in either period, largest first.
+  /// Every listed activity, largest first, Default last. Periods without
+  /// data simply count zero for every activity.
   final List<ComparisonRow> rows;
-
-  /// True when the current period is still in progress and the previous one
-  /// was therefore compared only up to the same point.
-  final bool truncated;
 }
 
-/// Compares [current] with [previous] (equivalent calendar periods).
-///
-/// If [current] is in progress at [now], it is counted up to now and the
-/// previous period only up to the same elapsed time, so both cover an
-/// equivalent span; [PeriodComparison.truncated] says so.
+/// Compares two full, equivalent periods. As in [activityDistribution], the
+/// not-yet-elapsed part of a period counts as [fillActivityId] (Default).
 PeriodComparison comparePeriods({
   required Iterable<TimeEntry> entries,
   required TimeRange current,
   required TimeRange previous,
   required DateTime now,
   required Map<int, Activity> activities,
+  Iterable<int> shown = const [],
+  int? fillActivityId,
 }) {
-  final inProgress = current.contains(now);
-  final cur = inProgress ? TimeRange(current.start, now) : current;
-  final prev = inProgress
-      ? TimeRange(
-          previous.start,
-          _min(previous.start.add(now.difference(current.start)), previous.end),
-        )
-      : previous;
-
-  final a = {
-    for (final s in activityDistribution(entries, cur, now, activities))
-      s.activity.id: s,
+  Map<int, Duration> totals(TimeRange r) => {
+    for (final s in activityDistribution(
+      entries,
+      r,
+      now,
+      activities,
+      shown: shown,
+      fillActivityId: fillActivityId,
+    ))
+      s.activity.id: s.duration,
   };
-  final b = {
-    for (final s in activityDistribution(entries, prev, now, activities))
-      s.activity.id: s,
-  };
-  final ids = {...a.keys, ...b.keys};
-  final rows =
-      [
-        for (final id in ids)
-          ComparisonRow(
-            activity: (a[id] ?? b[id])!.activity,
-            current: a[id]?.duration ?? Duration.zero,
-            previous: b[id]?.duration ?? Duration.zero,
-          ),
-      ]..sort((x, y) {
-        final mx = x.current > x.previous ? x.current : x.previous;
-        final my = y.current > y.previous ? y.current : y.previous;
-        return my.compareTo(mx);
-      });
+  final a = totals(current);
+  final b = totals(previous);
+  final rows = [
+    for (final id in {...a.keys, ...b.keys})
+      ComparisonRow(
+        activity: activities[id]!,
+        current: a[id] ?? Duration.zero,
+        previous: b[id] ?? Duration.zero,
+      ),
+  ];
   return PeriodComparison(
-    currentRange: cur,
-    previousRange: prev,
-    rows: rows,
-    truncated: inProgress,
+    currentRange: current,
+    previousRange: previous,
+    rows: sortDefaultLast(
+      rows,
+      (r) => r.activity,
+      (r) => r.current > r.previous ? r.current : r.previous,
+    ),
   );
 }
-
-DateTime _min(DateTime a, DateTime b) => a.isBefore(b) ? a : b;

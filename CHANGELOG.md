@@ -53,8 +53,9 @@ explicitly under **Database**.
 
 - Insights: period selector (day / week / month / year / all time, step back
   and forward), activity distribution donut with durations and percentages,
-  and comparison with the previous period (in-progress periods compared up to
-  the same point, clearly marked).
+  and comparison with the previous period. Periods are always shown in full;
+  the rest of the current period counts as Default (Insights only). Every
+  activity is listed, Default last.
 - History's "Info" opens that day in Insights.
 
 ### Changed
