@@ -601,3 +601,16 @@ icon" section (Android only) (D50).
 - Phone after the fix: Flat → Neon in Settings, the app stayed open with
   "The new icon appears after you leave the app."; Home switched the
   launcher entry to `.IconNeon` with no crash; the app reopened from it.
+
+## 2026-11-13 – Renamed to Lifestring
+
+**Requested**: after a naming discussion the developer chose Lifestring.
+
+**Work completed**: launcher label, app title, Settings name, Linux window
+title, backup / CSV file names and the backup error message now say
+Lifestring; internal identifiers kept so data and old backups keep working
+(D51). README title and status updated.
+
+**Testing performed**
+- Export, screen and widget tests pass; analyze clean.
+- Phone: installed over 0.1.1 (data kept); the launcher label is Lifestring.

@@ -169,7 +169,7 @@ void main() {
         () => BackupData.parse([0xff, 0xfe, 0x00]),
         throwsA(isA<BackupFormatException>()),
       );
-      expectRejected((j) => j['format'] = 'other', 'not a Time Tracker');
+      expectRejected((j) => j['format'] = 'other', 'not a Lifestring');
     });
 
     test('versions', () {
@@ -305,7 +305,7 @@ void main() {
 
   test('file names use the local date and time', () {
     final t = DateTime(2026, 3, 4, 5, 6);
-    expect(backupFileName(t), 'time-tracker-backup-2026-03-04-0506.json');
-    expect(csvFileName(t), 'time-tracker-entries-2026-03-04-0506.csv');
+    expect(backupFileName(t), 'lifestring-backup-2026-03-04-0506.json');
+    expect(csvFileName(t), 'lifestring-entries-2026-03-04-0506.csv');
   });
 }

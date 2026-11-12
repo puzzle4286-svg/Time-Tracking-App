@@ -74,11 +74,10 @@ class BackupService {
   static String _orderBy(String table) => table == 'settings' ? 'key' : 'id';
 }
 
-/// Suggested file names, e.g. `time-tracker-backup-2026-11-12-1330.json`.
-String backupFileName(DateTime now) =>
-    'time-tracker-backup-${_stamp(now)}.json';
+/// Suggested file names, e.g. `lifestring-backup-2026-11-12-1330.json`.
+String backupFileName(DateTime now) => 'lifestring-backup-${_stamp(now)}.json';
 
-String csvFileName(DateTime now) => 'time-tracker-entries-${_stamp(now)}.csv';
+String csvFileName(DateTime now) => 'lifestring-entries-${_stamp(now)}.csv';
 
 String _stamp(DateTime now) {
   final t = now.toLocal();

@@ -578,3 +578,18 @@ App icon switches between them (Android only).
   shortcut to the old entry may disappear (re-add it). Updating from 0.1.0
   moves the launcher entry from `MainActivity` to `.IconNeon` once, with the
   same effect.
+
+## D51 – The app is called Lifestring (developer choice, 2026-11-13)
+The name is about what tracked time means to the user (one unbroken string
+of a life, every moment in exactly one activity) rather than how the app
+looks. Shown as the Android launcher label, the window / task title, the
+Settings "About" entry, the Linux window title, backup and CSV file names
+(`lifestring-backup-…`, `lifestring-entries-…`) and the backup error
+message.
+
+Unchanged on purpose, because renaming them would break existing installs
+or data: the package / application ID `io.github.puzzle4286svg.time_tracker`
+(a new one installs as a separate app without the data), the Dart package
+name, the database file `time_tracker.db`, the backup `format` tag
+`time-tracker-backup` (older backups must still restore), the widget's
+`timetracker://` link scheme, and internal names such as `TimeTrackerApp`.

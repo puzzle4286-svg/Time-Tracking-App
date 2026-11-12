@@ -1,4 +1,4 @@
-# Time Tracker
+# Lifestring
 
 An offline-first personal time-tracking app for Android, built with Flutter.
 
@@ -6,7 +6,7 @@ Eight fixed activity buttons. Exactly one activity is always active; tapping
 another one switches to it. Tracking is purely timestamp-based, so it survives
 the app being closed, killed, or the phone restarting — no background service.
 
-> Status: **Phase 6 – insights complete**. See [TASKS.md](TASKS.md).
+> Status: **v0.1.1** – all planned phases complete. See [TASKS.md](TASKS.md).
 
 ## Features (planned for v1)
 

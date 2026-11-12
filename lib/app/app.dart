@@ -23,7 +23,7 @@ class TimeTrackerApp extends StatelessWidget {
       builder: (context, _) {
         final s = settings.settings;
         return MaterialApp(
-          title: 'Time Tracker',
+          title: 'Lifestring',
           scaffoldMessengerKey: scaffoldMessengerKey,
           theme: buildTheme(s.appearance, s.accent, neon: s.neon),
           // No Android stretch/glow when scrolling past the ends.

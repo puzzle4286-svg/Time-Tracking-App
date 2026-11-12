@@ -2,6 +2,8 @@ import 'package:sqflite/sqflite.dart';
 
 import 'schema.dart';
 
+// Kept from before the rename to Lifestring (D51): a new name would leave
+// existing data behind.
 const String databaseFileName = 'time_tracker.db';
 
 /// Opens (creating or migrating as needed) the app database.

@@ -136,6 +136,7 @@ A phase is only checked off once its functionality is tested.
 - [x] Home-screen task switcher widget, one tap per switch (D49)
 - [x] Edit sheet clears the navigation bar; grid rearranging
 - [x] App icon: Neon (default) and Flat, choosable in Settings (D50); 0.1.1
+- [x] Renamed to Lifestring (D51)
 
 ## Known issues (accepted, no fix planned)
 - Very short entries are stretched to label height on the timeline, so the

@@ -149,7 +149,7 @@ void main() {
     await tester.tap(find.text('Restore from backup'));
     await settle(tester);
     expect(find.text('Cannot restore this file'), findsOneWidget);
-    expect(find.textContaining('not a Time Tracker backup'), findsOneWidget);
+    expect(find.textContaining('not a Lifestring backup'), findsOneWidget);
     expect(find.textContaining('was not changed'), findsOneWidget);
     await tester.tap(find.text('OK'));
     await settle(tester);

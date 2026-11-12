@@ -5,6 +5,8 @@ import '../../database/schema.dart';
 import '../../util/timestamps.dart';
 
 /// Identifies a backup file made by this app.
+// Identifies backup files. Kept from before the app was renamed to
+// Lifestring (D51), so existing backups still restore; never change it.
 const backupFormatName = 'time-tracker-backup';
 
 /// Version of the JSON envelope (not of the database schema).
@@ -153,9 +155,7 @@ class BackupData {
       throw const BackupFormatException('The file is not a valid JSON file.');
     }
     if (json is! Map<String, Object?> || json['format'] != backupFormatName) {
-      throw const BackupFormatException(
-        'The file is not a Time Tracker backup.',
-      );
+      throw const BackupFormatException('The file is not a Lifestring backup.');
     }
     final formatVersion = json['formatVersion'];
     final version = json['schemaVersion'];
