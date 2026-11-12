@@ -87,8 +87,12 @@ works for any instant, before or after the anchor.
   trim neighbouring entries or cancel.
 
 ## D11 – Dependencies added only when their phase needs them
-Added in Phase 1: `sqflite` 2.4, `path` 1.9, dev `sqflite_common_ffi` 2.4. Planned, `fl_chart` (Phase 6), `share_plus`,
-`file_picker` (Phase 7). Each addition is recorded here.
+Added in Phase 1: `sqflite` 2.4, `path` 1.9, dev `sqflite_common_ffi` 2.4.
+`fl_chart` was not needed (D37). Phase 7: `file_picker` 13.3 (system save /
+open dialogs); `share_plus` was not needed, because the save dialog covers
+both "keep a copy" and "put it in a synced folder". `sqflite_common_ffi`
+became a runtime dependency for the Linux build (D39). Dev: `integration_test`
+(Flutter SDK). Each addition is recorded here.
 
 ## D12 – Models expose UTC `DateTime`s (revised 2026-11-11)
 Values read from storage are UTC `DateTime`s, and `SystemClock` returns UTC.
@@ -346,3 +350,58 @@ same logic as day/week/month (no new analytics feature).
 - Recomputed from entries on every change and every 30 s for periods in
   progress. The selection lives in `AppShell`, so History's "Info" opens that
   day (D32 implemented).
+
+## D39 – Linux desktop build for development (2026-11-12)
+Day-to-day development runs the Linux desktop app (`flutter run -d linux`)
+instead of the Android emulator. It starts faster and supports hot reload.
+Android is still the target, and the emulator is used again if the desktop
+build behaves differently. sqflite has no Linux plugin, so `sqflite_common_ffi`
+moved from dev to regular dependencies. `main.dart` uses it only on Linux,
+with the database at `$XDG_DATA_HOME/time_tracker/time_tracker.db` (default
+`~/.local/share/time_tracker`). Android still uses the platform plugin and
+`getDatabasesPath()`.
+
+## D40 – Backup format: raw rows of every table (Phase 7)
+A backup is one JSON file: `format` (`time-tracker-backup`), `formatVersion`
+(envelope, 1), `schemaVersion`, `appVersion`, `createdAtUtcUs` (UTC epoch
+microseconds, like every stored instant) and
+`tables` with every row of `activities`, `time_entries`, `goals` and
+`settings`, using the database's column names and values unchanged (ids, UTC
+microseconds, colours as integers). Copying rows exactly makes a restore
+lossless and needs no mapping code. `backupTables` lists the columns. A test
+compares it with `PRAGMA table_info`, so a future migration fails the tests
+until the backup format is updated. "JSON export" and "full backup" are this
+same file.
+- Only a backup with the current `schemaVersion` and `formatVersion` is
+  accepted. A newer one asks the user to update the app. An older one is
+  rejected for now; when the schema changes, the restore will run the
+  existing migrations on the old rows instead.
+- `ui.*` settings (scroll positions) are included. They are harmless and
+  keep the backup a plain copy.
+
+## D41 – Restore: validate everything, then replace in one transaction
+Restoring never merges. It replaces all data, after a confirmation that
+shows the backup's date and contents and says this cannot be undone. Before
+the confirmation, the file is checked: JSON, format, versions, exact
+columns and types, unique ids, both built-in activities present, every
+reference resolves, entries do not overlap, and only the latest entry may be
+running. The replace then deletes and inserts in one transaction, so the
+database's CHECKs, foreign keys and unique indexes check everything a
+second time. Any failure rolls back and the current data stays unchanged.
+Afterwards `AppRoot` loads every service again and rebuilds the whole tree
+(new `MaterialApp` key), so no screen keeps state from the old data. The
+restored running entry continues: reconciliation splits it at any midnights
+since the backup, so the time between backup and restore goes to the
+activity that was running when the backup was made (consistent with D35).
+
+## D42 – CSV export: readable local times plus exact UTC columns
+Columns `activity,start,end,start_utc_us,end_utc_us,duration_us`.
+`start` / `end` are local ISO 8601 with their UTC offset
+(`2026-11-12T09:30:00+01:00`, seconds) for reading. `start_utc_us` /
+`end_utc_us` are the stored instants (microseconds since 1970-01-01 UTC, D4)
+and `duration_us` the exact length, so scripts get lossless values that add
+up without rounding (revised 2026-11-12 at the developer's request; was
+`duration_seconds` with millisecond precision). The running entry has empty
+`end` / `end_utc_us`, and its duration runs to the export time. RFC 4180
+quoting with CRLF line ends; UTF-8 without a BOM. Entries are already split
+at midnight (D6), so each row belongs to one day.

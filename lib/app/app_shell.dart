@@ -14,6 +14,7 @@ import '../services/history/entry_edit_service.dart';
 import '../services/history/history_service.dart';
 import '../services/tracking/tracking_service.dart';
 import '../util/clock.dart';
+import '../widgets/data/data_section.dart';
 import 'settings_controller.dart';
 
 /// Bottom navigation between Track, History, Insights and Settings. Also reconciles
@@ -30,6 +31,7 @@ class AppShell extends StatefulWidget {
     required this.uiState,
     required this.db,
     required this.clock,
+    this.data,
   });
 
   final TrackingService tracking;
@@ -43,6 +45,9 @@ class AppShell extends StatefulWidget {
   /// Read access for Insights.
   final DatabaseExecutor db;
   final Clock clock;
+
+  /// Export, backup and restore in Settings; omitted in some tests.
+  final DataActions? data;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -114,6 +119,7 @@ class _AppShellState extends State<AppShell> {
           child: SettingsScreen(
             settings: widget.settings,
             uiState: widget.uiState,
+            data: widget.data,
           ),
         ),
       },

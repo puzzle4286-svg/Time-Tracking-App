@@ -4,18 +4,23 @@ import '../../app/app_info.dart';
 import '../../app/settings_controller.dart';
 import '../../models/app_settings.dart';
 import '../../repositories/ui_state_store.dart';
+import '../../widgets/data/data_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.settings,
     required this.uiState,
+    this.data,
   });
 
   final SettingsController settings;
 
   /// Remembers the accent row's scroll position across tabs and restarts.
   final UiStateStore uiState;
+
+  /// Export, backup and restore; the section is hidden when null.
+  final DataActions? data;
 
   static const accentScrollKey = 'settings.accentScroll';
 
@@ -101,6 +106,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+            if (widget.data case final data?) ...[
+              const SizedBox(height: 24),
+              DataSection(actions: data),
+            ],
             const SizedBox(height: 32),
             const Divider(),
             const ListTile(

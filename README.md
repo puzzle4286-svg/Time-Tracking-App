@@ -41,6 +41,12 @@ flutter pub get
 
 ## Run
 
+Development uses the Linux desktop build (D39); Android is the target.
+
+```bash
+flutter run -d linux
+```
+
 ```bash
 flutter emulators --launch Pixel_10_Pro   # or connect a device
 flutter run
@@ -59,4 +65,10 @@ To run the suite across several timezones (including DST edge cases):
 
 ```bash
 ./tool/test_timezones.sh
+```
+
+Integration test on the real app (Linux desktop):
+
+```bash
+flutter test integration_test -d linux
 ```

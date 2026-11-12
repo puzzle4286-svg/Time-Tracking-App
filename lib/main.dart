@@ -1,57 +1,34 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart' as ffi;
 
-import 'app/app.dart';
-import 'app/app_shell.dart';
-import 'app/settings_controller.dart';
+import 'app/app_root.dart';
 import 'database/app_database.dart';
-import 'database/seed.dart';
-import 'repositories/settings_repository.dart';
-import 'repositories/ui_state_store.dart';
-import 'services/activities/activity_service.dart';
-import 'services/goals/goal_service.dart';
-import 'services/history/entry_edit_service.dart';
-import 'services/history/history_service.dart';
-import 'services/tracking/tracking_service.dart';
 import 'util/clock.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   const clock = SystemClock();
 
-  final db = await openAppDatabase(
-    databaseFactory,
-    p.join(await getDatabasesPath(), databaseFileName),
-  );
-  await ensureSeeded(db, clock.now());
-
-  final settingsRepository = SettingsRepository(db);
-  final settings = SettingsController(
-    settingsRepository,
-    await settingsRepository.load(),
-  );
-
-  // Split at any midnights missed while the app was not running.
-  final tracking = TrackingService(db, clock);
-  await tracking.reconcile();
-  final activities = ActivityService(db, clock, tracking);
-  await activities.load();
-
+  final (factory, dir) = await _databaseLocation();
+  final db = await openAppDatabase(factory, p.join(dir, databaseFileName));
   runApp(
-    TimeTrackerApp(
-      settings: settings,
-      home: AppShell(
-        tracking: tracking,
-        activities: activities,
-        settings: settings,
-        history: HistoryService(db),
-        edits: EntryEditService(db, clock, tracking),
-        goals: GoalService(db, clock),
-        uiState: await UiStateStore.load(db),
-        db: db,
-        clock: clock,
-      ),
-    ),
+    AppRoot(db: db, clock: clock, services: await AppServices.load(db, clock)),
   );
+}
+
+/// Android uses sqflite's platform plugin. The Linux desktop build (used for
+/// development) uses the FFI implementation and stores data under
+/// `$XDG_DATA_HOME/time_tracker` (default `~/.local/share/time_tracker`).
+Future<(DatabaseFactory, String)> _databaseLocation() async {
+  if (!Platform.isLinux) return (databaseFactory, await getDatabasesPath());
+  ffi.sqfliteFfiInit();
+  final env = Platform.environment;
+  final base = env['XDG_DATA_HOME'] ?? p.join(env['HOME']!, '.local', 'share');
+  final dir = p.join(base, 'time_tracker');
+  await Directory(dir).create(recursive: true);
+  return (ffi.databaseFactoryFfi, dir);
 }

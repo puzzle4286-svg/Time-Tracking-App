@@ -363,3 +363,42 @@ developer's request.
 - 222 tests pass in all seven timezones.
 - Emulator: Today = Free Time 4%, Gaming 3%, Developing 0%, Default 92%
   (rest of the day); "Today vs Yesterday" over full days, Default last.
+
+## 2026-11-12 – Linux desktop for development
+
+**Requested**: develop on the Linux app instead of the emulator if feasible.
+
+**Work completed**: `sqflite_common_ffi` is now a runtime dependency; on
+Linux `main.dart` opens the database through FFI in
+`~/.local/share/time_tracker` (D39).
+
+**Testing performed**
+- `flutter analyze` clean; 222 tests pass.
+- `flutter run -d linux`: app launched, fresh database created and seeded.
+
+## 2026-11-12 – Phase 7: export and backup
+
+**Work completed**
+- `services/export/`: `csv_export.dart` (pure CSV builder, D42),
+  `backup_format.dart` (file format, column list, validation, D40),
+  `backup_service.dart` (read the database, restore in one transaction, D41),
+  `backup_files.dart` (system dialogs behind an interface).
+- `app/app_root.dart`: `AppServices.load` (moved from `main.dart`) and
+  `AppRoot`, which reloads all services and rebuilds the app after a restore.
+- Settings "Data" section with export, backup and restore; confirmation shows
+  the backup's date and counts; errors say the current data was not changed.
+- New dependency `file_picker` 13.3; dev `integration_test` (SDK).
+
+**Problems and solutions**
+- `PRAGMA table_info` reports `settings.key` (TEXT PRIMARY KEY) as nullable;
+  the schema test skips primary keys.
+- Native window cannot be driven on Wayland (no input tool), so the
+  desktop check is an integration test on the Linux build instead.
+
+**Testing performed**
+- 245 tests pass in all seven timezones; `flutter analyze` clean.
+- `flutter test integration_test -d linux`: real app with a database file:
+  set up an activity, CSV export + backup written to disk, data changed,
+  restore → "Backup restored", original data back.
+- Not yet done: real system dialogs (XDG portal on Linux, Storage Access
+  Framework on Android).

@@ -102,9 +102,16 @@ A phase is only checked off once its functionality is tested.
 - [x] Emulator: day and week views with real data
 
 ## Phase 7 – Export and backup
-- [ ] CSV export of time entries
-- [ ] JSON export / full backup
-- [ ] Validated restore with explicit replace confirmation
+- [x] CSV export of time entries (D42)
+- [x] JSON export / full backup: raw rows of every table (D40)
+- [x] Validated restore with explicit replace confirmation; one transaction,
+      app reloads afterwards (D41)
+- [x] Settings "Data" section; system save/open dialogs via `file_picker`
+- [x] Tests: CSV format/offsets/quoting, backup round trip, schema ↔ backup
+      columns, every validation rule, rollback on database rejection,
+      tracking after restore, UI flows (export, cancel, replace, invalid file)
+- [x] Integration test on the Linux desktop build (real app, database file)
+- [ ] Manual check of the real system dialogs (Linux portal, Android)
 
 ## Phase 8 – Final testing and polish
 - [ ] Full test run, analyze, device/emulator testing
@@ -117,4 +124,7 @@ A phase is only checked off once its functionality is tested.
   scale is locally non-linear around them (D24).
 - "Jump to date" far into the past loads every day in between (one query per
   day); fine for now, could become a single range query.
+- `sqflite_common_ffi` (needed for Linux, D39) bundles its own `libsqlite3.so`
+  into the Android APK too, about 1.7 MB per ABI and unused there. Look at the
+  `sqlite3` package's build options in Phase 8.
 - Android launch splash is white while the default theme is dark (cosmetic; Phase 8).

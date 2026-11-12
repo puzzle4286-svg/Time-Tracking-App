@@ -58,6 +58,14 @@ explicitly under **Database**.
   activity is listed, Default last.
 - History's "Info" opens that day in Insights.
 
+- Settings → Data: export time entries as CSV (readable local times plus
+  exact UTC microsecond start, end and duration columns),
+  back up all data as one JSON file, and restore a backup after a
+  confirmation. Restore checks the whole file first and replaces everything
+  in one transaction; a rejected file changes nothing.
+- Linux desktop build runs with its own database in
+  `~/.local/share/time_tracker` (for development).
+
 ### Changed
 - Time is never left empty: freed time and deleted entries always go to an
   activity (list of activities, neighbour marked, Default last).
