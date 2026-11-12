@@ -17,7 +17,7 @@ A phase is only checked off once its functionality is tested.
 - [x] SQLite setup with versioned migrations (`sqflite`; `sqflite_common_ffi` in tests)
 - [x] Models: Activity, TimeEntry, settings (Goal model + table deferred to Phase 5 as migration v2)
 - [x] Repositories: activities, entries, settings
-- [x] First-launch seeding: "Free Time" at position 1 + system "Unavailable" activity
+- [x] First-launch seeding (later changed: Default active, empty grid – D34)
 - [x] Initial open entry for Free Time (exactly one active)
 - [x] Theme system: light / dark / black, accent palettes (5, later 14 – D26), persisted
 - [x] Tests: seeding, initial active state, schema constraints, reopen persistence, settings, themes
@@ -70,13 +70,16 @@ A phase is only checked off once its functionality is tested.
 - [x] Freed time: choose neighbour / another activity / empty (D30)
 - [x] Confirmation grouped by effect, entry-strip style, precise durations
 - [x] Fixed: entries around midnight could not be edited (D33)
+- [x] Built-in Default activity; fresh install starts on Default with an
+      empty grid; schema v3 (D34)
+- [x] No empty time anywhere: fill list without "leave empty" (D35)
 - [x] Edits re-split at midnight; header, History refresh after every edit
 - [x] Tests: 24 service tests for edits/deletion, 6 widget tests for the flows
 - [x] Emulator: real delete (merged Free Time neighbours) and real end change
       with confirmation (removed + shortened, then Gaming merged)
 
 ## Phase 5 – Goals
-- [ ] Goal model + repository (schema v3)
+- [ ] Goal model + repository (schema v4)
 - [ ] Period calculation (hours / days / weeks / months, anchored)
 - [ ] Min / max / both progress
 - [ ] Goal editor UI

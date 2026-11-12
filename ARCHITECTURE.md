@@ -96,7 +96,7 @@ Rules:
 | `lib/widgets/entries/entry_strip.dart` | Shared entry look (tinted, coloured left bar) for timeline and dialogs |
 | `lib/repositories/ui_state_store.dart` | Persisted UI conveniences (scroll positions), `ui.*` keys in `settings` |
 
-## Database (schema v2 implemented; goals planned as v3)
+## Database (schema v3 implemented; goals planned as v4)
 
 ```sql
 activities(
@@ -104,7 +104,8 @@ activities(
   name TEXT NOT NULL,
   color INTEGER NOT NULL,          -- ARGB
   position INTEGER,                -- 1..8 while live, NULL when deleted/system
-  is_system INTEGER NOT NULL DEFAULT 0,  -- the hidden "Unavailable" activity
+  is_system INTEGER NOT NULL DEFAULT 0,  -- built-in, off the grid
+  role TEXT,                       -- 'default' | 'unavailable' (v3, unique)
   created_at INTEGER NOT NULL,     -- UTC epoch microseconds
   deleted_at INTEGER               -- UTC epoch microseconds
 )

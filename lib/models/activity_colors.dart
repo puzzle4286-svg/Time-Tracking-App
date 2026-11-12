@@ -15,3 +15,6 @@ const List<int> activityColors = [
 
 /// Colour of the system "Unavailable" activity.
 const int unavailableColor = 0xFF9E9E9E;
+
+/// Colour of the built-in "Default" activity.
+const int defaultActivityColor = 0xFF90A4AE;

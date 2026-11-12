@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:time_tracker/database/seed.dart';
+import 'package:time_tracker/models/activity.dart';
 import 'package:time_tracker/repositories/activity_repository.dart';
 import 'package:time_tracker/repositories/time_entry_repository.dart';
 
@@ -11,7 +12,6 @@ import '../support/matchers.dart';
 import '../support/test_database.dart';
 
 void main() {
-  // Models always return local DateTimes (same instant as stored UTC).
   final installTime = DateTime(2026, 11, 11, 9, 30);
 
   group('first launch', () {
@@ -23,39 +23,42 @@ void main() {
     });
     tearDown(() => db.close());
 
-    test(
-      'creates Free Time as the only grid activity, at position 1',
-      () async {
-        final live = await ActivityRepository(db).liveActivities();
-        expect(live, hasLength(1));
-        expect(live.single.name, initialActivityName);
-        expect(live.single.position, 1);
-        expect(live.single.createdAt, isMoment(installTime));
-      },
-    );
-
-    test('creates a hidden system Unavailable activity', () async {
-      final system = await ActivityRepository(db).systemActivity();
-      expect(system, isNotNull);
-      expect(system!.name, unavailableActivityName);
-      expect(system.position, isNull);
+    test('all eight grid positions are empty', () async {
+      expect(await ActivityRepository(db).liveActivities(), isEmpty);
     });
 
-    test('Free Time is active from the install time', () async {
-      final live = await ActivityRepository(db).liveActivities();
+    test('creates the built-in Default and Unavailable activities', () async {
+      final repo = ActivityRepository(db);
+      final def = await repo.withRole(SystemRole.defaultActivity);
+      final unavailable = await repo.withRole(SystemRole.unavailable);
+      expect(def!.name, defaultActivityName);
+      expect(def.position, isNull);
+      expect(def.canTakeTime, isTrue);
+      expect(unavailable!.name, unavailableActivityName);
+      expect(unavailable.canTakeTime, isFalse);
+    });
+
+    test('Default is active from the install time', () async {
+      final def = await ActivityRepository(
+        db,
+      ).withRole(SystemRole.defaultActivity);
       final open = await TimeEntryRepository(db).openEntry();
-      expect(open, isNotNull);
-      expect(open!.activityId, live.single.id);
+      expect(open!.activityId, def!.id);
       expect(open.start, isMoment(installTime));
       expect(await db.query('time_entries'), hasLength(1));
+    });
+
+    test('built-in activities cannot be renamed or deleted', () async {
+      final repo = ActivityRepository(db);
+      final def = (await repo.withRole(SystemRole.defaultActivity))!;
+      expect(() => repo.update(def.id, name: 'X', color: 0), throwsStateError);
+      expect(() => repo.softDelete(def.id, installTime), throwsStateError);
     });
 
     test('seeding again does nothing', () async {
       await ensureSeeded(db, installTime.add(const Duration(hours: 5)));
       expect(await ActivityRepository(db).count(), 2);
       expect(await db.query('time_entries'), hasLength(1));
-      final open = await TimeEntryRepository(db).openEntry();
-      expect(open!.start, isMoment(installTime));
     });
   });
 

@@ -10,3 +10,12 @@ Future<Database> openTestDatabase([String path = inMemoryDatabasePath]) {
     singleInstance: path != inMemoryDatabasePath,
   );
 }
+
+/// Id of the built-in activity with [role] ('default' or 'unavailable').
+Future<int> roleId(Database db, String role) async =>
+    (await db.query(
+          'activities',
+          where: 'role = ?',
+          whereArgs: [role],
+        )).single['id']!
+        as int;

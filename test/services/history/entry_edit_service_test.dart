@@ -3,6 +3,7 @@ import 'package:time_tracker/models/time_entry.dart';
 import 'package:time_tracker/services/history/entry_edit_service.dart';
 
 import '../../support/matchers.dart';
+import '../../support/test_database.dart';
 import '../../support/timeline_fixture.dart';
 import '../../support/tracking_fixture.dart';
 
@@ -55,9 +56,7 @@ void main() {
     });
 
     test('refuses the system activity', () async {
-      final system =
-          (await f.db.query('activities', where: 'is_system = 1')).single['id']!
-              as int;
+      final system = await roleId(f.db, 'unavailable');
       final study = await entryOf(f.study, mon(12));
       await expectLater(
         edits.changeActivity(study.id, system),
@@ -242,25 +241,39 @@ void main() {
       ]);
     });
 
-    test('can be left empty', () async {
+    test('can be filled with Default', () async {
+      final defaultId = await roleId(f.db, 'default');
       final gaming = await entryOf(f.gaming, mon(10));
       await edits.retime(
         gaming.id,
         start: mon(10, 30),
         end: mon(12),
-        fills: {FreedSide.start: null},
+        fills: {FreedSide.start: defaultId},
         apply: true,
       );
-      expect((await spans(f)).sublist(0, 2), [
+      expect((await spans(f)).sublist(0, 3), [
         (f.freeTime, mon(9), mon(10)),
+        (defaultId, mon(10), mon(10, 30)),
         (f.gaming, mon(10, 30), mon(12)),
       ]);
     });
 
-    test('rejects filling with a non-grid activity', () async {
-      final system =
-          (await f.db.query('activities', where: 'is_system = 1')).single['id']!
-              as int;
+    test('refuses filling with the edited activity itself', () async {
+      final gaming = await entryOf(f.gaming, mon(10));
+      await expectLater(
+        edits.retime(
+          gaming.id,
+          start: mon(10, 30),
+          end: mon(12),
+          fills: {FreedSide.start: f.gaming},
+          apply: false,
+        ),
+        throwsA(isA<EditException>()),
+      );
+    });
+
+    test('rejects filling with Unavailable', () async {
+      final system = await roleId(f.db, 'unavailable');
       final gaming = await entryOf(f.gaming, mon(10));
       await expectLater(
         edits.retime(
@@ -311,15 +324,25 @@ void main() {
       await expectConsistent();
     });
 
-    test('the change is not undone by default either', () async {
-      final monday = await entryOf(f.freeTime, mon(13));
-      await edits.retime(monday.id, start: mon(13), end: mon(23), apply: true);
-      final s = await spans(f);
-      expect(s.sublist(s.length - 2), [
-        (f.freeTime, mon(13), mon(23)), // 23–24 left empty
-        (f.freeTime, DateTime(2026, 11, 10), null),
-      ]);
-    });
+    test(
+      'without a choice the freed time goes to Default, never empty',
+      () async {
+        final defaultId = await roleId(f.db, 'default');
+        final monday = await entryOf(f.freeTime, mon(13));
+        await edits.retime(
+          monday.id,
+          start: mon(13),
+          end: mon(23),
+          apply: true,
+        );
+        final s = await spans(f);
+        expect(s.sublist(s.length - 3), [
+          (f.freeTime, mon(13), mon(23)),
+          (defaultId, mon(23), DateTime(2026, 11, 10)),
+          (f.freeTime, DateTime(2026, 11, 10), null),
+        ]);
+      },
+    );
 
     test('a day can start later, filled with another activity', () async {
       final tuesday = await entryOf(f.freeTime, DateTime(2026, 11, 10));
@@ -392,10 +415,10 @@ void main() {
       await expectConsistent();
     });
 
-    test('leave empty only when nothing is adjacent', () async {
+    test('with nothing adjacent, the time goes to a chosen activity', () async {
       final gaming = await entryOf(f.gaming, mon(10));
       await expectLater(
-        edits.delete(gaming.id, DeleteFill.leaveEmpty),
+        edits.delete(gaming.id, DeleteFill.activity, activityId: f.study),
         throwsA(isA<EditException>()),
       );
       // Isolate an entry with gaps on both sides.
@@ -413,10 +436,17 @@ void main() {
         whereArgs: [first.id],
       );
       expect((await edits.deleteOptions(first.id)).available, [
-        DeleteFill.leaveEmpty,
+        DeleteFill.activity,
       ]);
-      await edits.delete(first.id, DeleteFill.leaveEmpty);
-      expect((await f.entries()).length, 3);
+      await expectLater(
+        edits.delete(first.id, DeleteFill.activity), // no activity given
+        throwsA(isA<EditException>()),
+      );
+      final defaultId = await roleId(f.db, 'default');
+      await edits.delete(first.id, DeleteFill.activity, activityId: defaultId);
+      final s = await spans(f);
+      expect(s.first, (defaultId, mon(9, 10), mon(9, 30)));
+      expect(s, hasLength(4)); // nothing removed, nothing left empty
     });
 
     test('filling across midnight keeps one entry per day', () async {

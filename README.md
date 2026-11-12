@@ -10,7 +10,7 @@ the app being closed, killed, or the phone restarting — no background service.
 
 ## Features (planned for v1)
 
-- 8 activity positions in a 2×4 grid; "Free Time" is active on first launch
+- 8 activity positions in a 2×4 grid; a built-in "Default" activity runs until you set up your own
 - Atomic activity switching, automatic midnight splitting, DST-safe
 - Activity editing, deletion with history preservation, replacement
 - Full historical entry editing (change, split, delete, conflict warnings)

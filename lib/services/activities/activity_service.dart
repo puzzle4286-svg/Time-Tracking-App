@@ -54,6 +54,18 @@ class ActivityService extends ChangeNotifier {
 
   Activity? byId(int id) => _live.where((a) => a.id == id).firstOrNull;
 
+  Activity? _default;
+
+  /// The built-in Default activity (never on the grid).
+  Activity get defaultActivity => _default!;
+
+  /// Everything time can be given to: grid activities, then Default last.
+  List<Activity> get assignable => [..._live, defaultActivity];
+
+  /// A grid activity or Default.
+  Activity? assignableById(int id) =>
+      assignable.where((a) => a.id == id).firstOrNull;
+
   /// First colour not used by another live activity (or the first colour).
   int suggestColor() {
     final used = _live.map((a) => a.color).toSet();
@@ -72,7 +84,9 @@ class ActivityService extends ChangeNotifier {
   }
 
   Future<void> load() async {
-    _live = await ActivityRepository(_db).liveActivities();
+    final repo = ActivityRepository(_db);
+    _live = await repo.liveActivities();
+    _default = await repo.withRole(SystemRole.defaultActivity);
     notifyListeners();
   }
 
@@ -139,7 +153,7 @@ class ActivityService extends ChangeNotifier {
     if (isActive) {
       if (newActiveId == null ||
           newActiveId == id ||
-          byId(newActiveId) == null) {
+          assignableById(newActiveId) == null) {
         throw ArgumentError.value(
           newActiveId,
           'newActiveId',
@@ -154,7 +168,7 @@ class ActivityService extends ChangeNotifier {
         case KeepUnderName(:final name):
           _checkName(name);
         case MoveToActivity(:final activityId):
-          if (activityId == id || byId(activityId) == null) {
+          if (activityId == id || assignableById(activityId) == null) {
             throw ArgumentError.value(
               activityId,
               'activityId',
@@ -181,7 +195,7 @@ class ActivityService extends ChangeNotifier {
           await entries.reassignActivity(id, activityId);
           await activities.softDelete(id, now);
         case MarkUnavailable():
-          final unavailable = await activities.systemActivity();
+          final unavailable = await activities.withRole(SystemRole.unavailable);
           await entries.reassignActivity(id, unavailable!.id);
           await activities.softDelete(id, now);
         case null:

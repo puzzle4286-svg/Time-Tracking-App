@@ -16,17 +16,10 @@ Future<void> runDeleteActivityFlow(
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   final isActive = tracking.current.activity.id == activity.id;
-  final others = activities.live.where((a) => a.id != activity.id).toList();
-  if (isActive && others.isEmpty) {
-    messenger.showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Set up another activity first: one activity must always be running.',
-        ),
-      ),
-    );
-    return;
-  }
+  // Other grid activities, then Default last: there is always a successor.
+  final others = activities.assignable
+      .where((a) => a.id != activity.id)
+      .toList();
   final count = await activities.entryCount(activity.id);
   if (!context.mounted) return;
 

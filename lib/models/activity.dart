@@ -1,12 +1,29 @@
 import '../util/timestamps.dart';
 
+/// Built-in activities that are not on the grid and cannot be edited.
+enum SystemRole {
+  /// "Default": active on first launch; can take over any time (fill
+  /// choices, successor of a deleted activity) but is never on the grid.
+  defaultActivity('default'),
+
+  /// "Unavailable": holds history of deleted activities when chosen.
+  unavailable('unavailable');
+
+  const SystemRole(this.value);
+
+  /// Stored value in `activities.role`.
+  final String value;
+
+  static SystemRole? parse(Object? value) =>
+      values.where((r) => r.value == value).firstOrNull;
+}
+
 /// One of the user's activities.
 ///
 /// Live activities occupy one of the eight grid [position]s (1–8). Deleted
 /// activities keep their row (with [deletedAt] set and no position) so that
-/// historical time entries stay readable. The single [isSystem] activity
-/// ("Unavailable") holds history whose activity was deleted without a
-/// replacement; it is never shown in the grid.
+/// historical time entries stay readable. System activities ([role] set) are
+/// never on the grid and cannot be renamed or deleted.
 class Activity {
   const Activity({
     required this.id,
@@ -16,6 +33,7 @@ class Activity {
     required this.isSystem,
     required this.createdAt,
     required this.deletedAt,
+    this.role,
   });
 
   static const int gridRows = 2;
@@ -34,7 +52,13 @@ class Activity {
   final DateTime createdAt;
   final DateTime? deletedAt;
 
+  final SystemRole? role;
+
   bool get isDeleted => deletedAt != null;
+  bool get isDefault => role == SystemRole.defaultActivity;
+
+  /// Whether time may be assigned to it now: a grid activity or Default.
+  bool get canTakeTime => !isDeleted && (position != null || isDefault);
 
   factory Activity.fromRow(Map<String, Object?> row) => Activity(
     id: row['id']! as int,
@@ -44,5 +68,6 @@ class Activity {
     isSystem: row['is_system'] == 1,
     createdAt: fromStoredTimestamp(row['created_at']! as int),
     deletedAt: fromStoredTimestampOrNull(row['deleted_at']),
+    role: SystemRole.parse(row['role']),
   );
 }

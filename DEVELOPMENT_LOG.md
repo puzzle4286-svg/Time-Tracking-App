@@ -276,3 +276,25 @@ fill options.
   and the freed 2 min filled with Free Time (today's Developing untouched);
   Gaming end moved to 23:57 → grouped confirmation (removed Free Time 3s,
   shortened Developing), applied correctly.
+
+## 2026-11-12 – Default activity, no empty time
+
+**Requested**: never allow empty time; add a built-in "Default" activity
+that starts on first launch (empty grid), cannot be deleted or used from the
+grid, and is offered last in fill choices; fill dialog shows the activities
+directly with "(previous)/(following)".
+
+**Work completed**: `SystemRole` + schema v3; seeding on Default; Default
+allowed as successor / history target / fill / activity change; "leave
+empty" replaced by an activity choice; fill dialog is an activity list.
+
+**Testing performed**
+- 168 tests pass in all seven timezones (new: first launch with empty grid,
+  deleting the only grid activity while running hands over to Default,
+  switch to Default, fill list order, Default fill, no-gap defaults,
+  migration adds Default).
+- Emulator: upgrade migrated the existing database to v3 (Default added,
+  user activities untouched); real edit: Gaming end 23:32:57 → 23:30, fill
+  list "Free Time / Developing (following) / Default", chose Default →
+  Default 23:30:00–23:32:57, no gap. Fresh-install behaviour verified by
+  widget test only (not wiping the emulator's data).

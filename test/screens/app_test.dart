@@ -567,6 +567,51 @@ void main() {
       expect(entries[2].start, isMoment(DateTime(2026, 11, 9, 11, 30)));
     });
 
+    testWidgets('freed time lists activities directly, Default last', (
+      tester,
+    ) async {
+      await openHistoryWithEntries(tester);
+      await tapGamingBlock(tester);
+      await tester.tap(find.text('Change start / end'));
+      await tester.pumpAndSettle();
+
+      // End 11:00 -> 10:30 frees 30 min before the following Free Time.
+      await tester.tap(find.byKey(const Key('pick-end')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.keyboard_outlined));
+      await tester.pumpAndSettle();
+      final fields = find.descendant(
+        of: find.byType(TimePickerDialog),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(fields.at(0), '10');
+      await tester.enterText(fields.at(1), '30');
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await settle(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Fill the freed time'), findsOneWidget);
+      expect(find.text('Leave empty'), findsNothing);
+      expect(find.text('Another activity'), findsNothing);
+      final labels = tester
+          .widgetList<RadioListTile<int>>(find.byType(RadioListTile<int>))
+          .map((t) => ((t.title! as Row).children[2] as Expanded).child)
+          .map((w) => (w as Text).data)
+          .toList();
+      // Grid activities except Gaming itself, the neighbour marked, Default last.
+      expect(labels, ['Free Time (following)', 'Study', 'Default']);
+
+      await tester.tap(find.text('Next')); // neighbour preselected
+      await settle(tester);
+      await tester.pumpAndSettle();
+      final entries = await f.entries();
+      expect(entries.last.start, isMoment(DateTime(2026, 11, 9, 10, 30)));
+    });
+
     testWidgets('delete between the same activity merges into one entry', (
       tester,
     ) async {

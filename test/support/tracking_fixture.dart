@@ -7,7 +7,7 @@ import 'package:time_tracker/services/tracking/tracking_service.dart';
 import 'fake_clock.dart';
 import 'test_database.dart';
 
-/// Seeded database with Free Time plus two extra activities, and a
+/// Seeded database with Free Time (running), Gaming and Study, and a
 /// [TrackingService] driven by a [FakeClock].
 class TrackingFixture {
   TrackingFixture._(this.db, this.clock, this.freeTime, this.gaming, this.study)
@@ -27,7 +27,17 @@ class TrackingFixture {
     final db = await openTestDatabase(path);
     await ensureSeeded(db, installTime);
     final activities = ActivityRepository(db);
-    final freeTime = (await activities.liveActivities()).single.id;
+    // Fresh installs start on Default with an empty grid; these tests use
+    // a set-up user: Free Time at position 1, running since install.
+    final freeTime = await activities.insert(
+      name: 'Free Time',
+      color: 0,
+      position: 1,
+      createdAt: installTime,
+    );
+    await db.update('time_entries', {
+      'activity_id': freeTime,
+    }, where: 'end_utc IS NULL');
     final gaming = await activities.insert(
       name: 'Gaming',
       color: 1,

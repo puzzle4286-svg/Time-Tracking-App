@@ -238,8 +238,9 @@ tracking reconcile so the header, History and future statistics follow.
   the running entry's end cannot be set; an edit may not swallow the running
   entry.
 - **Freed time** (revised 2026-11-12): when the entry shrinks, the user
-  chooses per side what fills exactly the freed part of the old range: the
-  adjacent neighbour's activity, another activity, or nothing. The neighbour
+  chooses per side which activity takes exactly the freed part of the old
+  range (list of activities, neighbour marked and preselected, Default last;
+  never empty – D35). The neighbour
   is not offered when it is the entry's own activity (e.g. the same activity
   continuing past midnight), because filling with it would merge the edit
   away; previously such edits around midnight were silently undone.
@@ -251,8 +252,8 @@ tracking reconcile so the header, History and future statistics follow.
 - **Delete**: fill with the previous or following activity, or split the time
   evenly between them. An option is offered only if that neighbour touches
   the entry exactly. Deleting the running entry offers "resume the previous
-  activity". "Leave empty" appears only when no neighbour is adjacent (and
-  never for the running entry).
+  activity". With no adjacent neighbour, the user picks the activity that
+  takes the time (D35).
 - **Split** was briefly offered and then removed at the developer's request
   (2026-11-12): splitting one activity into two of its own makes no sense for
   this app. This deliberately drops the original spec's "split an entry".
@@ -280,3 +281,23 @@ directly. After local midnight (while UTC is still the previous date) a UTC
 failed — the real reason entries around midnight could not be edited.
 `pickDateTime` converts every bound to local time; a widget test reproduces
 the failure.
+
+## D34 – Built-in "Default" activity replaces "Free Time" as the start
+Developer request (2026-11-12), changing spec 4.1: a fresh install has all
+eight grid slots empty and the built-in **Default** activity running. Default
+is never on the grid, cannot be renamed or deleted, and cannot be selected
+from the grid; it is offered (always last) wherever time must go somewhere:
+freed-time fills, deleting an entry with no adjacent neighbour, changing an
+entry's activity, the successor of a deleted running activity, and as the
+target for a deleted activity's history. Because Default always exists, a
+running activity can always be deleted.
+Schema v3 adds `activities.role` (`default`, `unavailable`, unique) and
+inserts Default for existing installs only; fresh installs get it from
+seeding. `Activity.canTakeTime` = grid activity or Default.
+
+## D35 – Time is never left empty
+No edit offers or performs "leave empty". Freed time goes to the chosen
+activity, otherwise the adjacent neighbour, otherwise Default. Deleting an
+entry with no adjacent neighbour asks which activity takes over its time
+(implemented as changing that entry's activity). Recovery after a missing
+open entry falls back to Default.

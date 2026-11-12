@@ -53,8 +53,9 @@ enum DeleteFill {
   /// Both neighbours meet in the middle of the gap.
   split,
 
-  /// The time stays untracked. Only offered when no neighbour is adjacent.
-  leaveEmpty,
+  /// The time goes to a chosen activity (the entry's activity changes).
+  /// Offered when no neighbour is adjacent; time is never left empty.
+  activity,
 }
 
 /// Neighbours of an entry that touch it exactly, and the fill options.
@@ -107,10 +108,7 @@ class EntryEditService extends ChangeNotifier {
 
   Future<void> changeActivity(int entryId, int activityId) async {
     await _db.transaction((txn) async {
-      final target = await ActivityRepository(txn).byId(activityId);
-      if (target == null || target.isDeleted || target.isSystem) {
-        throw const EditException('Choose an activity from the grid.');
-      }
+      await _checkAssignable(txn, activityId);
       final e = await _entry(txn, entryId);
       final entries = TimeEntryRepository(txn);
       await entries.setActivity(entryId, activityId);
@@ -127,14 +125,14 @@ class EntryEditService extends ChangeNotifier {
   ///
   /// Rules: overlapped entries are shortened, split around the edited entry,
   /// or removed if fully covered. Time the edited entry gives up (see
-  /// [freedRanges]) is filled as chosen in [fills]: an activity id, or null to
-  /// leave it empty. A side missing from [fills] defaults to its adjacent
-  /// neighbour (if any). The end of the running entry cannot be set.
+  /// [freedRanges]) always goes to an activity: the one chosen in [fills],
+  /// otherwise the adjacent neighbour, otherwise Default. Time is never left
+  /// empty. The end of the running entry cannot be set.
   Future<List<EntryEffect>> retime(
     int entryId, {
     required DateTime start,
     DateTime? end,
-    Map<FreedSide, int?> fills = const {},
+    Map<FreedSide, int> fills = const {},
     required bool apply,
   }) async {
     final effects = await _db.transaction((txn) async {
@@ -218,7 +216,7 @@ class EntryEditService extends ChangeNotifier {
     int entryId,
     DateTime start,
     DateTime? requestedEnd,
-    Map<FreedSide, int?> fills,
+    Map<FreedSide, int> fills,
   ) async {
     final entries = TimeEntryRepository(txn);
     final activities = await ActivityRepository(txn).allById();
@@ -253,18 +251,18 @@ class EntryEditService extends ChangeNotifier {
 
     // Shrinking: fill the freed time as chosen. Filling with the adjacent
     // neighbour's activity extends that neighbour.
+    final defaultId = (await ActivityRepository(
+      txn,
+    ).withRole(SystemRole.defaultActivity))!.id;
     for (final f in await _freed(txn, e, start, end)) {
       final neighbour = f.neighbour;
-      final fillId = fills.containsKey(f.side)
-          ? fills[f.side]
-          : (neighbour != null && neighbour.activityId != e.activityId
-                ? neighbour.activityId
-                : null);
-      if (fillId == null) continue; // leave empty
-      final fill = activities[fillId];
-      if (fill == null || fill.isDeleted || fill.isSystem) {
-        throw const EditException('Choose an activity from the grid.');
-      }
+      final fillId =
+          fills[f.side] ??
+          (neighbour != null && neighbour.activityId != e.activityId
+              ? neighbour.activityId
+              : defaultId);
+      await _checkAssignable(txn, fillId, notSameAs: e.activityId);
+      final fill = activities[fillId]!;
       if (neighbour != null && neighbour.activityId == fillId) {
         final (s, t) = f.side == FreedSide.start
             ? (neighbour.start, f.end)
@@ -347,16 +345,16 @@ class EntryEditService extends ChangeNotifier {
           DeleteFill.following,
         if (prev != null && next != null && prev.activityId != next.activityId)
           DeleteFill.split,
-        // Leaving a gap is only allowed when nothing can fill it, and never
-        // for the running entry (something must always be active).
-        if (prev == null && next == null && !e.isOpen) DeleteFill.leaveEmpty,
+        // Nothing adjacent: the time goes to an activity the user picks.
+        if (prev == null && next == null) DeleteFill.activity,
       ],
     );
   }
 
   /// Deletes an entry and fills its time as chosen. Deleting the running
-  /// entry with [DeleteFill.previous] resumes the previous activity.
-  Future<void> delete(int entryId, DeleteFill fill) async {
+  /// entry with [DeleteFill.previous] resumes the previous activity. With
+  /// [DeleteFill.activity], [activityId] takes over the time.
+  Future<void> delete(int entryId, DeleteFill fill, {int? activityId}) async {
     final now = _clock.now();
     await _db.transaction((txn) async {
       final entries = TimeEntryRepository(txn);
@@ -370,9 +368,16 @@ class EntryEditService extends ChangeNotifier {
         DeleteFill.previous => prev != null,
         DeleteFill.following => next != null,
         DeleteFill.split => prev != null && next != null,
-        DeleteFill.leaveEmpty => prev == null && next == null && !e.isOpen,
+        DeleteFill.activity => prev == null && next == null,
       };
       if (!ok) throw const EditException('That option is not available.');
+
+      if (fill == DeleteFill.activity) {
+        await _checkAssignable(txn, activityId, notSameAs: e.activityId);
+        await entries.setActivity(e.id, activityId!);
+        await _mergeAround(entries, e.start, e.end ?? now);
+        return;
+      }
 
       // Delete first: if `e` is open, `prev` may only become open afterwards.
       await entries.delete(e.id);
@@ -389,8 +394,8 @@ class EntryEditService extends ChangeNotifier {
           await entries.setBounds(prev!.id, prev.start, mid);
           await entries.setBounds(next!.id, mid, next.end);
           touched.addAll([prev.id, next.id]);
-        case DeleteFill.leaveEmpty:
-          break;
+        case DeleteFill.activity:
+          break; // handled above
       }
       await _splitAll(txn, touched, now);
       await _mergeAround(entries, e.start, e.end ?? now);
@@ -399,6 +404,24 @@ class EntryEditService extends ChangeNotifier {
   }
 
   // ---- Helpers -----------------------------------------------------------
+
+  /// Throws unless [activityId] may take time (a grid activity or Default)
+  /// and differs from [notSameAs].
+  Future<void> _checkAssignable(
+    DatabaseExecutor db,
+    int? activityId, {
+    int? notSameAs,
+  }) async {
+    final a = activityId == null
+        ? null
+        : await ActivityRepository(db).byId(activityId);
+    if (a == null || !a.canTakeTime) {
+      throw const EditException('Choose one of your activities or Default.');
+    }
+    if (a.id == notSameAs) {
+      throw const EditException('Choose a different activity.');
+    }
+  }
 
   Future<TimeEntry> _entry(DatabaseExecutor db, int id) async {
     final e = await TimeEntryRepository(db).byId(id);

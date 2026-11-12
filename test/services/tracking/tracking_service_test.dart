@@ -8,6 +8,7 @@ import 'package:time_tracker/services/tracking/time_range.dart';
 import 'package:time_tracker/services/tracking/tracking_service.dart';
 
 import '../../support/matchers.dart';
+import '../../support/test_database.dart';
 import '../../support/tracking_fixture.dart';
 
 void main() {
@@ -92,9 +93,7 @@ void main() {
     });
 
     test('refuses unknown, deleted and system activities unchanged', () async {
-      final system =
-          (await f.db.query('activities', where: 'is_system = 1')).single['id']!
-              as int;
+      final system = await roleId(f.db, 'unavailable');
       await f.db.update(
         'activities',
         {'deleted_at': 1, 'position': null},
@@ -109,6 +108,14 @@ void main() {
       final entries = await expectConsistent();
       expect(entries, hasLength(1));
       expect(f.service.current.activity.id, f.freeTime);
+    });
+
+    test('Default can be switched to (it is off the grid)', () async {
+      final defaultId = await roleId(f.db, 'default');
+      f.clock.advance(const Duration(minutes: 5));
+      await f.service.switchTo(defaultId);
+      expect(f.service.current.activity.name, 'Default');
+      expect(f.service.current.activity.isDefault, isTrue);
     });
 
     test('notifies listeners', () async {
@@ -234,7 +241,10 @@ void main() {
       await f.db.delete('time_entries');
       await f.service.reconcile();
       await expectConsistent();
-      expect(f.service.current.activity.id, f.freeTime);
+      expect(
+        f.service.current.activity.isDefault,
+        isTrue,
+      ); // falls back to Default
     });
 
     test(

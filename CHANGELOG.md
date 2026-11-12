@@ -44,6 +44,13 @@ explicitly under **Database**.
 - Edit confirmations are grouped ("These entries will be removed:", …) and
   show entries in the History style with name and duration.
 
+- Built-in "Default" activity: running on first launch with all eight slots
+  empty; offered (last) wherever time must be reassigned.
+
+### Changed
+- Time is never left empty: freed time and deleted entries always go to an
+  activity (list of activities, neighbour marked, Default last).
+
 ### Fixed
 - Entries around midnight could not be edited (the date picker received UTC
   bounds).
@@ -77,3 +84,5 @@ explicitly under **Database**.
 - Schema v2: all timestamps are now UTC epoch **microseconds** (were
   milliseconds). Migration multiplies existing values by 1000; column names
   unchanged.
+- Schema v3: `activities.role` marks built-in activities; adds "Default" to
+  existing installs.

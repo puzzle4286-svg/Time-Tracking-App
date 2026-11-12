@@ -57,7 +57,7 @@ void main() {
 
     final db = await openTestDatabase(path);
     addTearDown(db.close);
-    expect(await db.getVersion(), 2);
+    expect(await db.getVersion(), schemaVersion);
 
     final entries = await db.query('time_entries', orderBy: 'id');
     expect(entries[0]['start_utc'], startMs * 1000);
@@ -67,6 +67,20 @@ void main() {
     expect(activities[0]['created_at'], startMs * 1000);
     expect(activities[0]['deleted_at'], isNull);
     expect(activities[1]['deleted_at'], endMs * 1000);
+
+    // v3 adds the built-in Default activity to existing installs, without
+    // touching their own activities.
+    final defaults = await db.query('activities', where: "role = 'default'");
+    expect(defaults.single['name'], 'Default');
+    expect(defaults.single['position'], isNull);
+    expect(
+      (await db.query(
+        'activities',
+        where: 'id = ?',
+        whereArgs: [a],
+      )).single['position'],
+      1,
+    );
 
     final open = await TimeEntryRepository(db).openEntry();
     expect(open!.start, DateTime.utc(2026, 11, 9, 9, 30));

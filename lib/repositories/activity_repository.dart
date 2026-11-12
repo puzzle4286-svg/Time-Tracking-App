@@ -38,8 +38,12 @@ class ActivityRepository {
     return rows.isEmpty ? null : Activity.fromRow(rows.single);
   }
 
-  Future<Activity?> systemActivity() async {
-    final rows = await _db.query('activities', where: 'is_system = 1');
+  Future<Activity?> withRole(SystemRole role) async {
+    final rows = await _db.query(
+      'activities',
+      where: 'role = ?',
+      whereArgs: [role.value],
+    );
     return rows.isEmpty ? null : Activity.fromRow(rows.single);
   }
 
@@ -53,13 +57,14 @@ class ActivityRepository {
     required int color,
     required int? position,
     required DateTime createdAt,
-    bool isSystem = false,
+    SystemRole? role,
   }) {
     return _db.insert('activities', {
       'name': name,
       'color': color,
       'position': position,
-      'is_system': isSystem ? 1 : 0,
+      'is_system': role == null ? 0 : 1,
+      'role': role?.value,
       'created_at': toStoredTimestamp(createdAt),
     });
   }

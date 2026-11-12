@@ -86,7 +86,7 @@ class TrackingService extends ChangeNotifier {
       final open = await _reconcileIn(txn, now);
       if (open.activityId != activityId) {
         final target = await ActivityRepository(txn).byId(activityId);
-        if (target == null || target.isDeleted || target.isSystem) {
+        if (target == null || !target.canTakeTime) {
           throw ArgumentError.value(
             activityId,
             'activityId',
@@ -126,14 +126,15 @@ class TrackingService extends ChangeNotifier {
   /// but if no entry is open, start one rather than leave nothing active.
   Future<TimeEntry> _recoverOpenEntry(Transaction txn, DateTime now) async {
     debugPrint('TrackingService: no open entry found; recovering.');
-    final live = await ActivityRepository(txn).liveActivities();
-    if (live.isEmpty) {
-      throw StateError('No live activity exists to track.');
-    }
+    final activities = ActivityRepository(txn);
+    final fallback =
+        await activities.withRole(SystemRole.defaultActivity) ??
+        (await activities.liveActivities()).firstOrNull;
+    if (fallback == null) throw StateError('No activity exists to track.');
     final id = await TimeEntryRepository(
       txn,
-    ).insert(activityId: live.first.id, start: now);
-    return TimeEntry(id: id, activityId: live.first.id, start: now, end: null);
+    ).insert(activityId: fallback.id, start: now);
+    return TimeEntry(id: id, activityId: fallback.id, start: now, end: null);
   }
 
   Future<ActiveSession> _loadSession(Transaction txn, DateTime now) async {

@@ -125,7 +125,7 @@ class _EntryFlow {
       builder: (context) => SimpleDialog(
         title: const Text('Change activity'),
         children: [
-          for (final a in activities.live)
+          for (final a in activities.assignable)
             SimpleDialogOption(
               onPressed: () => Navigator.of(context).pop(a.id),
               child: Row(
@@ -152,7 +152,7 @@ class _EntryFlow {
     if (bounds == null || !context.mounted) return;
     await _run(() async {
       // Ask what fills any time the entry gives up.
-      final fills = <FreedSide, int?>{};
+      final fills = <FreedSide, int>{};
       final freed = await edits.freedRanges(
         entry.id,
         start: bounds.start,
@@ -160,18 +160,18 @@ class _EntryFlow {
       );
       for (final range in freed) {
         if (!context.mounted) return;
-        final choice = await showDialog<({int? activityId})>(
+        final choice = await showDialog<int>(
           context: context,
           builder: (_) => _FillDialog(
             range: range,
             choices: [
-              for (final a in activities.live)
+              for (final a in activities.assignable)
                 if (a.id != entry.activityId) a,
             ],
           ),
         );
         if (choice == null) return; // cancelled
-        fills[range.side] = choice.activityId;
+        fills[range.side] = choice;
       }
 
       final effects = await edits.retime(
@@ -217,17 +217,23 @@ class _EntryFlow {
       );
       return;
     }
-    final fill = await showDialog<DeleteFill>(
+    final result = await showDialog<({DeleteFill fill, int? activityId})>(
       context: context,
       builder: (_) => _DeleteDialog(
         entry: entry,
         activity: activity,
         options: options,
         now: clock.now(),
+        choices: [
+          for (final a in activities.assignable)
+            if (a.id != entry.activityId) a,
+        ],
       ),
     );
-    if (fill == null) return;
-    await _run(() => edits.delete(entry.id, fill));
+    if (result == null) return;
+    await _run(
+      () => edits.delete(entry.id, result.fill, activityId: result.activityId),
+    );
   }
 }
 
@@ -308,6 +314,7 @@ class _DeleteDialog extends StatefulWidget {
     required this.activity,
     required this.options,
     required this.now,
+    required this.choices,
   });
 
   final TimeEntry entry;
@@ -315,12 +322,16 @@ class _DeleteDialog extends StatefulWidget {
   final DeleteOptions options;
   final DateTime now;
 
+  /// Activities that can take the time when no neighbour is adjacent.
+  final List<Activity> choices;
+
   @override
   State<_DeleteDialog> createState() => _DeleteDialogState();
 }
 
 class _DeleteDialogState extends State<_DeleteDialog> {
   late DeleteFill _fill = widget.options.available.first;
+  late int _activity = widget.choices.first.id;
 
   String _label(DeleteFill f) {
     final prev = widget.options.previous?.activity.name;
@@ -337,7 +348,7 @@ class _DeleteDialogState extends State<_DeleteDialog> {
             : 'Fill with the previous activity ($prev)',
       DeleteFill.following => 'Fill with the following activity ($next)',
       DeleteFill.split => 'Split evenly between $prev and $next',
-      DeleteFill.leaveEmpty => 'Leave the time empty',
+      DeleteFill.activity => 'Give the time to:',
     };
   }
 
@@ -359,20 +370,28 @@ class _DeleteDialogState extends State<_DeleteDialog> {
           const SizedBox(height: 12),
           const Text('What should fill its time?'),
           const SizedBox(height: 8),
-          RadioGroup<DeleteFill>(
-            groupValue: _fill,
-            onChanged: (v) => setState(() => _fill = v!),
-            child: Column(
-              children: [
-                for (final f in widget.options.available)
-                  RadioListTile(
-                    value: f,
-                    title: Text(_label(f)),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-              ],
+          // No neighbour touches it: pick the activity that takes over.
+          if (widget.options.available.contains(DeleteFill.activity))
+            _ActivityRadioList(
+              choices: widget.choices,
+              selected: _activity,
+              onChanged: (id) => setState(() => _activity = id),
+            )
+          else
+            RadioGroup<DeleteFill>(
+              groupValue: _fill,
+              onChanged: (v) => setState(() => _fill = v!),
+              child: Column(
+                children: [
+                  for (final f in widget.options.available)
+                    RadioListTile(
+                      value: f,
+                      title: Text(_label(f)),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
       actions: [
@@ -385,7 +404,11 @@ class _DeleteDialogState extends State<_DeleteDialog> {
             backgroundColor: Theme.of(context).colorScheme.error,
             foregroundColor: Theme.of(context).colorScheme.onError,
           ),
-          onPressed: () => Navigator.of(context).pop(_fill),
+          onPressed: () =>
+              Navigator.of(context).pop<({DeleteFill fill, int? activityId})>((
+                fill: _fill,
+                activityId: _fill == DeleteFill.activity ? _activity : null,
+              )),
           child: const Text('Delete'),
         ),
       ],
@@ -474,9 +497,9 @@ class _EffectsDialog extends StatelessWidget {
   }
 }
 
-enum _FillOption { neighbour, other, empty }
-
-/// Asks what fills time an edited entry gives up.
+/// Asks which activity takes over time an edited entry gives up. Time is
+/// never left empty. The adjacent neighbour (if any) is marked and
+/// preselected; Default comes last.
 class _FillDialog extends StatefulWidget {
   const _FillDialog({required this.range, required this.choices});
 
@@ -490,20 +513,13 @@ class _FillDialog extends StatefulWidget {
 }
 
 class _FillDialogState extends State<_FillDialog> {
-  late _FillOption _option = widget.range.neighbour != null
-      ? _FillOption.neighbour
-      : _FillOption.empty;
-  late int? _other = widget.choices
-      .where((a) => a.id != widget.range.neighbour?.id)
-      .firstOrNull
-      ?.id;
+  late int _selected = widget.range.neighbour?.id ?? widget.choices.first.id;
 
   @override
   Widget build(BuildContext context) {
     final range = widget.range;
-    final neighbour = range.neighbour;
     final where = range.side == FreedSide.start ? 'before' : 'after';
-    final others = widget.choices.where((a) => a.id != neighbour?.id).toList();
+    final mark = range.side == FreedSide.start ? 'previous' : 'following';
     return AlertDialog(
       title: const Text('Fill the freed time'),
       scrollable: true,
@@ -513,48 +529,15 @@ class _FillDialogState extends State<_FillDialog> {
         children: [
           Text(
             'This frees ${formatDurationPrecise(range.duration)} $where the '
-            'entry. What should fill it?',
+            'entry. Which activity takes it over?',
           ),
           const SizedBox(height: 8),
-          RadioGroup<_FillOption>(
-            groupValue: _option,
-            onChanged: (v) => setState(() => _option = v!),
-            child: Column(
-              children: [
-                if (neighbour != null)
-                  RadioListTile(
-                    value: _FillOption.neighbour,
-                    title: Text(
-                      '${neighbour.name} '
-                      '(${range.side == FreedSide.start ? 'previous' : 'following'})',
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                RadioListTile(
-                  value: _FillOption.other,
-                  enabled: others.isNotEmpty,
-                  title: const Text('Another activity'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                if (_option == _FillOption.other)
-                  DropdownButtonFormField<int>(
-                    initialValue: _other,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      for (final a in others)
-                        DropdownMenuItem(value: a.id, child: Text(a.name)),
-                    ],
-                    onChanged: (v) => setState(() => _other = v),
-                  ),
-                const RadioListTile(
-                  value: _FillOption.empty,
-                  title: Text('Leave empty'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
-            ),
+          _ActivityRadioList(
+            choices: widget.choices,
+            selected: _selected,
+            onChanged: (id) => setState(() => _selected = id),
+            labelFor: (a) =>
+                a.id == range.neighbour?.id ? '${a.name} ($mark)' : a.name,
           ),
         ],
       ),
@@ -564,18 +547,49 @@ class _FillDialogState extends State<_FillDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _option == _FillOption.other && _other == null
-              ? null
-              : () => Navigator.of(context).pop<({int? activityId})>((
-                  activityId: switch (_option) {
-                    _FillOption.neighbour => neighbour!.id,
-                    _FillOption.other => _other,
-                    _FillOption.empty => null,
-                  },
-                )),
+          onPressed: () => Navigator.of(context).pop(_selected),
           child: const Text('Next'),
         ),
       ],
+    );
+  }
+}
+
+/// Radio list of activities with their colour.
+class _ActivityRadioList extends StatelessWidget {
+  const _ActivityRadioList({
+    required this.choices,
+    required this.selected,
+    required this.onChanged,
+    this.labelFor,
+  });
+
+  final List<Activity> choices;
+  final int? selected;
+  final ValueChanged<int> onChanged;
+  final String Function(Activity)? labelFor;
+
+  @override
+  Widget build(BuildContext context) {
+    return RadioGroup<int>(
+      groupValue: selected,
+      onChanged: (v) => onChanged(v!),
+      child: Column(
+        children: [
+          for (final a in choices)
+            RadioListTile<int>(
+              value: a.id,
+              contentPadding: EdgeInsets.zero,
+              title: Row(
+                children: [
+                  CircleAvatar(radius: 7, backgroundColor: Color(a.color)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(labelFor?.call(a) ?? a.name)),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -60,6 +60,24 @@ const Map<int, List<String>> migrations = {
                             ELSE deleted_at * 1000 END
     ''',
   ],
+  // v3: built-in "Default" activity. `role` marks system activities
+  // ('default', 'unavailable'). Existing installs get a Default row; fresh
+  // installs get it from seeding (the table is still empty here then).
+  3: [
+    'ALTER TABLE activities ADD COLUMN role TEXT',
+    "UPDATE activities SET role = 'unavailable' WHERE is_system = 1",
+    '''
+    INSERT INTO activities (name, color, position, is_system, role, created_at)
+      SELECT 'Default', 4287669422, NULL, 1, 'default',
+             CAST(strftime('%s', 'now') AS INTEGER) * 1000000
+      WHERE EXISTS (SELECT 1 FROM activities)
+        AND NOT EXISTS (SELECT 1 FROM activities WHERE role = 'default')
+    ''',
+    '''
+    CREATE UNIQUE INDEX activities_one_per_role
+      ON activities(role) WHERE role IS NOT NULL
+    ''',
+  ],
 };
 
 int get schemaVersion => migrations.keys.reduce((a, b) => a > b ? a : b);
