@@ -1,0 +1,5 @@
+First release on F-Droid.
+- Eight activity tiles, one tap to switch; rearrange by dragging
+- History timeline with full editing; Insights with swipe between periods
+- Goals, home-screen widget, CSV export, JSON backup and restore
+- Neon and Flat app icons, light / dark / black themes

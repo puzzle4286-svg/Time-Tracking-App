@@ -6,7 +6,7 @@ Eight fixed activity buttons. Exactly one activity is always active; tapping
 another one switches to it. Tracking is purely timestamp-based, so it survives
 the app being closed, killed, or the phone restarting — no background service.
 
-> Status: **v0.1.1** – all planned phases complete. See [TASKS.md](TASKS.md).
+> Status: **v0.2.0** – all planned phases complete; prepared for F-Droid. See [TASKS.md](TASKS.md).
 
 ## Features (planned for v1)
 
@@ -72,3 +72,16 @@ Integration test on the real app (Linux desktop):
 ```bash
 flutter test integration_test -d linux
 ```
+
+## Releases
+
+Published through F-Droid (D52). Store texts live in
+`fastlane/metadata/android/en-US/`; the build recipe draft is in
+`fdroid/`. For a new version: bump `version` in `pubspec.yaml` and
+`appVersion` in `lib/app/app_info.dart`, add
+`fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`, commit and tag
+`v<version>`.
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).

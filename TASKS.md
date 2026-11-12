@@ -138,6 +138,8 @@ A phase is only checked off once its functionality is tested.
 - [x] App icon: Neon (default) and Flat, choosable in Settings (D50); 0.1.1
 - [x] Renamed to Lifestring (D51)
 - [x] Insights: swipe to change the period; scroll position kept (D38)
+- [x] F-Droid preparation: license, app ID, listing, build recipe (D52); 0.2.0
+- [ ] Submit the recipe to fdroiddata (merge request on GitLab)
 
 ## Known issues (accepted, no fix planned)
 - Very short entries are stretched to label height on the timeline, so the

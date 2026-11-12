@@ -635,3 +635,28 @@ previous results stay, dimmed, while a new period loads (D38).
 - New integration test on the real Linux build
   (`integration_test/insights_swipe_test.dart`): swipe back and forward
   with the list scrolled; label and offset as expected.
+
+## 2026-11-13 – F-Droid preparation, version 0.2.0
+
+**Requested**: publish on F-Droid; the developer left the choices to the
+assistant.
+
+**Work completed** (D52): GPL-3.0-or-later license; app ID
+`io.github.puzzle4286svg.lifestring`; fastlane store listing with a 512 px
+icon from the icon script; fdroiddata recipe draft in `fdroid/`; README
+release and license sections; version 0.2.0+3.
+
+**Problems and solutions**
+- package:sqlite3's build hook downloads a prebuilt SQLite for every target,
+  Android included, which F-Droid does not accept. The recipe switches it to
+  the system library (Android never loads it; sqflite uses the platform's
+  SQLite).
+- Release builds were signed with the debug key; the recipe removes that
+  line so F-Droid receives an unsigned APK.
+
+**Testing performed**
+- Full test suite (275) and analyze after the ID change.
+- Clean copy built with the recipe's prebuild and build commands: package
+  `io.github.puzzle4286svg.lifestring` 0.2.0 (3), unsigned, no SQLite
+  library, native libraries only from Flutter and package:jni.
+- Not yet run on the phone (disconnected) or through fdroidserver itself.

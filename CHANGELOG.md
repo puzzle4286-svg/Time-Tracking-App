@@ -83,6 +83,10 @@ explicitly under **Database**.
   names). Data, backups and the app ID are unchanged.
 - Insights: swipe left / right to change the period; changing it keeps the
   scroll position.
+- Version 0.2.0, prepared for F-Droid: GPL-3.0-or-later license, store
+  listing, build recipe. **App ID changed** to
+  `io.github.puzzle4286svg.lifestring`: installs as a new app; move data with
+  a JSON backup.
 - Main screen shows the running activity's goals under today's total: one
   bar per goal with green (between targets) and red (over the maximum)
   zones and labelled min / max marks.

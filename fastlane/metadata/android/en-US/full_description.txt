@@ -1,0 +1,25 @@
+<p>Lifestring shows where your time goes. Your day is one unbroken string: at every moment exactly one activity is running, and one tap switches to the next.</p>
+
+<p><b>Tracking</b></p>
+<ul>
+<li>Up to eight activities in a 4 × 2 grid, each with a name, colour and icon; rearrange them by dragging.</li>
+<li>One tap switches; the running activity, its session time and today's total are always on top.</li>
+<li>Tracking is based on timestamps only. It keeps going when the app is closed, killed or the phone restarts – no background service, no battery drain.</li>
+<li>Entries are split at midnight automatically and handle daylight saving time correctly.</li>
+<li>Home-screen widget: switch activities without opening the app.</li>
+</ul>
+
+<p><b>History and insights</b></p>
+<ul>
+<li>History: a continuous, to-scale timeline of every day. Tap an entry to change its activity or times, or delete it; the gap is filled the way you choose.</li>
+<li>Insights: distribution of your time per day, week, month, year or all time, and a comparison with the previous period. Swipe to move between periods.</li>
+<li>Goals per activity: a minimum, a maximum or both, over any number of hours, days, weeks or months.</li>
+</ul>
+
+<p><b>Yours, and only yours</b></p>
+<ul>
+<li>Everything stays on your device. No account, no internet permission, no ads, no tracking.</li>
+<li>Export your entries as CSV, or back up and restore all data as JSON.</li>
+<li>Light, dark and black (OLED) themes, fourteen accent colours and an optional Neon look.</li>
+<li>Choose between two app icons, Neon and Flat.</li>
+</ul>

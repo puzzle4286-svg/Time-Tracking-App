@@ -600,3 +600,33 @@ or data: the package / application ID `io.github.puzzle4286svg.time_tracker`
 name, the database file `time_tracker.db`, the backup `format` tag
 `time-tracker-backup` (older backups must still restore), the widget's
 `timetracker://` link scheme, and internal names such as `TimeTrackerApp`.
+
+## D52 – Published on F-Droid; app ID io.github.puzzle4286svg.lifestring (2026-11-13)
+- **License**: GPL-3.0-or-later (`LICENSE`), the usual choice on F-Droid:
+  anyone may reuse the code, and versions they distribute stay open source.
+- **App ID** changed from `io.github.puzzle4286svg.time_tracker` to
+  `io.github.puzzle4286svg.lifestring` (Gradle namespace and application
+  ID, Kotlin package, widget provider name, Linux application ID and binary
+  name), before the first public release, because it can never change
+  afterwards. F-Droid signs with its own key, so the F-Droid build could not
+  update the existing install anyway. The new ID installs as a separate app:
+  move data with a JSON backup (the format tag is unchanged, D51). Still
+  `time_tracker`: the Dart package name, the database file, the method
+  channel name and the Linux data folder (internal, or would lose data).
+- **Build recipe** (`fdroid/io.github.puzzle4286svg.lifestring.yml`, the
+  draft for fdroiddata): Flutter 3.44.2 from F-Droid's srclib, pub cache
+  inside the build directory, release signing line removed (F-Droid signs).
+  `package:sqlite3` (needed only for the Linux build, D39) would download a
+  prebuilt SQLite in its build hook even for Android, where it is excluded
+  from the APK anyway (D43). The recipe sets its `source: system` user
+  define, so nothing is downloaded or bundled; Android reads SQLite through
+  sqflite. The repo keeps the default so the Linux build and `flutter test`
+  keep working. Checked by building a clean copy with the recipe's
+  commands: unsigned APK, no SQLite library, only Flutter's libraries and
+  `libdartjni` (compiled from source by package:jni).
+- **Store listing** in `fastlane/metadata/android/en-US/` (title,
+  descriptions, per-versionCode changelogs, 512 px icon from
+  `tool/generate_app_icons.py`). New versions: bump `version` in
+  pubspec.yaml and `appVersion`, add `changelogs/<versionCode>.txt`, tag
+  `v<version>`; F-Droid's update check reads the tags.
+- Version 0.2.0 (versionCode 3) is the first F-Droid release.

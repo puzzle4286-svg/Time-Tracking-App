@@ -1,0 +1,46 @@
+# Draft build recipe for fdroiddata (metadata/io.github.puzzle4286svg.lifestring.yml).
+# Kept here so it is versioned with the app; copy it into a fork of
+# https://gitlab.com/fdroid/fdroiddata to submit or update it (D52).
+Categories:
+  - Time
+License: GPL-3.0-or-later
+AuthorName: puzzle4286-svg
+SourceCode: https://github.com/puzzle4286-svg/Time-Tracking-App
+IssueTracker: https://github.com/puzzle4286-svg/Time-Tracking-App/issues
+Changelog: https://github.com/puzzle4286-svg/Time-Tracking-App/blob/HEAD/CHANGELOG.md
+
+AutoName: Lifestring
+
+RepoType: git
+Repo: https://github.com/puzzle4286-svg/Time-Tracking-App.git
+
+Builds:
+  - versionName: 0.2.0
+    versionCode: 3
+    commit: v0.2.0
+    output: build/app/outputs/flutter-apk/app-release.apk
+    srclibs:
+      - flutter@3.44.2
+    prebuild:
+      # On Android the app reads SQLite through sqflite (the system's SQLite,
+      # via Java); package:sqlite3 (used by the Linux build) would otherwise
+      # download a prebuilt library in its build hook. Use the system copy
+      # instead, so nothing is downloaded or bundled.
+      - printf '\nhooks:\n  user_defines:\n    sqlite3:\n      source: system\n' >> pubspec.yaml
+      # F-Droid signs the APK itself; the repo signs release builds with the
+      # local debug key for sideloading.
+      - sed -i -e '/signingConfig = signingConfigs.getByName("debug")/d' android/app/build.gradle.kts
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get
+    scandelete:
+      - .pub-cache
+    build:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
+CurrentVersion: 0.2.0
+CurrentVersionCode: 3

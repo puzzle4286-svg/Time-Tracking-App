@@ -6,6 +6,7 @@ Writes, relative to the project root:
   layer (Android 13 themed icons) and background colours.
 - PNG fallbacks for Android 7 (mipmap-*dpi).
 - Settings previews (assets/app_icons/*.png).
+- The F-Droid store icon (fastlane/.../images/icon.png, Neon).
 
 Run after changing the design:  python3 tool/generate_app_icons.py
 Needs Pillow.
@@ -231,6 +232,10 @@ def main():
         for density, size in DENSITIES.items():
             render(variant, size).save(RES / f"mipmap-{density}/{name}.png")
         render(variant, 192).save(assets / f"{variant}.png")
+    # Store listing icon (F-Droid reads fastlane metadata).
+    store = ROOT / "fastlane/metadata/android/en-US/images"
+    store.mkdir(parents=True, exist_ok=True)
+    render("neon", 512).save(store / "icon.png")
     colors.append("</resources>")
     (RES / "values/ic_launcher_colors.xml").write_text("\n".join(colors) + "\n")
     (RES / "drawable/ic_launcher_monochrome.xml").write_text(monochrome())

@@ -1,4 +1,4 @@
-package io.github.puzzle4286svg.time_tracker
+package io.github.puzzle4286svg.lifestring
 
 import android.content.Intent
 import android.os.Bundle

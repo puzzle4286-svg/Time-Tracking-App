@@ -29,7 +29,7 @@ import '../tracking/tracking_service.dart';
 /// a background Dart isolate and uses the normal [TrackingService.switchTo].
 abstract final class SwitcherWidget {
   static const androidProvider =
-      'io.github.puzzle4286svg.time_tracker.SwitcherWidgetProvider';
+      'io.github.puzzle4286svg.lifestring.SwitcherWidgetProvider';
 
   /// Logical size of one tile image, including [padding] on every side.
   ///
