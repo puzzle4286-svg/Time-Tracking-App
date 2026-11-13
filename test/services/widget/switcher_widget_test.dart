@@ -135,6 +135,25 @@ void main() {
       );
     });
 
+    test('is grey in Grayscale, coloured otherwise', () async {
+      final a = _activity();
+      const probe = Offset(SwitcherWidget.padding + 6, 26);
+      bool grey(Color c) =>
+          (c.r - c.g).abs() < 3 / 255 && (c.g - c.b).abs() < 3 / 255;
+      final coloured = await _pixel(await render(a, active: true), probe);
+      expect(grey(coloured), isFalse);
+      final png = await SwitcherWidget.renderTile(
+        a,
+        active: true,
+        scheme: scheme,
+        neon: false,
+        filter: styleFilter(AppStyle.grayscale),
+      );
+      final c = await _pixel(png, probe);
+      expect(grey(c), isTrue, reason: '$c');
+      expect(c.a, greaterThan(0.99));
+    });
+
     test('draws the icon or the first letter in the centre', () async {
       for (final a in [_activity(icon: 'work'), _activity(name: 'reading')]) {
         for (final active in [false, true]) {
@@ -153,9 +172,12 @@ void main() {
     test('grid by position, the running activity and the look', () async {
       final f = await TrackingFixture.create(DateTime.utc(2026, 11, 12, 8));
       addTearDown(f.db.close);
-      await SettingsRepository(
-        f.db,
-      ).save(const AppSettings(appearance: AppearanceMode.light, neon: true));
+      await SettingsRepository(f.db).save(
+        const AppSettings(
+          appearance: AppearanceMode.light,
+          style: AppStyle.neon,
+        ),
+      );
       await f.service.reconcile();
       f.clock.advance(const Duration(minutes: 5));
       await f.service.switchTo(f.study);
@@ -166,7 +188,7 @@ void main() {
       expect(state.at(3)?.id, f.study);
       expect(state.at(4), isNull);
       expect(state.activeId, f.study);
-      expect(state.neon, isTrue);
+      expect(state.style, AppStyle.neon);
       expect(state.colorScheme.brightness, Brightness.light);
     });
   });

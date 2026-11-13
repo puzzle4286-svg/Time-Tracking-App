@@ -12,6 +12,7 @@ import '../../app/theme/app_theme.dart';
 import '../../database/app_database.dart';
 import '../../models/activity.dart';
 import '../../models/activity_icons.dart';
+import '../../models/app_settings.dart';
 import '../../repositories/activity_repository.dart';
 import '../../repositories/settings_repository.dart';
 import '../../repositories/time_entry_repository.dart';
@@ -69,7 +70,8 @@ abstract final class SwitcherWidget {
           activity,
           active: activity.id == state.activeId,
           scheme: scheme,
-          neon: state.neon,
+          neon: state.style == AppStyle.neon,
+          filter: styleFilter(state.style),
         );
         await HomeWidget.saveFile(imageKey(position), png, extension: 'png');
         await HomeWidget.saveWidgetData<String>(
@@ -89,10 +91,16 @@ abstract final class SwitcherWidget {
     required bool active,
     required ColorScheme scheme,
     required bool neon,
+    ColorFilter? filter,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder)..scale(pixelRatio);
+    // Like the app in Grayscale (D59).
+    if (filter != null) {
+      canvas.saveLayer(Offset.zero & tileSize, Paint()..colorFilter = filter);
+    }
     paintTile(canvas, activity, active: active, scheme: scheme, neon: neon);
+    if (filter != null) canvas.restore();
     final image = await recorder.endRecording().toImage(
       (tileSize.width * pixelRatio).round(),
       (tileSize.height * pixelRatio).round(),
@@ -187,12 +195,17 @@ abstract final class SwitcherWidget {
 
 /// What the widget shows, read straight from the database.
 class SwitcherState {
-  SwitcherState._(this._byPosition, this.activeId, this.colorScheme, this.neon);
+  SwitcherState._(
+    this._byPosition,
+    this.activeId,
+    this.colorScheme,
+    this.style,
+  );
 
   final Map<int, Activity> _byPosition;
   final int? activeId;
   final ColorScheme colorScheme;
-  final bool neon;
+  final AppStyle style;
 
   Activity? at(int position) => _byPosition[position];
 
@@ -203,8 +216,12 @@ class SwitcherState {
     return SwitcherState._(
       {for (final a in activities) a.position!: a},
       open?.activityId,
-      buildTheme(settings.appearance, settings.accent).colorScheme,
-      settings.neon,
+      buildTheme(
+        settings.appearance,
+        settings.accent,
+        style: settings.style,
+      ).colorScheme,
+      settings.style,
     );
   }
 }

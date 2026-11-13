@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generates the two launcher icons (Neon = default, Flat) from one spec (D50).
+"""Generates the launcher icons (Neon = default, Flat, Grayscale) from one
+spec (D50, D60).
 
 Writes, relative to the project root:
 - Adaptive icons (Android 8+): vector foregrounds, a shared monochrome
@@ -40,8 +41,17 @@ VARIANTS = {
     # name: (background, resource suffix)
     "neon": ("05070A", ""),
     "flat": ("1B2624", "_flat"),
+    # Flat's design with every colour turned to its grey (D60).
+    "grayscale": ("1C1C1C", "_grayscale"),
 }
 RUNNING_RING = "E8F5E9"  # flat: ring around the active tile
+
+
+def gray(color):
+    """[color] as the grey of equal luminance (Rec. 709, as in the app)."""
+    r, g, b = (int(color[i:i + 2], 16) for i in (0, 2, 4))
+    v = round(0.2126 * r + 0.7152 * g + 0.0722 * b)
+    return f"{v:02X}" * 3
 
 
 def tile_rect(i, grow=0.0):
@@ -64,6 +74,8 @@ def pause_bars(i):
 
 def shapes(variant):
     """Layers as (kind, rect, colour, alpha, stroke_width), back to front."""
+    if variant == "grayscale":
+        return [(k, r, gray(c), a, s) for k, r, c, a, s in shapes("flat")]
     bg = VARIANTS[variant][0]
     out = []
     for i, c in enumerate(COLORS):

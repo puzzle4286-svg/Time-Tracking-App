@@ -68,38 +68,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text('Appearance', style: text.titleMedium),
             const SizedBox(height: 12),
             SegmentedButton<AppearanceMode>(
+              showSelectedIcon: false,
+              style: _segmentStyle,
               segments: const [
                 ButtonSegment(
                   value: AppearanceMode.light,
-                  label: Text('Light'),
-                  icon: Icon(Icons.light_mode_outlined),
+                  label: _SegmentLabel(
+                    icon: Icons.light_mode_outlined,
+                    label: 'Light',
+                  ),
                 ),
                 ButtonSegment(
                   value: AppearanceMode.dark,
-                  label: Text('Dark'),
-                  icon: Icon(Icons.dark_mode_outlined),
+                  label: _SegmentLabel(
+                    icon: Icons.dark_mode_outlined,
+                    label: 'Dark',
+                  ),
                 ),
                 ButtonSegment(
                   value: AppearanceMode.black,
-                  label: Text('Black'),
-                  icon: Icon(Icons.contrast),
+                  label: _SegmentLabel(icon: Icons.contrast, label: 'Black'),
                 ),
               ],
               selected: {current.appearance},
               onSelectionChanged: (s) => settings.setAppearance(s.single),
             ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              key: const Key('neon-switch'),
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.auto_awesome_outlined),
-              title: const Text('Neon'),
-              subtitle: const Text('Glowing highlights'),
-              value: current.neon,
-              onChanged: settings.setNeon,
+            const SizedBox(height: 24),
+            Text('Style', style: text.titleMedium),
+            const SizedBox(height: 12),
+            SegmentedButton<AppStyle>(
+              key: const Key('style-selector'),
+              showSelectedIcon: false,
+              style: _segmentStyle,
+              segments: const [
+                ButtonSegment(
+                  value: AppStyle.flat,
+                  label: _SegmentLabel(
+                    icon: Icons.square_outlined,
+                    label: 'Flat',
+                  ),
+                ),
+                ButtonSegment(
+                  value: AppStyle.neon,
+                  label: _SegmentLabel(
+                    icon: Icons.auto_awesome_outlined,
+                    label: 'Neon',
+                  ),
+                ),
+                ButtonSegment(
+                  value: AppStyle.grayscale,
+                  label: _SegmentLabel(
+                    icon: Icons.gradient,
+                    label: 'Grayscale',
+                  ),
+                ),
+              ],
+              selected: {current.style},
+              onSelectionChanged: (s) => settings.setStyle(s.single),
             ),
             const SizedBox(height: 24),
             Text('Accent colour', style: text.titleMedium),
+            if (current.style.colourless)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Accent colors have no effect with Grayscale. Your choice '
+                  'is kept for Flat and Neon.',
+                  key: const Key('accent-unused'),
+                  style: text.bodySmall,
+                ),
+              ),
             const SizedBox(height: 12),
             SizedBox(
               height: 76,
@@ -191,6 +229,32 @@ class _AccentSwatch extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Icon above label, shared by both selectors so they match (D59).
+const _segmentStyle = ButtonStyle(
+  padding: WidgetStatePropertyAll(
+    EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+  ),
+);
+
+class _SegmentLabel extends StatelessWidget {
+  const _SegmentLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(height: 4),
+        Text(label, maxLines: 1, softWrap: false),
+      ],
     );
   }
 }

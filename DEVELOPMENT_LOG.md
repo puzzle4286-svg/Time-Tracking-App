@@ -732,3 +732,44 @@ handle.
   new integration test (touch and mouse) passes; mouse drag enabled for
   lists (D58). `test/screens`, `test/widgets` and analyze pass.
 
+## 2026-11-13 – Styles: Flat, Neon, Grayscale, B&W
+
+**Requested**: styles like the appearance modes, with icons, in the order
+Flat, Neon, Grayscale, pure black and white; how many distinct looks there
+are. Developer chose: the whole app turns grey, activities included; four
+styles; icon above the label so "Grayscale" fits.
+
+**Work completed** (D59): `AppStyle` setting (migrates `neon`); themes;
+whole-app grey filter; home widget tiles grey; Style selector; hints that
+the accent is unused and Dark = Black in B&W.
+
+**Testing performed**
+- Theme tests (grey schemes, accent ignored, B&W pure, Dark = Black in B&W,
+  glow only in Neon); settings round trip and Neon migration; widget tests
+  for the filter (screens and sheets) and the selector; widget tile pixels
+  grey. All 292 tests and analyze pass.
+- Screenshots of every style in Light and Dark from the real Linux app
+  (scratch integration test, not kept): first inline layout cut
+  "Grayscale" off; the stacked layout fits.
+- Revised B&W to pure black and white: a threshold cut at mid-grey made
+  light colours vanish; the cut near the background plus outline tiles and
+  untinted entry strips is readable. Screenshots of every tab, the editor
+  and "Which activity?" in Light and Dark from the real Linux app
+  (scratch test, not kept). All 295 tests and analyze pass.
+- B&W removed again at the developer's request: Flat, Neon and Grayscale
+  are enough. All 292 tests and analyze pass.
+
+## 2026-11-13 – Grayscale launcher icon
+
+**Requested**: a grey launcher icon to go with the Grayscale style.
+
+**Work completed** (D60): grayscale variant in the icon generator (Neon
+and Flat outputs unchanged); `.IconGrayscale` alias; `AppIconChoice`.
+
+**Testing performed**
+- App icon section test: three options, Grayscale can be chosen. All tests
+  and analyze pass. Debug APK built; its manifest has the new alias,
+  disabled by default.
+- Not tried on a phone (none available); switching uses the same code as
+  Flat.
+

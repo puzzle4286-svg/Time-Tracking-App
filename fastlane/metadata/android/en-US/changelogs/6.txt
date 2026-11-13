@@ -1,0 +1,3 @@
+- New Style setting: Flat, Neon or Grayscale (the whole app in shades of grey)
+- Grayscale launcher icon, next to Neon and Flat
+- Appearance and Style buttons show the icon above the label

@@ -28,21 +28,36 @@ void main() {
       const AppSettings(
         appearance: AppearanceMode.black,
         accent: AccentPalette.rose,
-        neon: true,
+        style: AppStyle.grayscale,
       ),
     );
     final s = await repo.load();
     expect(s.appearance, AppearanceMode.black);
     expect(s.accent, AccentPalette.rose);
-    expect(s.neon, isTrue);
+    expect(s.style, AppStyle.grayscale);
+  });
+
+  test('a Neon setting from before styles becomes the Neon style', () async {
+    await db.insert('settings', {'key': 'neon', 'value': 'true'});
+    expect((await repo.load()).style, AppStyle.neon);
+  });
+
+  test('Neon is still written for older versions', () async {
+    await repo.save(const AppSettings(style: AppStyle.neon));
+    final row = (await db.query(
+      'settings',
+      where: 'key = ?',
+      whereArgs: ['neon'],
+    )).single;
+    expect(row['value'], 'true');
   });
 
   test('unknown stored values fall back to defaults', () async {
     await db.insert('settings', {'key': 'appearance', 'value': 'sepia'});
-    await db.insert('settings', {'key': 'neon', 'value': 'maybe'});
+    await db.insert('settings', {'key': 'style', 'value': 'sepia'});
     final s = await repo.load();
     expect(s.appearance, const AppSettings().appearance);
-    expect(s.neon, isFalse);
+    expect(s.style, AppStyle.flat);
   });
 
   test('controller persists changes and notifies', () async {
@@ -52,12 +67,12 @@ void main() {
 
     await controller.setAppearance(AppearanceMode.light);
     await controller.setAccent(AccentPalette.amber);
-    await controller.setNeon(true);
+    await controller.setStyle(AppStyle.grayscale);
 
     expect(notified, 3);
     final stored = await repo.load();
     expect(stored.appearance, AppearanceMode.light);
     expect(stored.accent, AccentPalette.amber);
-    expect(stored.neon, isTrue);
+    expect(stored.style, AppStyle.grayscale);
   });
 }

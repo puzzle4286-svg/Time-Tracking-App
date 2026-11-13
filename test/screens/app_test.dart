@@ -601,7 +601,7 @@ void main() {
     expect(stored.accent, AccentPalette.rose);
   });
 
-  testWidgets('neon switch adds the glow and persists', (tester) async {
+  testWidgets('Neon style adds the glow and persists', (tester) async {
     BoxDecoration frame(int position) =>
         tester
                 .widget<AnimatedContainer>(
@@ -620,10 +620,12 @@ void main() {
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('neon-switch')));
+    await tester.ensureVisible(find.text('Neon'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Neon'));
     await settle(tester);
     await tester.pumpAndSettle();
-    expect((await SettingsRepository(f.db).load()).neon, isTrue);
+    expect((await SettingsRepository(f.db).load()).style, AppStyle.neon);
 
     await tester.tap(find.text('Track'));
     await tester.pumpAndSettle();
@@ -638,12 +640,58 @@ void main() {
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('neon-switch')));
+    await tester.tap(find.text('Flat'));
     await settle(tester);
     await tester.tap(find.text('Track'));
     await tester.pumpAndSettle();
     expect(frame(active).boxShadow, isNull);
     expect(frame(inactive).border, isNull);
+  });
+
+  testWidgets('Grayscale shows the whole app without colour; Flat brings it '
+      'back', (tester) async {
+    await pumpApp(tester);
+    Iterable<ColorFiltered> filters() =>
+        tester.widgetList<ColorFiltered>(find.byType(ColorFiltered));
+    expect(filters(), isEmpty);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('accent-unused')), findsNothing);
+    for (final label in ['Grayscale']) {
+      await tester.ensureVisible(find.text(label));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(filters(), hasLength(1), reason: label);
+      expect(find.byKey(const Key('accent-unused')), findsOneWidget);
+    }
+    expect((await SettingsRepository(f.db).load()).style, AppStyle.grayscale);
+
+    // A sheet opened from the main screen is filtered too.
+    await tester.tap(find.text('Track'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.byKey(const Key('activity-tile-1')));
+    await tester.pumpAndSettle();
+    expect(
+      find.ancestor(
+        of: find.text('Edit activity'),
+        matching: find.byType(ColorFiltered),
+      ),
+      findsOneWidget,
+    );
+    Navigator.of(tester.element(find.text('Edit activity'))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Flat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flat'));
+    await settle(tester);
+    await tester.pumpAndSettle();
+    expect(filters(), isEmpty);
   });
 
   testWidgets('grid is 2 rows x 4 columns, positions 1-4 on top', (

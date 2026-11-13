@@ -5,6 +5,19 @@ explicitly under **Database**.
 
 ## [Unreleased]
 
+## [0.4.0] – 2026-11-13
+
+### Added
+- Style setting under Appearance: Flat, Neon, Grayscale, each with an
+  icon. Replaces the Neon switch; a saved Neon choice carries over.
+  Grayscale shows the whole app in shades of grey, activities and the
+  home screen widget included, and ignores the accent colour.
+
+- Grayscale launcher icon, next to Neon and Flat in Settings → App icon.
+
+### Changed
+- Appearance and Style buttons show the icon above the label.
+
 ## [0.3.1] – 2026-11-13
 
 ### Fixed

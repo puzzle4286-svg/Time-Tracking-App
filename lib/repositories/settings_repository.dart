@@ -10,6 +10,11 @@ class SettingsRepository {
 
   static const _appearanceKey = 'appearance';
   static const _accentKey = 'accent';
+  static const _styleKey = 'style';
+
+  /// Before styles (D59) only Neon existed, stored as `true` / `false`.
+  /// Read when there is no style yet, and still written so older versions
+  /// restoring a backup keep Neon.
   static const _neonKey = 'neon';
 
   /// Loads settings; missing or unknown values fall back to defaults.
@@ -30,11 +35,11 @@ class SettingsRepository {
         values[_accentKey],
         defaults.accent,
       ),
-      neon: switch (values[_neonKey]) {
-        'true' => true,
-        'false' => false,
-        _ => defaults.neon,
-      },
+      style: _byName(
+        AppStyle.values,
+        values[_styleKey],
+        values[_neonKey] == 'true' ? AppStyle.neon : defaults.style,
+      ),
     );
   }
 
@@ -43,6 +48,7 @@ class SettingsRepository {
     for (final MapEntry(:key, :value) in {
       _appearanceKey: settings.appearance.name,
       _accentKey: settings.accent.name,
+      _styleKey: settings.style.name,
       _neonKey: settings.neon.toString(),
     }.entries) {
       batch.insert('settings', {

@@ -1,5 +1,20 @@
 enum AppearanceMode { light, dark, black }
 
+/// How colourful the app is (D59), in the order shown in Settings.
+enum AppStyle {
+  /// Colours as they are.
+  flat,
+
+  /// Glowing highlights (D48).
+  neon,
+
+  /// Everything in shades of grey, activities included; no accent.
+  grayscale;
+
+  /// Whether the whole app is shown without colour.
+  bool get colourless => this == grayscale;
+}
+
 /// Predefined accent palettes, each defined by a Material 3 seed. Stored by
 /// name, so new values can be appended without affecting saved settings.
 enum AccentPalette {
@@ -30,22 +45,24 @@ class AppSettings {
   const AppSettings({
     this.appearance = AppearanceMode.dark,
     this.accent = AccentPalette.teal,
-    this.neon = false,
+    this.style = AppStyle.flat,
   });
 
   final AppearanceMode appearance;
   final AccentPalette accent;
 
+  final AppStyle style;
+
   /// Neon look: glowing highlights (D48).
-  final bool neon;
+  bool get neon => style == AppStyle.neon;
 
   AppSettings copyWith({
     AppearanceMode? appearance,
     AccentPalette? accent,
-    bool? neon,
+    AppStyle? style,
   }) => AppSettings(
     appearance: appearance ?? this.appearance,
     accent: accent ?? this.accent,
-    neon: neon ?? this.neon,
+    style: style ?? this.style,
   );
 }

@@ -24,6 +24,7 @@ object AppIcon {
     private val aliases = linkedMapOf(
         "neon" to ".IconNeon", // manifest default
         "flat" to ".IconFlat",
+        "grayscale" to ".IconGrayscale", // D60
     )
 
     fun register(context: Context, messenger: BinaryMessenger) {

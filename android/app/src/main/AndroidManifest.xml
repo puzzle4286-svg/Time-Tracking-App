@@ -46,6 +46,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity-alias>
+        <activity-alias
+            android:name=".IconGrayscale"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher_grayscale"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
         <!-- Home-screen task switcher (D49). -->
         <receiver
             android:name=".SwitcherWidgetProvider"

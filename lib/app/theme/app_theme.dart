@@ -3,20 +3,45 @@ import 'package:flutter/material.dart';
 import '../../models/app_settings.dart';
 import 'neon.dart';
 
-/// Builds the Material 3 theme for an appearance mode and accent palette.
-/// [neon] adds the [Neon] extension that widgets use for their glow.
+/// Colour matrix that turns any colour into its grey of equal luminance
+/// (Rec. 709 weights). Applied to the whole app, and to the home-screen
+/// widget's tiles, in Grayscale (D59).
+const List<double> grayscaleMatrix = [
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0, 0, 0, 1, 0, //
+];
+
+/// The whole-app colour filter for [style], or null for none (D59).
+ColorFilter? styleFilter(AppStyle style) => switch (style) {
+  AppStyle.grayscale => const ColorFilter.matrix(grayscaleMatrix),
+  AppStyle.flat || AppStyle.neon => null,
+};
+
+/// Builds the Material 3 theme for an appearance mode, accent palette and
+/// style. Neon adds the [Neon] extension that widgets use for their glow;
+/// Grayscale ignores the accent (D59).
 ThemeData buildTheme(
   AppearanceMode mode,
   AccentPalette accent, {
-  bool neon = false,
+  AppStyle style = AppStyle.flat,
 }) {
   final brightness = mode == AppearanceMode.light
       ? Brightness.light
       : Brightness.dark;
-  var scheme = ColorScheme.fromSeed(
-    seedColor: Color(accent.seed),
-    brightness: brightness,
-  );
+  final neon = style == AppStyle.neon;
+  var scheme = switch (style) {
+    AppStyle.grayscale => ColorScheme.fromSeed(
+      seedColor: Colors.grey,
+      brightness: brightness,
+      dynamicSchemeVariant: DynamicSchemeVariant.monochrome,
+    ),
+    AppStyle.flat || AppStyle.neon => ColorScheme.fromSeed(
+      seedColor: Color(accent.seed),
+      brightness: brightness,
+    ),
+  };
   if (mode == AppearanceMode.black) {
     // True black for OLED; containers stay just distinguishable from it.
     scheme = scheme.copyWith(

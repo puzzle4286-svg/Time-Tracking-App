@@ -42,7 +42,7 @@ void main() {
     final neon = buildTheme(
       AppearanceMode.dark,
       AccentPalette.teal,
-      neon: true,
+      style: AppStyle.neon,
     );
     expect(plain.extension<Neon>()?.enabled, isFalse);
     expect(neon.extension<Neon>()?.enabled, isTrue);
@@ -55,4 +55,53 @@ void main() {
     final teal = buildTheme(AppearanceMode.light, AccentPalette.teal);
     expect(light.colorScheme.primary, isNot(teal.colorScheme.primary));
   });
+
+  group('styles (D59)', () {
+    test('grayscale has no colour and ignores the accent', () {
+      for (final mode in AppearanceMode.values) {
+        final teal = buildTheme(
+          mode,
+          AccentPalette.teal,
+          style: AppStyle.grayscale,
+        ).colorScheme;
+        final rose = buildTheme(
+          mode,
+          AccentPalette.rose,
+          style: AppStyle.grayscale,
+        ).colorScheme;
+        expect(teal, rose);
+        for (final c in [teal.primary, teal.surface, teal.secondaryContainer]) {
+          expect(_isGrey(c), isTrue, reason: '$mode $c');
+        }
+      }
+      // Dark and Black still differ.
+      expect(
+        buildTheme(
+          AppearanceMode.dark,
+          AccentPalette.teal,
+          style: AppStyle.grayscale,
+        ).colorScheme.surface,
+        isNot(Colors.black),
+      );
+    });
+
+    test('only Grayscale has a whole-app filter', () {
+      expect(styleFilter(AppStyle.grayscale), isNotNull);
+      expect(styleFilter(AppStyle.flat), isNull);
+      expect(styleFilter(AppStyle.neon), isNull);
+    });
+
+    test('only Neon turns the glow on', () {
+      for (final style in AppStyle.values) {
+        final theme = buildTheme(
+          AppearanceMode.dark,
+          AccentPalette.teal,
+          style: style,
+        );
+        expect(theme.extension<Neon>()?.enabled, style == AppStyle.neon);
+      }
+    });
+  });
 }
+
+bool _isGrey(Color c) => (c.r - c.g).abs() < 0.02 && (c.g - c.b).abs() < 0.02;
