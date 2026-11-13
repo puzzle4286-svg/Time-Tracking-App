@@ -156,11 +156,11 @@ class _ActivityEditorState extends State<_ActivityEditor> {
                 validator: (v) => ActivityService.validateDescription(v ?? ''),
               ),
               const SizedBox(height: 8),
-              Text('Colour', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              _ExpandableWrap(
+                key: const Key('colour-section'),
+                label: 'Colour',
+                itemExtent: 40,
+                selectedIndex: activityColors.indexOf(_color),
                 children: [
                   for (final c in activityColors)
                     InkResponse(
@@ -184,12 +184,19 @@ class _ActivityEditorState extends State<_ActivityEditor> {
                 ],
               ),
               const SizedBox(height: 16),
-              Text('Icon', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 8),
-              _IconPicker(
-                selected: _icon,
-                color: Color(_color),
-                onSelected: (key) => setState(() => _icon = key),
+              _ExpandableWrap(
+                key: const Key('icon-section'),
+                label: 'Icon',
+                itemExtent: 44,
+                selectedIndex: _icon == null
+                    ? 0
+                    : activityIcons.keys.toList().indexOf(_icon!) + 1,
+                children: _iconOptions(
+                  context,
+                  selected: _icon,
+                  color: Color(_color),
+                  onSelected: (key) => setState(() => _icon = key),
+                ),
               ),
               const SizedBox(height: 24),
               FilledButton(onPressed: _save, child: const Text('Save')),
@@ -239,62 +246,147 @@ class _ActivityEditorState extends State<_ActivityEditor> {
 
 /// "None" plus every icon in [activityIcons]; the selected one is filled
 /// with the activity colour.
-class _IconPicker extends StatelessWidget {
-  const _IconPicker({
-    required this.selected,
-    required this.color,
-    required this.onSelected,
+List<Widget> _iconOptions(
+  BuildContext context, {
+  required String? selected,
+  required Color color,
+  required ValueChanged<String?> onSelected,
+}) {
+  final scheme = Theme.of(context).colorScheme;
+  final onColor = ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+      ? Colors.white
+      : Colors.black;
+  Widget option(String? key, IconData icon, String label) {
+    final isSelected = key == selected;
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: 'Icon $label',
+        excludeSemantics: true,
+        child: InkResponse(
+          key: Key('icon-option-${key ?? 'none'}'),
+          onTap: () => onSelected(key),
+          radius: 24,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isSelected ? color : scheme.surfaceContainerHighest,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 22,
+              color: isSelected ? onColor : scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  return [
+    option(null, Icons.block, 'None'),
+    for (final MapEntry(:key, :value) in activityIcons.entries)
+      option(key, value, key[0].toUpperCase() + key.substring(1)),
+  ];
+}
+
+/// A labelled set of choices that shows only its first row until the label
+/// is tapped; tapping again closes it (D57). Closed by default. When the
+/// selected choice is not in the first row, it takes that row's last place,
+/// so the current choice is always visible.
+class _ExpandableWrap extends StatefulWidget {
+  const _ExpandableWrap({
+    super.key,
+    required this.label,
+    required this.itemExtent,
+    required this.selectedIndex,
+    required this.children,
   });
 
-  final String? selected;
-  final Color color;
-  final ValueChanged<String?> onSelected;
+  static const double spacing = 8;
+
+  final String label;
+
+  /// Width of every child.
+  final double itemExtent;
+
+  /// Index of the selected child, or -1 for none.
+  final int selectedIndex;
+  final List<Widget> children;
+
+  @override
+  State<_ExpandableWrap> createState() => _ExpandableWrapState();
+}
+
+class _ExpandableWrapState extends State<_ExpandableWrap> {
+  bool _open = false;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final onColor =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? Colors.white
-        : Colors.black;
-    Widget option(String? key, IconData icon, String label) {
-      final isSelected = key == selected;
-      return Tooltip(
-        message: label,
-        child: Semantics(
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
           button: true,
-          selected: isSelected,
-          label: 'Icon $label',
-          excludeSemantics: true,
-          child: InkResponse(
-            key: Key('icon-option-${key ?? 'none'}'),
-            onTap: () => onSelected(key),
-            radius: 24,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isSelected ? color : scheme.surfaceContainerHighest,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 22,
-                color: isSelected ? onColor : scheme.onSurfaceVariant,
+          expanded: _open,
+          child: InkWell(
+            key: Key('${widget.label.toLowerCase()}-section-toggle'),
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Text(widget.label, style: theme.textTheme.labelLarge),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.expand_more,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-      );
-    }
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        option(null, Icons.block, 'None'),
-        for (final MapEntry(:key, :value) in activityIcons.entries)
-          option(key, value, key[0].toUpperCase() + key.substring(1)),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = _ExpandableWrap.spacing;
+            final perRow = math.max(
+              1,
+              ((constraints.maxWidth + spacing) / (widget.itemExtent + spacing))
+                  .floor(),
+            );
+            final all = widget.children;
+            final List<Widget> shown;
+            if (_open || all.length <= perRow) {
+              shown = all;
+            } else if (widget.selectedIndex >= perRow) {
+              shown = [...all.take(perRow - 1), all[widget.selectedIndex]];
+            } else {
+              shown = all.take(perRow).toList();
+            }
+            return AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              alignment: Alignment.topCenter,
+              child: Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: shown,
+              ),
+            );
+          },
+        ),
       ],
     );
   }

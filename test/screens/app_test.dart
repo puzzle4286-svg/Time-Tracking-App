@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:time_tracker/app/app.dart';
 import 'package:time_tracker/app/app_shell.dart';
 import 'package:time_tracker/app/settings_controller.dart';
+import 'package:time_tracker/models/activity_colors.dart';
 import 'package:time_tracker/models/activity_icons.dart';
 import 'package:time_tracker/models/app_settings.dart';
 import 'package:time_tracker/models/goal.dart';
@@ -202,6 +203,8 @@ void main() {
       Future<void> pickIcon(String key) async {
         await tester.longPress(tile);
         await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('icon-section-toggle')));
+        await tester.pumpAndSettle();
         final option = find.byKey(Key('icon-option-$key'));
         await tester.ensureVisible(option);
         await tester.pumpAndSettle();
@@ -314,6 +317,68 @@ void main() {
     expect(f.service.current.activity.id, f.gaming);
     expect(find.text('Which activity?'), findsNothing);
   });
+
+  testWidgets(
+    'Colour and Icon show one row until their label is tapped; the choice '
+    'stays visible when closed',
+    (tester) async {
+      // Phone size (408 dp wide), where neither fits in one row.
+      tester.view
+        ..devicePixelRatio = 3
+        ..physicalSize = const Size(1224, 2700);
+      addTearDown(tester.view.reset);
+      await pumpApp(tester);
+      await tester.longPress(find.byKey(const Key('activity-tile-2')));
+      await tester.pumpAndSettle();
+
+      int shown(String prefix) => find
+          .byWidgetPredicate(
+            (w) =>
+                w.key is ValueKey<String> &&
+                (w.key! as ValueKey<String>).value.startsWith(prefix),
+          )
+          .evaluate()
+          .length;
+      final iconsClosed = shown('icon-option-');
+      expect(iconsClosed, lessThan(activityIcons.length + 1));
+      expect(iconsClosed, greaterThan(1));
+
+      // Opening shows every icon; closing goes back to one row.
+      final toggle = find.byKey(const Key('icon-section-toggle'));
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(shown('icon-option-'), activityIcons.length + 1);
+
+      // Pick an icon from the end, then close: it is still shown.
+      final lastKey = activityIcons.keys.last;
+      final last = find.byKey(Key('icon-option-$lastKey'));
+      await tester.ensureVisible(last);
+      await tester.pumpAndSettle();
+      await tester.tap(last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(toggle);
+      await tester.pumpAndSettle();
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(shown('icon-option-'), iconsClosed);
+      expect(last, findsOneWidget);
+
+      // Colours fold the same way.
+      final colours = find.descendant(
+        of: find.byKey(const Key('colour-section')),
+        matching: find.byType(InkResponse),
+      );
+      final coloursClosed = colours.evaluate().length;
+      expect(coloursClosed, lessThan(activityColors.length));
+      await tester.tap(find.byKey(const Key('colour-section-toggle')));
+      await tester.pumpAndSettle();
+      expect(colours.evaluate().length, activityColors.length);
+
+      await tapSave(tester);
+      await tester.pumpAndSettle();
+      expect(activities.byId(f.gaming)!.icon, lastKey);
+    },
+  );
 
   testWidgets('the running activity\'s goals show under the header', (
     tester,

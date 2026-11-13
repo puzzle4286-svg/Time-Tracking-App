@@ -697,3 +697,21 @@ upgrade. Debug builds install as "Lifestring Dev" (D55).
 - Installed as Lifestring Dev on the phone; the released app untouched.
   Gesture not yet tried by hand there.
 
+## 2026-11-13 – Landscape fix, collapsible editor sections
+
+**Requested**: fix the overflow when the phone is turned, check every
+screen; fold the editor's colours and icons to one row, opened by tapping
+their label. Release together with the descriptions as 0.3.0 (not yet).
+
+**Work completed** (D56, D57): landscape main screen layout; landscape
+overflow test for every screen and sheet; `_ExpandableWrap` in the
+activity editor.
+
+**Testing performed**
+- Landscape test fails on the old main screen (20 px overflow) and passes
+  now; no other screen overflowed.
+- Widget test at phone size: one row closed, everything open, the chosen
+  icon stays visible after closing, colours fold the same way.
+- `test/screens` and analyze pass. Installed as Lifestring Dev on the
+  phone; not yet checked by hand.
+

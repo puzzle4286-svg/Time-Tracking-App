@@ -138,66 +138,113 @@ class HomeScreen extends StatelessWidget {
         // Prefer the live row so renames show immediately.
         final active = activities.byId(activeId) ?? session.activity;
 
+        final header = CurrentActivityHeader(
+          tracking: tracking,
+          activity: active,
+          clock: clock,
+        );
+        // The running activity's goals, right under the header (scrolls
+        // when there are many).
+        final goalList = Align(
+          alignment: Alignment.topCenter,
+          child: HomeGoals(
+            goals: goals,
+            tracking: tracking,
+            activities: activities,
+          ),
+        );
+        // Swiping up on the grid opens "Which activity?" (what each
+        // activity covers); nothing on screen for it (D54).
+        final grid = _SwipeUp(
+          key: const Key('activity-grid'),
+          onSwipeUp: () => _openGuide(context),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: _grid(context, activeId),
+          ),
+        );
+
         return SafeArea(
-          child: Column(
-            children: [
-              CurrentActivityHeader(
-                tracking: tracking,
-                activity: active,
-                clock: clock,
-              ),
-              // The running activity's goals, right under the header
-              // (scrolls when there are many).
-              Expanded(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: HomeGoals(
-                    goals: goals,
-                    tracking: tracking,
-                    activities: activities,
-                  ),
-                ),
-              ),
-              // Swiping up on the grid opens "Which activity?" (what each
-              // activity covers); nothing on screen for it (D54).
-              _SwipeUp(
-                key: const Key('activity-grid'),
-                onSwipeUp: () => _openGuide(context),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  child: Column(
-                    children: [
-                      for (var row = 0; row < Activity.gridRows; row++)
-                        SizedBox(
-                          height: tileHeight + 6,
-                          child: Row(
-                            children: [
-                              for (
-                                var col = 0;
-                                col < Activity.gridColumns;
-                                col++
-                              )
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(3),
-                                    child: _tile(
-                                      context,
-                                      row * Activity.gridColumns + col + 1,
-                                      activeId,
-                                    ),
-                                  ),
-                                ),
-                            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Held sideways there is not enough height for header,
+              // goals and grid stacked: header and goals on the left, the
+              // grid on the right, at the bottom within thumb reach (D56).
+              if (constraints.maxWidth > constraints.maxHeight) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          // Scales down rather than overflowing when the
+                          // screen is very short.
+                          Flexible(
+                            flex: 0,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: SizedBox(
+                                width: constraints.maxWidth / 2,
+                                child: header,
+                              ),
+                            ),
                           ),
+                          Expanded(child: goalList),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: SingleChildScrollView(
+                          reverse: true,
+                          padding: const EdgeInsets.only(top: 12),
+                          child: grid,
                         ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  header,
+                  Expanded(child: goalList),
+                  grid,
+                ],
+              );
+            },
           ),
         );
       },
+    );
+  }
+
+  /// The 2 × 4 activity grid, positions 1–4 on top.
+  Widget _grid(BuildContext context, int activeId) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var row = 0; row < Activity.gridRows; row++)
+          SizedBox(
+            height: tileHeight + 6,
+            child: Row(
+              children: [
+                for (var col = 0; col < Activity.gridColumns; col++)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(3),
+                      child: _tile(
+                        context,
+                        row * Activity.gridColumns + col + 1,
+                        activeId,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 

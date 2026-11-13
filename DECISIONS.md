@@ -688,3 +688,23 @@ name, the database file `time_tracker.db`, the backup `format` tag
   app ID changes.
 - Release and F-Droid builds are unchanged (no suffix, label "Lifestring").
 
+## D56 – Main screen in landscape (2026-11-13)
+- Held sideways, header, goals and the two grid rows do not fit stacked
+  (overflow by about 20 px on a 900 × 408 dp phone). In landscape the main
+  screen puts the header and goals on the left and the grid on the right,
+  at the bottom within thumb reach. The header scales down rather than
+  overflow on very short screens, and the grid scrolls if it must.
+- `test/screens/landscape_test.dart` opens every screen and sheet
+  (main screen, activity editor, set-up, "Which activity?", Goals, goal
+  editor, Rearrange grid, History with entry actions and editor, Insights,
+  Settings) at that size with system bars and a cutout, and fails on any
+  overflow. Only the main screen overflowed.
+
+## D57 – Collapsible Colour and Icon in the activity editor (2026-11-13)
+- Both show only their first row until their label is tapped; tapping again
+  closes them. Closed by default every time the editor opens, so the
+  description field, colours and Save fit without scrolling.
+- The row length follows the sheet width. If the current choice is not in
+  the first row, it takes that row's last place, so the current colour or
+  icon is always visible when closed.
+
