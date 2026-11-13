@@ -637,3 +637,24 @@ name, the database file `time_tracker.db`, the backup `format` tag
   no release signing key and no signed APKs on GitHub releases, and Flutter
   builds are not yet byte-for-byte reproducible here. F-Droid signs with its
   own key, which cannot be switched to the developer's key later.
+
+## D53 – Signed APKs on GitHub releases (2026-11-13)
+- F-Droid closed the merge request: the app must be maintained for more
+  than 3 months, and reviewers saw no unique features. Resubmit from about
+  2027-02-13 with a release history and a clearer listing.
+- Until then releases go to GitHub with APKs signed by a release key
+  (RSA 4096, PKCS12, alias `lifestring`, valid 100 years; certificate
+  SHA-256 `E6:FE:5A:93:…:45:7A`, full value in the README). Installable
+  directly or through Obtainium, which follows the releases.
+- The keystore and `android/key.properties` live outside git (both are
+  ignored); the master copy is in `~/.android-keys/lifestring/`. **Losing
+  the key means no update can ever reach existing installs**, so it must be
+  backed up off this machine.
+- `build.gradle.kts` signs with the release key when `key.properties`
+  exists, else with the debug key. The debug line is kept verbatim so the
+  F-Droid recipe's `sed` still deletes it and F-Droid builds stay unsigned
+  (checked with a clean copy: unsigned APK).
+- Only per-ABI APKs are published (version codes 1000/2000/4000 + build).
+  A universal APK would have the bare build number, so switching between
+  the two would look like a downgrade.
+

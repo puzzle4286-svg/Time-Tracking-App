@@ -660,3 +660,21 @@ release and license sections; version 0.2.0+3.
   `io.github.puzzle4286svg.lifestring` 0.2.0 (3), unsigned, no SQLite
   library, native libraries only from Flutter and package:jni.
 - Not yet run on the phone (disconnected) or through fdroidserver itself.
+
+## 2026-11-13 – Signed GitHub releases
+
+**Requested**: F-Droid declined (under 3 months old, no unique features);
+publish installable releases on GitHub instead.
+
+**Work completed** (D53): release keystore and `key.properties` (outside
+git); release signing in `build.gradle.kts`; README install section;
+v0.2.0 GitHub release with per-ABI APKs and SHA256SUMS.
+
+**Testing performed**
+- Clean copy built the F-Droid way (no key.properties, recipe `sed`):
+  arm64 APK unsigned, as F-Droid expects.
+- Signed build: all APKs verify with apksigner against the new certificate;
+  version codes 1003, 2003, 4003.
+- Not installed on the phone (an install over the old debug-signed build
+  needs an uninstall first, or a JSON backup to move data).
+

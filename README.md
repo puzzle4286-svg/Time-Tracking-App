@@ -6,7 +6,7 @@ Eight fixed activity buttons. Exactly one activity is always active; tapping
 another one switches to it. Tracking is purely timestamp-based, so it survives
 the app being closed, killed, or the phone restarting — no background service.
 
-> Status: **v0.2.0** – all planned phases complete; prepared for F-Droid. See [TASKS.md](TASKS.md).
+> Status: **v0.2.0** – all planned phases complete; signed APKs on GitHub releases. See [TASKS.md](TASKS.md).
 
 ## Features (planned for v1)
 
@@ -20,6 +20,28 @@ the app being closed, killed, or the phone restarting — no background service.
 - CSV / JSON export, full backup and restore
 
 Out of scope for v1: sync, accounts, backend, desktop builds, notifications.
+
+## Install
+
+Download the APK for your phone from the
+[latest release](https://github.com/puzzle4286-svg/lifestring/releases/latest)
+and open it. Most phones need **`arm64-v8a`**; older 32-bit phones need
+`armeabi-v7a`. Android asks you to allow installs from your browser or file
+manager the first time.
+
+For automatic updates, add
+`https://github.com/puzzle4286-svg/lifestring` in
+[Obtainium](https://github.com/ImranR98/Obtainium).
+
+Releases are signed with the developer's key; the certificate's SHA-256
+fingerprint is:
+
+```
+E6:FE:5A:93:F5:7A:8D:7E:D4:32:91:9A:14:63:AE:9F:85:4E:C8:24:A2:80:5C:4B:74:B2:B8:14:A4:56:45:7A
+```
+
+Not on F-Droid yet (D52, D53). F-Droid signs with its own key, so a future
+F-Droid build cannot update a GitHub install: switch with a JSON backup.
 
 ## Technology
 
@@ -75,12 +97,22 @@ flutter test integration_test -d linux
 
 ## Releases
 
-Published through F-Droid (D52). Store texts live in
+Signed APKs are published on GitHub releases (D53); an F-Droid submission
+was declined for now (D52). Store texts live in
 `fastlane/metadata/android/en-US/`; the build recipe draft is in
 `fdroid/`. For a new version: bump `version` in `pubspec.yaml` and
 `appVersion` in `lib/app/app_info.dart`, add
 `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`, commit and tag
-`v<version>`.
+`v<version>`, then build and publish:
+
+```bash
+flutter build apk --release --split-per-abi
+gh release create v<version> build/app/outputs/flutter-apk/app-*-release.apk
+```
+
+Signing needs `android/key.properties` and the keystore it points to
+(both private, never committed; see D53). Without them release builds use
+the debug key.
 
 ## License
 
