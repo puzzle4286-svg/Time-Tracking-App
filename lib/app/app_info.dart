@@ -1,3 +1,3 @@
 /// Shown in Settings. Keep in sync with `version` in pubspec.yaml.
 const String appName = 'Lifestring';
-const String appVersion = '0.4.0';
+const String appVersion = '0.4.1';

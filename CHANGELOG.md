@@ -5,6 +5,12 @@ explicitly under **Database**.
 
 ## [Unreleased]
 
+## [0.4.1] – 2026-11-13
+
+### Fixed
+- Settings → App icon lists the icons as Flat, Neon, Grayscale, the same
+  order as the Style setting.
+
 ## [0.4.0] – 2026-11-13
 
 ### Added

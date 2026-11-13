@@ -1,0 +1,1 @@
+- App icon choices in the same order as Style: Flat, Neon, Grayscale

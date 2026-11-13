@@ -86,13 +86,15 @@ void main() {
     expect(AppIconChoice.parse(null), AppIconChoice.neon);
   });
 
-  testWidgets('offers Neon, Flat and Grayscale; Grayscale can be chosen', (
-    tester,
-  ) async {
+  testWidgets('offers Flat, Neon and Grayscale in that order; Grayscale can '
+      'be chosen', (tester) async {
     await pump(tester);
-    for (final name in ['neon', 'flat', 'grayscale']) {
-      expect(find.byKey(Key('app-icon-$name')), findsOneWidget);
-    }
+    final xs = [
+      for (final name in ['flat', 'neon', 'grayscale'])
+        tester.getTopLeft(find.byKey(Key('app-icon-$name'))).dx,
+    ];
+    expect(xs[0], lessThan(xs[1]));
+    expect(xs[1], lessThan(xs[2]));
     await tester.tap(find.byKey(const Key('app-icon-grayscale')));
     await tester.pumpAndSettle();
     expect(enabled, 'grayscale');
