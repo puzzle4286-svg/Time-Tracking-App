@@ -310,6 +310,76 @@ void main() {
     },
   );
 
+  group('"Which activity?" closes with a swipe down on the list', () {
+    final grid = find.byKey(const Key('activity-grid'));
+    final title = find.text('Which activity?');
+    final list = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byType(ListView),
+    );
+
+    Future<void> openGuide(WidgetTester tester) async {
+      await tester.fling(grid, const Offset(0, -120), 800);
+      await tester.pumpAndSettle();
+      expect(title, findsOneWidget);
+    }
+
+    testWidgets('short list: a swipe closes, a small drag does not', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await openGuide(tester);
+
+      await tester.drag(list, const Offset(0, 20));
+      await tester.pumpAndSettle();
+      expect(title, findsOneWidget);
+
+      await tester.drag(list, const Offset(0, 120));
+      await tester.pumpAndSettle();
+      expect(title, findsNothing);
+      // Closing switches nothing.
+      expect(f.service.current.activity.id, f.freeTime);
+
+      await openGuide(tester);
+      await tester.fling(list, const Offset(0, 60), 1500);
+      await tester.pumpAndSettle();
+      expect(title, findsNothing);
+    });
+
+    testWidgets('long list: scrolls back to the top first, then closes', (
+      tester,
+    ) async {
+      // Sideways phone, so eight activities do not fit and the list scrolls.
+      tester.view
+        ..devicePixelRatio = 3
+        ..physicalSize = const Size(2700, 1224);
+      addTearDown(tester.view.reset);
+      for (var p = 4; p <= 8; p++) {
+        await activities.create(position: p, name: 'Extra $p', color: 0);
+      }
+      await pumpApp(tester);
+      await openGuide(tester);
+
+      await tester.drag(list, const Offset(0, -200));
+      await tester.pumpAndSettle();
+      final scrolled = tester
+          .state<ScrollableState>(
+            find.descendant(of: list, matching: find.byType(Scrollable)),
+          )
+          .position;
+      expect(scrolled.pixels, greaterThan(100));
+
+      // Pulling down scrolls back up instead of closing.
+      await tester.drag(list, Offset(0, scrolled.pixels - 10));
+      await tester.pumpAndSettle();
+      expect(title, findsOneWidget);
+      // At the top, the next pull closes.
+      await tester.drag(list, const Offset(0, 120));
+      await tester.pumpAndSettle();
+      expect(title, findsNothing);
+    });
+  });
+
   testWidgets('tapping a tile still switches; no swipe needed', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.byKey(const Key('activity-tile-2')));

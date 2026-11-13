@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'settings_controller.dart';
@@ -26,9 +27,12 @@ class TimeTrackerApp extends StatelessWidget {
           title: 'Lifestring',
           scaffoldMessengerKey: scaffoldMessengerKey,
           theme: buildTheme(s.appearance, s.accent, neon: s.neon),
-          // No Android stretch/glow when scrolling past the ends.
+          // No Android stretch/glow when scrolling past the ends. Every
+          // pointer drags lists, the mouse included, so the Linux build
+          // swipes like the phone (D58).
           scrollBehavior: const MaterialScrollBehavior().copyWith(
             overscroll: false,
+            dragDevices: PointerDeviceKind.values.toSet(),
           ),
           home: home,
         );

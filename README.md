@@ -6,7 +6,7 @@ Eight fixed activity buttons. Exactly one activity is always active; tapping
 another one switches to it. Tracking is purely timestamp-based, so it survives
 the app being closed, killed, or the phone restarting — no background service.
 
-> Status: **v0.3.0** – all planned phases complete; signed APKs on GitHub releases. See [TASKS.md](TASKS.md).
+> Status: **v0.3.1** – all planned phases complete; signed APKs on GitHub releases. See [TASKS.md](TASKS.md).
 
 ## Features (planned for v1)
 

@@ -675,6 +675,11 @@ name, the database file `time_tracker.db`, the backup `format` tag
   and long press opens the editor, like on the tiles. Discoverability: the first
   saved description shows a one-time hint (`ui.home.guideHintShown`), and
   the editor's helper text names the gesture.
+- The sheet closes with a swipe down on the list as well as on the handle
+  (0.3.1): pulling 48 px past the top, or a fast downward fling that started
+  at the top. A scrolled list scrolls back up first, so reading a long list
+  never closes it by accident. The list always uses clamping physics so the
+  pull past the top is reported on every platform.
 - Default and Unavailable have no description: they are built in and not
   editable.
 
@@ -707,4 +712,14 @@ name, the database file `time_tracker.db`, the backup `format` tag
 - The row length follows the sheet width. If the current choice is not in
   the first row, it takes that row's last place, so the current colour or
   icon is always visible when closed.
+
+## D58 – Every pointer drags lists, the mouse included (2026-11-13)
+- Flutter does not drag-scroll with a mouse on desktop by default, so on
+  the Linux build (D39) swipe-down-to-close on "Which activity?" and drag
+  scrolling did nothing with a mouse. The app's scroll behaviour now lists
+  every pointer kind as a drag device, so the Linux build behaves like the
+  phone. Touch on Android is unchanged; a mouse there (rare) drags too.
+- `integration_test/activity_guide_test.dart` runs the real Linux app:
+  swipe up opens the sheet, a small drag keeps it, a swipe down closes it,
+  by touch and by mouse.
 

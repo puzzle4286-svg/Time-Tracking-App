@@ -5,6 +5,15 @@ explicitly under **Database**.
 
 ## [Unreleased]
 
+## [0.3.1] – 2026-11-13
+
+### Fixed
+- "Which activity?" closes with a swipe down anywhere on the list, not
+  only on the handle above it. A list long enough to scroll scrolls back
+  to the top first.
+- Lists can be dragged with a mouse (Linux build), like a finger on the
+  phone.
+
 ## [0.3.0] – 2026-11-13
 
 ### Added

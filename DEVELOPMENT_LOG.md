@@ -715,3 +715,20 @@ activity editor.
 - `test/screens` and analyze pass. Installed as Lifestring Dev on the
   phone; not yet checked by hand.
 
+## 2026-11-13 – 0.3.1: swipe down closes "Which activity?"
+
+**Requested**: close the sheet by swiping down on the list, not only on the
+handle.
+
+**Work completed** (D54): `_PullDownToClose` around the list; version
+0.3.1+5 with changelogs.
+
+**Testing performed**
+- Widget tests: a small drag keeps it open, a swipe or fling closes it
+  without switching; with eight activities in landscape, a pull scrolls
+  back to the top first and the next one closes. `test/screens` and
+  analyze pass.
+- Phone no longer available. Checked on the real Linux app instead:
+  new integration test (touch and mouse) passes; mouse drag enabled for
+  lists (D58). `test/screens`, `test/widgets` and analyze pass.
+
