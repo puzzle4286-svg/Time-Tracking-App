@@ -13,6 +13,10 @@ explicitly under **Database**.
 - Activity editor: the Colour and Icon arrows point right when closed and
   down when open.
 
+### Changed
+- Appearance and Style buttons show the icon left of the label again
+  (compared side by side on the phone).
+
 ## [0.4.0] – 2026-11-13
 
 ### Added

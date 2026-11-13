@@ -69,25 +69,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             SegmentedButton<AppearanceMode>(
               showSelectedIcon: false,
-              style: _segmentStyle,
               segments: const [
                 ButtonSegment(
                   value: AppearanceMode.light,
-                  label: _SegmentLabel(
-                    icon: Icons.light_mode_outlined,
-                    label: 'Light',
-                  ),
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode_outlined),
                 ),
                 ButtonSegment(
                   value: AppearanceMode.dark,
-                  label: _SegmentLabel(
-                    icon: Icons.dark_mode_outlined,
-                    label: 'Dark',
-                  ),
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode_outlined),
                 ),
                 ButtonSegment(
                   value: AppearanceMode.black,
-                  label: _SegmentLabel(icon: Icons.contrast, label: 'Black'),
+                  label: Text('Black'),
+                  icon: Icon(Icons.contrast),
                 ),
               ],
               selected: {current.appearance},
@@ -99,28 +95,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SegmentedButton<AppStyle>(
               key: const Key('style-selector'),
               showSelectedIcon: false,
-              style: _segmentStyle,
               segments: const [
                 ButtonSegment(
                   value: AppStyle.flat,
-                  label: _SegmentLabel(
-                    icon: Icons.square_outlined,
-                    label: 'Flat',
-                  ),
+                  label: Text('Flat'),
+                  icon: Icon(Icons.square_outlined),
                 ),
                 ButtonSegment(
                   value: AppStyle.neon,
-                  label: _SegmentLabel(
-                    icon: Icons.auto_awesome_outlined,
-                    label: 'Neon',
-                  ),
+                  label: Text('Neon'),
+                  icon: Icon(Icons.auto_awesome_outlined),
                 ),
                 ButtonSegment(
                   value: AppStyle.grayscale,
-                  label: _SegmentLabel(
-                    icon: Icons.gradient,
-                    label: 'Grayscale',
-                  ),
+                  label: Text('Grayscale'),
+                  icon: Icon(Icons.gradient),
                 ),
               ],
               selected: {current.style},
@@ -229,32 +218,6 @@ class _AccentSwatch extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Icon above label, shared by both selectors so they match (D59).
-const _segmentStyle = ButtonStyle(
-  padding: WidgetStatePropertyAll(
-    EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-  ),
-);
-
-class _SegmentLabel extends StatelessWidget {
-  const _SegmentLabel({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20),
-        const SizedBox(height: 4),
-        Text(label, maxLines: 1, softWrap: false),
-      ],
     );
   }
 }

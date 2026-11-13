@@ -1,2 +1,3 @@
 - App icon choices in the same order as Style: Flat, Neon, Grayscale
 - Activity editor: Colour and Icon arrows point right when closed, down when open
+- Appearance and Style buttons show the icon beside the label again

@@ -743,8 +743,10 @@ name, the database file `time_tracker.db`, the backup `format` tag
   enough.
 - Distinct looks: Flat 3 × 14 = 42, Neon 42, Grayscale 3, so **87** (not
   3 × 3 × 14 = 126). Before styles: 3 × 2 × 14 = 84.
-- Appearance and Style segments show the icon above the label (chosen
-  while there were four styles, when "Grayscale" did not fit inline).
+- Appearance and Style segments show the icon left of the label. Icon
+  above label was used in 0.4.0 (when four styles did not fit inline);
+  with three, the developer compared both on the phone and chose inline
+  (0.4.1).
 - The launcher icon (D50) stays a separate setting; it gained a Grayscale
   choice (D60).
 
