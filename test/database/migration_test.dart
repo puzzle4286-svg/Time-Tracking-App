@@ -119,4 +119,39 @@ void main() {
     expect(row.containsKey('icon'), isTrue);
     expect(row['icon'], isNull);
   });
+
+  test('v5 -> v6 adds an empty description to existing activities', () async {
+    final dir = await Directory.systemTemp.createTemp('migration');
+    addTearDown(() => dir.delete(recursive: true));
+    final path = p.join(dir.path, 'app.db');
+    sqfliteFfiInit();
+    final v5 = await databaseFactoryFfiNoIsolate.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 5,
+        onCreate: (db, _) async {
+          for (var v = 1; v <= 5; v++) {
+            for (final s in migrations[v]!) {
+              await db.execute(s);
+            }
+          }
+        },
+      ),
+    );
+    await v5.insert('activities', {
+      'name': 'Reading',
+      'color': 7,
+      'position': 1,
+      'icon': 'reading',
+      'created_at': 1,
+    });
+    await v5.close();
+
+    final db = await openTestDatabase(path);
+    addTearDown(db.close);
+    final row = (await db.query('activities')).single;
+    expect(row['icon'], 'reading');
+    expect(row.containsKey('description'), isTrue);
+    expect(row['description'], isNull);
+  });
 }

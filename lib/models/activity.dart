@@ -35,6 +35,7 @@ class Activity {
     required this.deletedAt,
     this.role,
     this.icon,
+    this.description,
   });
 
   static const int gridRows = 2;
@@ -58,6 +59,10 @@ class Activity {
   /// Key into `activityIcons`, or null for no icon.
   final String? icon;
 
+  /// What the activity is for, written by the user to help decide where a
+  /// part of the day belongs. Null when not set (never empty).
+  final String? description;
+
   bool get isDeleted => deletedAt != null;
   bool get isDefault => role == SystemRole.defaultActivity;
 
@@ -74,5 +79,6 @@ class Activity {
     deletedAt: fromStoredTimestampOrNull(row['deleted_at']),
     role: SystemRole.parse(row['role']),
     icon: row['icon'] as String?,
+    description: row['description'] as String?,
   );
 }

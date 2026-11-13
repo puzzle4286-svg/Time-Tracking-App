@@ -31,6 +31,39 @@ void main() {
     expect(service.atPosition(5)!.id, created.id);
   });
 
+  test(
+    'description is trimmed, blank clears it, too long is refused',
+    () async {
+      final created = await service.create(
+        position: 5,
+        name: 'Reading',
+        color: activityColors[3],
+        description: '  Books and articles, not course reading ',
+      );
+      expect(created.description, 'Books and articles, not course reading');
+
+      await service.update(
+        created.id,
+        name: 'Reading',
+        color: created.color,
+        description: '   ',
+      );
+      expect(service.byId(created.id)!.description, isNull);
+
+      final tooLong = 'x' * (ActivityService.maxDescriptionLength + 1);
+      await expectLater(
+        service.update(
+          created.id,
+          name: 'Reading',
+          color: created.color,
+          description: tooLong,
+        ),
+        throwsArgumentError,
+      );
+      expect(service.byId(created.id)!.description, isNull);
+    },
+  );
+
   test('refuses an occupied or out-of-range position', () async {
     await expectLater(
       service.create(position: 1, name: 'X', color: 0),

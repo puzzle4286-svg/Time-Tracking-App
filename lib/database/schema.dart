@@ -106,6 +106,8 @@ const Map<int, List<String>> migrations = {
   ],
   // v5: optional tile icon, a key from `activityIcons` (null = none).
   5: ['ALTER TABLE activities ADD COLUMN icon TEXT'],
+  // v6: optional description of what the activity covers (null = none).
+  6: ['ALTER TABLE activities ADD COLUMN description TEXT'],
 };
 
 int get schemaVersion => migrations.keys.reduce((a, b) => a > b ? a : b);

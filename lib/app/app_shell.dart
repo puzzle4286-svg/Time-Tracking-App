@@ -103,6 +103,7 @@ class _AppShellState extends State<AppShell> {
           activities: widget.activities,
           goals: widget.goals,
           clock: widget.clock,
+          uiState: widget.uiState,
         ),
         1 => HistoryScreen(
           history: widget.history,

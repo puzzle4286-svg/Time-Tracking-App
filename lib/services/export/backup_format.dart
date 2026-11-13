@@ -39,6 +39,7 @@ const Map<String, List<BackupColumn>> backupTables = {
     BackupColumn('deleted_at', _int, nullable: true),
     BackupColumn('role', _text, nullable: true),
     BackupColumn('icon', _text, nullable: true),
+    BackupColumn('description', _text, nullable: true),
   ],
   'time_entries': [
     BackupColumn('id', _int),
@@ -74,6 +75,11 @@ final Map<int, void Function(Map<String, Object?> tables)> _rowUpgrades = {
   5: (tables) {
     for (final row in _rawRows(tables, 'activities')) {
       row.putIfAbsent('icon', () => null);
+    }
+  },
+  6: (tables) {
+    for (final row in _rawRows(tables, 'activities')) {
+      row.putIfAbsent('description', () => null);
     }
   },
 };

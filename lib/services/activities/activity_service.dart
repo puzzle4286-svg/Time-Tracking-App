@@ -36,6 +36,7 @@ class ActivityService extends ChangeNotifier {
   ActivityService(this._db, this._clock, this._tracking);
 
   static const int maxNameLength = 30;
+  static const int maxDescriptionLength = 300;
 
   final Database _db;
   final Clock _clock;
@@ -83,6 +84,20 @@ class ActivityService extends ChangeNotifier {
     return null;
   }
 
+  /// Returns an error message, or null if [description] is acceptable.
+  static String? validateDescription(String description) {
+    if (description.trim().length > maxDescriptionLength) {
+      return 'At most $maxDescriptionLength characters';
+    }
+    return null;
+  }
+
+  /// Trimmed [description], or null when blank.
+  static String? _normalizeDescription(String? description) {
+    final trimmed = description?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
   Future<void> load() async {
     final repo = ActivityRepository(_db);
     _live = await repo.liveActivities();
@@ -96,8 +111,10 @@ class ActivityService extends ChangeNotifier {
     required String name,
     required int color,
     String? icon,
+    String? description,
   }) async {
     _checkName(name);
+    _checkDescription(description);
     if (position < 1 || position > Activity.gridSize) {
       throw ArgumentError.value(position, 'position', 'Must be 1–8');
     }
@@ -110,24 +127,31 @@ class ActivityService extends ChangeNotifier {
       position: position,
       createdAt: _clock.now(),
       icon: icon,
+      description: _normalizeDescription(description),
     );
     await load();
     return byId(id)!;
   }
 
-  /// Renames / recolours an activity and sets its [icon] (null clears it).
-  /// History follows automatically because entries reference the activity
-  /// by id.
+  /// Renames / recolours an activity and sets its [icon] and
+  /// [description] (null or blank clears them). History follows
+  /// automatically because entries reference the activity by id.
   Future<void> update(
     int id, {
     required String name,
     required int color,
     String? icon,
+    String? description,
   }) async {
     _checkName(name);
-    await ActivityRepository(
-      _db,
-    ).update(id, name: name.trim(), color: color, icon: icon);
+    _checkDescription(description);
+    await ActivityRepository(_db).update(
+      id,
+      name: name.trim(),
+      color: color,
+      icon: icon,
+      description: _normalizeDescription(description),
+    );
     await load();
   }
 
@@ -155,6 +179,13 @@ class ActivityService extends ChangeNotifier {
   void _checkName(String name) {
     final error = validateName(name);
     if (error != null) throw ArgumentError.value(name, 'name', error);
+  }
+
+  void _checkDescription(String? description) {
+    final error = validateDescription(description ?? '');
+    if (error != null) {
+      throw ArgumentError.value(description, 'description', error);
+    }
   }
 
   /// Number of time entries recorded for [activityId].

@@ -141,6 +141,7 @@ A phase is only checked off once its functionality is tested.
 - [x] F-Droid preparation: license, app ID, listing, build recipe (D52); 0.2.0
 - [x] Submitted to fdroiddata; closed (under 3 months, no unique features)
 - [x] Signed APKs on GitHub releases (D53)
+- [x] Activity descriptions and "Which activity?" (D54)
 - [ ] Back up the release keystore off this machine
 - [ ] Resubmit to F-Droid from about 2027-02-13, with a clearer listing
 

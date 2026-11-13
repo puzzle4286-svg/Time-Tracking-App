@@ -92,7 +92,7 @@ Rules:
 | `lib/services/analytics/comparison.dart` | `comparePeriods` – pure, equivalent spans |
 | `lib/services/analytics/insights_service.dart` | Loads entries once per selection |
 | `lib/widgets/charts/` | `DonutChart` (CustomPainter), `ComparisonBars` |
-| `lib/widgets/activities/` | `ActivityTile` (icon, active highlight), `showActivityEditor` sheet (name, colour, icon) |
+| `lib/widgets/activities/` | `ActivityTile` (icon, active highlight), `showActivityEditor` sheet (name, description, colour, icon), `showActivityGuide` ("Which activity?") |
 | `lib/models/activity_icons.dart` | Icon keys ⇄ Material icons for tiles |
 | `lib/screens/home/home_goals.dart` | Goal progress list on the main screen |
 | `lib/widgets/goals/goal_bars.dart` | `GoalBar`: linear bar with target zones and labelled marks |
@@ -120,7 +120,7 @@ Rules:
 | `lib/widgets/goals/` | `GoalCard`, `GoalEditorPage`, descriptions |
 | `lib/repositories/ui_state_store.dart` | Persisted UI conveniences (scroll positions), `ui.*` keys in `settings` |
 
-## Database (schema v4)
+## Database (schema v6)
 
 ```sql
 activities(
@@ -131,7 +131,9 @@ activities(
   is_system INTEGER NOT NULL DEFAULT 0,  -- built-in, off the grid
   role TEXT,                       -- 'default' | 'unavailable' (v3, unique)
   created_at INTEGER NOT NULL,     -- UTC epoch microseconds
-  deleted_at INTEGER               -- UTC epoch microseconds
+  deleted_at INTEGER,              -- UTC epoch microseconds
+  icon TEXT,                       -- key into activityIcons (v5)
+  description TEXT                 -- what it covers, NULL if unset (v6)
 )
 UNIQUE INDEX on activities(position) WHERE deleted_at IS NULL AND position IS NOT NULL
 

@@ -97,6 +97,10 @@ explicitly under **Database**.
   loads the days in between with one query instead of one per day.
 - Android: dark launch splash and startup window (no white flash); unused
   SQLite library no longer packaged.
+- Activity descriptions: an optional "What it covers" text (up to 300
+  characters) in the activity editor. Swiping up on the grid opens "Which
+  activity?", listing every activity with its description; tapping one
+  switches to it. A one-time hint explains the gesture.
 
 ### Changed
 - Time is never left empty: freed time and deleted entries always go to an
@@ -139,3 +143,5 @@ explicitly under **Database**.
   existing installs.
 - Schema v4: `goals` table.
 - Schema v5: `activities.icon` (nullable text key of the tile icon).
+- Schema v6: `activities.description` (nullable text; blank is stored as
+  NULL). Older backups are upgraded on restore.

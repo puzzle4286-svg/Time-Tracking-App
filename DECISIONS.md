@@ -658,3 +658,33 @@ name, the database file `time_tracker.db`, the backup `format` tag
   A universal APK would have the bare build number, so switching between
   the two would look like a downgrade.
 
+## D54 – Activity descriptions and "Which activity?" (2026-11-13)
+- Each grid activity can have a description of what it covers (optional,
+  at most 300 characters, trimmed; blank is stored as NULL). Schema v6
+  adds `activities.description`; backups from v4/v5 restore with no
+  descriptions.
+- Edited in the activity editor, right under the name, so it is written
+  once when the activity is set up.
+- Used through "Which activity?": swiping up on the grid opens a sheet
+  with every grid activity, its icon and its description (activities
+  without one say how to add it). Tapping one switches to it, so looking
+  something up and switching is one step.
+- A gesture instead of a button, to keep the main screen as clean as
+  before (a "Which activity?" button above the grid was tried and dropped).
+  Taps and long presses on tiles are unchanged; in the list, tap switches
+  and long press opens the editor, like on the tiles. Discoverability: the first
+  saved description shows a one-time hint (`ui.home.guideHintShown`), and
+  the editor's helper text names the gesture.
+- Default and Unavailable have no description: they are built in and not
+  editable.
+
+## D55 – Debug builds install as "Lifestring Dev" (2026-11-13)
+- Debug builds use the app ID `io.github.puzzle4286svg.lifestring.dev` and
+  the label "Lifestring Dev", so they install next to the released app
+  (GitHub/Obtainium) instead of replacing it, with their own database. Move
+  data over with a JSON backup when needed.
+- `AppIcon.kt` builds the launcher alias names from the Kotlin package, not
+  from `packageName`, because the aliases keep their class names while the
+  app ID changes.
+- Release and F-Droid builds are unchanged (no suffix, label "Lifestring").
+

@@ -74,6 +74,9 @@ flutter emulators --launch Pixel_10_Pro   # or connect a device
 flutter run
 ```
 
+Debug builds install as a separate app, "Lifestring Dev"
+(`io.github.puzzle4286svg.lifestring.dev`), next to a released install (D55).
+
 ## Test and check
 
 ```bash

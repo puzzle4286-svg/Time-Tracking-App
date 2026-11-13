@@ -267,6 +267,38 @@ void main() {
     },
   );
 
+  test(
+    'a backup from schema v5 (before descriptions) is upgraded and restores',
+    () async {
+      final json =
+          jsonDecode(utf8.decode((await backup.createBackup()).encode()))
+              as Map<String, Object?>;
+      json['schemaVersion'] = 5;
+      for (final row in (json['tables']! as Map)['activities']! as List) {
+        (row as Map).remove('description');
+      }
+      final data = BackupData.parse(utf8.encode(jsonEncode(json)));
+      await backup.restore(data);
+      final rows = await f.db.query('activities');
+      expect(rows.map((r) => r['description']), everyElement(isNull));
+      expect(rows, hasLength(5));
+    },
+  );
+
+  test('descriptions survive a backup round trip', () async {
+    await f.db.update('activities', {
+      'description': 'Lectures and homework',
+    }, where: 'id = ${f.study}');
+    final data = BackupData.parse((await backup.createBackup()).encode());
+    await f.db.update('activities', {'description': null});
+    await backup.restore(data);
+    final row = (await f.db.query(
+      'activities',
+      where: 'id = ${f.study}',
+    )).single;
+    expect(row['description'], 'Lectures and homework');
+  });
+
   test('a backup the database rejects changes nothing', () async {
     final before = await dump(f.db);
     final json =

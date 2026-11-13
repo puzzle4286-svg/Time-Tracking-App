@@ -34,6 +34,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["appLabel"] = "Lifestring"
     }
 
     packaging {
@@ -57,6 +58,12 @@ android {
     }
 
     buildTypes {
+        // Debug builds install as a separate app, "Lifestring Dev", with its
+        // own data, so testing never touches the released app (D55).
+        debug {
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabel"] = "Lifestring Dev"
+        }
         release {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")

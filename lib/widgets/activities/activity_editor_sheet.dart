@@ -7,7 +7,12 @@ import '../../models/activity_icons.dart';
 import '../../services/activities/activity_service.dart';
 
 /// Values entered in the activity editor.
-typedef ActivityDraft = ({String name, int color, String? icon});
+typedef ActivityDraft = ({
+  String name,
+  int color,
+  String? icon,
+  String description,
+});
 
 /// Bottom sheet for setting up an empty slot or editing an activity.
 /// Returns the entered values, or null if cancelled. With [onDelete], a
@@ -19,6 +24,7 @@ Future<ActivityDraft?> showActivityEditor(
   required String initialName,
   required int initialColor,
   String? initialIcon,
+  String? initialDescription,
   VoidCallback? onDelete,
   VoidCallback? onGoals,
   VoidCallback? onArrange,
@@ -32,6 +38,7 @@ Future<ActivityDraft?> showActivityEditor(
       initialName: initialName,
       initialColor: initialColor,
       initialIcon: initialIcon,
+      initialDescription: initialDescription,
       onDelete: onDelete,
       onGoals: onGoals,
       onArrange: onArrange,
@@ -45,6 +52,7 @@ class _ActivityEditor extends StatefulWidget {
     required this.initialName,
     required this.initialColor,
     required this.initialIcon,
+    required this.initialDescription,
     required this.onDelete,
     required this.onGoals,
     required this.onArrange,
@@ -54,6 +62,7 @@ class _ActivityEditor extends StatefulWidget {
   final String initialName;
   final int initialColor;
   final String? initialIcon;
+  final String? initialDescription;
   final VoidCallback? onDelete;
   final VoidCallback? onGoals;
   final VoidCallback? onArrange;
@@ -65,20 +74,27 @@ class _ActivityEditor extends StatefulWidget {
 class _ActivityEditorState extends State<_ActivityEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.initialName);
+  late final _description = TextEditingController(
+    text: widget.initialDescription ?? '',
+  );
   late int _color = widget.initialColor;
   late String? _icon = widget.initialIcon;
 
   @override
   void dispose() {
     _name.dispose();
+    _description.dispose();
     super.dispose();
   }
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
-    Navigator.of(
-      context,
-    ).pop<ActivityDraft>((name: _name.text.trim(), color: _color, icon: _icon));
+    Navigator.of(context).pop<ActivityDraft>((
+      name: _name.text.trim(),
+      color: _color,
+      icon: _icon,
+      description: _description.text.trim(),
+    ));
   }
 
   @override
@@ -108,6 +124,7 @@ class _ActivityEditorState extends State<_ActivityEditor> {
               Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               TextFormField(
+                key: const Key('activity-name-field'),
                 controller: _name,
                 autofocus: widget.initialName.isEmpty,
                 maxLength: ActivityService.maxNameLength,
@@ -118,6 +135,25 @@ class _ActivityEditorState extends State<_ActivityEditor> {
                 ),
                 validator: (v) => ActivityService.validateName(v ?? ''),
                 onFieldSubmitted: (_) => _save(),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                key: const Key('activity-description-field'),
+                controller: _description,
+                minLines: 2,
+                maxLines: 5,
+                maxLength: ActivityService.maxDescriptionLength,
+                textCapitalization: TextCapitalization.sentences,
+                keyboardType: TextInputType.multiline,
+                decoration: const InputDecoration(
+                  labelText: 'What it covers (optional)',
+                  hintText: 'e.g. lectures, homework, reading for courses',
+                  helperText: 'Swipe up on the grid to see all descriptions',
+                  helperMaxLines: 2,
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                validator: (v) => ActivityService.validateDescription(v ?? ''),
               ),
               const SizedBox(height: 8),
               Text('Colour', style: Theme.of(context).textTheme.labelLarge),

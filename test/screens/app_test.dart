@@ -79,6 +79,14 @@ void main() {
   String textOf(WidgetTester tester, String key) =>
       tester.widget<Text>(find.byKey(Key(key))).data!;
 
+  /// Taps Save, scrolling to it first (the editor sheet can be taller than
+  /// the test screen).
+  Future<void> tapSave(WidgetTester tester) async {
+    await tester.ensureVisible(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+  }
+
   /// Lets database futures and resulting rebuilds complete.
   Future<void> settle(WidgetTester tester) async {
     for (var i = 0; i < 5; i++) {
@@ -170,8 +178,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Edit activity'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextFormField), 'Leisure');
-    await tester.tap(find.text('Save'));
+    await tester.enterText(
+      find.byKey(const Key('activity-name-field')),
+      'Leisure',
+    );
+    await tapSave(tester);
     await tester.pumpAndSettle();
 
     expect(textOf(tester, 'current-activity-name'), 'Leisure');
@@ -196,9 +207,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(option);
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Save'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Save'));
+        await tapSave(tester);
         await tester.pumpAndSettle();
       }
 
@@ -220,6 +229,91 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'a description set in the editor shows when swiping up on the grid; '
+    'tapping there switches',
+    (tester) async {
+      await pumpApp(tester);
+      const hint = 'Swipe up on the grid to see what each activity covers';
+      final grid = find.byKey(const Key('activity-grid'));
+
+      Future<void> saveDescription(int position, String text) async {
+        await tester.longPress(find.byKey(Key('activity-tile-$position')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('activity-description-field')),
+          text,
+        );
+        await tapSave(tester);
+        await tester.pump();
+      }
+
+      await saveDescription(3, '  Lectures, homework, exam prep ');
+      expect(
+        activities.byId(f.study)!.description,
+        'Lectures, homework, exam prep',
+      );
+      // The first saved description explains the gesture, once.
+      expect(find.text(hint), findsOneWidget);
+      ScaffoldMessenger.of(tester.element(grid)).removeCurrentSnackBar();
+      await tester.pumpAndSettle();
+      await saveDescription(2, 'Video games');
+      expect(find.text(hint), findsNothing);
+      await tester.pumpAndSettle();
+
+      // Reopening the editor shows the saved text.
+      await tester.longPress(find.byKey(const Key('activity-tile-3')));
+      await tester.pumpAndSettle();
+      expect(find.text('Lectures, homework, exam prep'), findsOneWidget);
+      Navigator.of(tester.element(find.text('Edit activity'))).pop();
+      await tester.pumpAndSettle();
+
+      // A short downward drag does nothing; a swipe up opens the guide.
+      await tester.drag(grid, const Offset(0, 80));
+      await tester.pumpAndSettle();
+      expect(find.text('Which activity?'), findsNothing);
+      await tester.fling(grid, const Offset(0, -120), 800);
+      await tester.pumpAndSettle();
+      expect(find.text('Which activity?'), findsOneWidget);
+      expect(find.text('Lectures, homework, exam prep'), findsOneWidget);
+      expect(
+        find.text('No description yet. Long-press to add one.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(Key('guide-activity-${f.study}')));
+      await tester.pumpAndSettle();
+      expect(find.text('Which activity?'), findsNothing);
+      expect(f.service.current.activity.id, f.study);
+
+      // Long-pressing an activity in the list opens its editor instead of
+      // switching; saving there updates the list's source.
+      await tester.fling(grid, const Offset(0, -120), 800);
+      await tester.pumpAndSettle();
+      await tester.longPress(find.byKey(Key('guide-activity-${f.freeTime}')));
+      await tester.pumpAndSettle();
+      expect(find.text('Which activity?'), findsNothing);
+      expect(find.text('Edit activity'), findsOneWidget);
+      expect(find.text('Free Time'), findsWidgets);
+      await tester.enterText(
+        find.byKey(const Key('activity-description-field')),
+        'Anything restful',
+      );
+      await tapSave(tester);
+      await tester.pumpAndSettle();
+      expect(activities.byId(f.freeTime)!.description, 'Anything restful');
+      expect(f.service.current.activity.id, f.study);
+    },
+  );
+
+  testWidgets('tapping a tile still switches; no swipe needed', (tester) async {
+    await pumpApp(tester);
+    await tester.tap(find.byKey(const Key('activity-tile-2')));
+    await settle(tester);
+    expect(f.service.current.activity.id, f.gaming);
+    expect(find.text('Which activity?'), findsNothing);
+  });
 
   testWidgets('the running activity\'s goals show under the header', (
     tester,
@@ -286,7 +380,7 @@ void main() {
     await pumpApp(tester);
     await tester.tap(find.byKey(const Key('activity-tile-4')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save'));
+    await tapSave(tester);
     await tester.pumpAndSettle();
     expect(find.text('Enter a name'), findsOneWidget);
     expect(activities.atPosition(4), isNull);
@@ -298,8 +392,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Set up activity'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextFormField), 'Reading');
-    await tester.tap(find.text('Save'));
+    await tester.enterText(
+      find.byKey(const Key('activity-name-field')),
+      'Reading',
+    );
+    await tapSave(tester);
     await tester.pumpAndSettle();
 
     expect(activities.atPosition(4)!.name, 'Reading');
@@ -725,7 +822,7 @@ void main() {
       await tester.enterText(fields.at(1), '30');
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Save'));
+      await tapSave(tester);
       await settle(tester);
       await tester.pumpAndSettle();
 
@@ -772,7 +869,7 @@ void main() {
       await tester.enterText(fields.at(1), '30');
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Save'));
+      await tapSave(tester);
       await settle(tester);
       await tester.pumpAndSettle();
 
@@ -852,7 +949,7 @@ void main() {
       expect(find.text('New goal'), findsOneWidget);
       // Defaults: every 1 day from 00:00, minimum 1 h.
       await tester.enterText(find.byKey(const Key('Minimum-h')), '2');
-      await tester.tap(find.text('Save'));
+      await tapSave(tester);
       await settle(tester);
       await tester.pumpAndSettle();
 
@@ -893,7 +990,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('Minimum-toggle')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Save'));
+      await tapSave(tester);
       await tester.pumpAndSettle();
       expect(find.text('Set a minimum, a maximum, or both'), findsOneWidget);
       expect(find.text('New goal'), findsOneWidget); // still open

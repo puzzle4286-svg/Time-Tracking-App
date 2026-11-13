@@ -678,3 +678,22 @@ v0.2.0 GitHub release with per-ABI APKs and SHA256SUMS.
 - Not installed on the phone (an install over the old debug-signed build
   needs an uninstall first, or a JSON backup to move data).
 
+## 2026-11-13 – Activity descriptions
+
+**Requested**: a text field to define once what each activity is for, to
+look up later when unsure where a part of the day belongs.
+
+**Work completed** (D54): schema v6 `activities.description`; editor field
+"What it covers (optional)"; "Which activity?" sheet, opened by swiping
+up on the grid (a button above the grid was tried first and dropped to keep
+the main screen clean); one-time hint; backup format column and v5 row
+upgrade. Debug builds install as "Lifestring Dev" (D55).
+
+**Testing performed**
+- Migration v5 -> v6; service trims, clears on blank, refuses over 300
+  characters; backup round trip and restore of a v5 backup; widget test
+  for editing, the guide and switching from it. Editor tests now scroll to
+  Save (the sheet is taller). Affected test files and analyze pass.
+- Installed as Lifestring Dev on the phone; the released app untouched.
+  Gesture not yet tried by hand there.
+

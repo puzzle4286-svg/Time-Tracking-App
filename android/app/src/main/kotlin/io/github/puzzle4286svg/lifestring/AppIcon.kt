@@ -79,8 +79,11 @@ object AppIcon {
     private fun pending(context: Context): String? =
         prefs(context).getString(PENDING, null)?.takeIf { it in aliases }
 
+    // Alias class names come from the Kotlin package (the manifest's
+    // ".IconNeon" is relative to the namespace), not from the app ID, which
+    // has a ".dev" suffix in debug builds.
     private fun component(context: Context, name: String) =
-        ComponentName(context.packageName, context.packageName + aliases.getValue(name))
+        ComponentName(context, MainActivity::class.java.`package`!!.name + aliases.getValue(name))
 
     private fun isEnabled(context: Context, name: String, byDefault: Boolean): Boolean =
         when (context.packageManager.getComponentEnabledSetting(component(context, name))) {

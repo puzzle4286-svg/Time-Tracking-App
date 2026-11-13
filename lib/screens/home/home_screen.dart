@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/activity.dart';
+import '../../repositories/ui_state_store.dart';
 import '../../services/activities/activity_service.dart';
 import '../../services/goals/goal_service.dart';
 import '../../services/tracking/tracking_service.dart';
 import '../../util/clock.dart';
 import '../../widgets/activities/activity_editor_sheet.dart';
+import '../../widgets/activities/activity_guide_sheet.dart';
 import '../../widgets/activities/activity_tile.dart';
 import '../../widgets/activities/delete_activity_flow.dart';
 import '../goals/goals_page.dart';
@@ -25,12 +27,17 @@ class HomeScreen extends StatelessWidget {
     required this.activities,
     required this.goals,
     required this.clock,
+    required this.uiState,
   });
+
+  /// Set once the swipe-up hint has been shown.
+  static const guideHintKey = 'home.guideHintShown';
 
   final TrackingService tracking;
   final ActivityService activities;
   final GoalService goals;
   final Clock clock;
+  final UiStateStore uiState;
 
   /// Compact buttons, so the grid takes little space at the bottom.
   static const double tileHeight = 64;
@@ -56,8 +63,10 @@ class HomeScreen extends StatelessWidget {
         name: draft.name,
         color: draft.color,
         icon: draft.icon,
+        description: draft.description,
       ),
     );
+    if (context.mounted) _maybeShowGuideHint(context, draft.description);
   }
 
   Future<void> _edit(BuildContext context, Activity activity) async {
@@ -67,6 +76,7 @@ class HomeScreen extends StatelessWidget {
       initialName: activity.name,
       initialColor: activity.color,
       initialIcon: activity.icon,
+      initialDescription: activity.description,
       onGoals: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => GoalsPage(
@@ -97,8 +107,10 @@ class HomeScreen extends StatelessWidget {
         name: draft.name,
         color: draft.color,
         icon: draft.icon,
+        description: draft.description,
       ),
     );
+    if (context.mounted) _maybeShowGuideHint(context, draft.description);
   }
 
   /// Runs [action], reporting failures instead of crashing the UI.
@@ -146,36 +158,73 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Column(
-                  children: [
-                    for (var row = 0; row < Activity.gridRows; row++)
-                      SizedBox(
-                        height: tileHeight + 6,
-                        child: Row(
-                          children: [
-                            for (var col = 0; col < Activity.gridColumns; col++)
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(3),
-                                  child: _tile(
-                                    context,
-                                    row * Activity.gridColumns + col + 1,
-                                    activeId,
+              // Swiping up on the grid opens "Which activity?" (what each
+              // activity covers); nothing on screen for it (D54).
+              _SwipeUp(
+                key: const Key('activity-grid'),
+                onSwipeUp: () => _openGuide(context),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: Column(
+                    children: [
+                      for (var row = 0; row < Activity.gridRows; row++)
+                        SizedBox(
+                          height: tileHeight + 6,
+                          child: Row(
+                            children: [
+                              for (
+                                var col = 0;
+                                col < Activity.gridColumns;
+                                col++
+                              )
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(3),
+                                    child: _tile(
+                                      context,
+                                      row * Activity.gridColumns + col + 1,
+                                      activeId,
+                                    ),
                                   ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  void _openGuide(BuildContext context) {
+    if (activities.live.isEmpty) return;
+    unawaited(
+      showActivityGuide(
+        context,
+        activities: activities.live,
+        activeId: tracking.current.activity.id,
+        onSelect: (a) => _select(context, a),
+        onEdit: (a) => _edit(context, a),
+      ),
+    );
+  }
+
+  /// After the first description is saved, says once how to find them.
+  void _maybeShowGuideHint(BuildContext context, String description) {
+    if (description.trim().isEmpty || uiState.get(guideHintKey) != null) {
+      return;
+    }
+    unawaited(uiState.set(guideHintKey, '1'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Swipe up on the grid to see what each activity covers'),
+        duration: Duration(seconds: 6),
+      ),
     );
   }
 
@@ -191,6 +240,40 @@ class HomeScreen extends StatelessWidget {
       onLongPress: () => activity == null
           ? _setUp(context, position)
           : _edit(context, activity),
+    );
+  }
+}
+
+/// Calls [onSwipeUp] for an upward swipe over [child] (a fast flick or a
+/// drag of [minDistance]). Taps and long presses still reach the tiles.
+class _SwipeUp extends StatefulWidget {
+  const _SwipeUp({super.key, required this.onSwipeUp, required this.child});
+
+  static const double minDistance = 48;
+  static const double minVelocity = 300;
+
+  final VoidCallback onSwipeUp;
+  final Widget child;
+
+  @override
+  State<_SwipeUp> createState() => _SwipeUpState();
+}
+
+class _SwipeUpState extends State<_SwipeUp> {
+  double _dy = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onVerticalDragStart: (_) => _dy = 0,
+      onVerticalDragUpdate: (d) => _dy += d.delta.dy,
+      onVerticalDragEnd: (d) {
+        final flick = (d.primaryVelocity ?? 0) <= -_SwipeUp.minVelocity;
+        if (flick || _dy <= -_SwipeUp.minDistance) widget.onSwipeUp();
+        _dy = 0;
+      },
+      child: widget.child,
     );
   }
 }
