@@ -630,3 +630,10 @@ name, the database file `time_tracker.db`, the backup `format` tag
   pubspec.yaml and `appVersion`, add `changelogs/<versionCode>.txt`, tag
   `v<version>`; F-Droid's update check reads the tags.
 - Version 0.2.0 (versionCode 3) is the first F-Droid release.
+- Per fdroiddata's checklist: `commit` is the full hash of the release tag,
+  and there is one build per ABI (`--split-per-abi`, version codes
+  1000 × ABI + build number via `VercodeOperation`; arm64 is 19.6 MB instead
+  of 54.8 MB universal). **Reproducible builds are not enabled**: there is
+  no release signing key and no signed APKs on GitHub releases, and Flutter
+  builds are not yet byte-for-byte reproducible here. F-Droid signs with its
+  own key, which cannot be switched to the developer's key later.

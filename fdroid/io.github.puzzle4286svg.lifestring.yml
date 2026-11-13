@@ -14,21 +14,23 @@ AutoName: Lifestring
 RepoType: git
 Repo: https://github.com/puzzle4286-svg/lifestring.git
 
+# Notes for maintainers of this file (strip comment lines when submitting):
+# - commit must be the full hash of the release tag (git rev-parse vX^{commit}).
+# - One build per ABI. Flutter's --split-per-abi sets the version code to
+#   1000 * ABI + build number (arm 1, arm64 2, x86_64 4), see
+#   VercodeOperation. Checked: arm64 APK 19.6 MB, versionCode 2003.
+# - prebuild: package:sqlite3 (Linux build only) would download a prebuilt
+#   SQLite in its build hook; source: system avoids that (Android uses
+#   sqflite's platform SQLite). The signing line is removed: F-Droid signs.
 Builds:
   - versionName: 0.2.0
-    versionCode: 3
-    commit: v0.2.0
-    output: build/app/outputs/flutter-apk/app-release.apk
+    versionCode: 1003
+    commit: 4923ff827c43d692022a2eb9e437f3998ea7be33
+    output: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
     srclibs:
       - flutter@3.44.2
     prebuild:
-      # On Android the app reads SQLite through sqflite (the system's SQLite,
-      # via Java); package:sqlite3 (used by the Linux build) would otherwise
-      # download a prebuilt library in its build hook. Use the system copy
-      # instead, so nothing is downloaded or bundled.
       - printf '\nhooks:\n  user_defines:\n    sqlite3:\n      source: system\n' >> pubspec.yaml
-      # F-Droid signs the APK itself; the repo signs release builds with the
-      # local debug key for sideloading.
       - sed -i -e '/signingConfig = signingConfigs.getByName("debug")/d' android/app/build.gradle.kts
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter config --no-analytics
@@ -37,10 +39,50 @@ Builds:
       - .pub-cache
     build:
       - export PUB_CACHE=$(pwd)/.pub-cache
-      - $$flutter$$/bin/flutter build apk --release
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform=android-arm
+
+  - versionName: 0.2.0
+    versionCode: 2003
+    commit: 4923ff827c43d692022a2eb9e437f3998ea7be33
+    output: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+    srclibs:
+      - flutter@3.44.2
+    prebuild:
+      - printf '\nhooks:\n  user_defines:\n    sqlite3:\n      source: system\n' >> pubspec.yaml
+      - sed -i -e '/signingConfig = signingConfigs.getByName("debug")/d' android/app/build.gradle.kts
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get
+    scandelete:
+      - .pub-cache
+    build:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform=android-arm64
+
+  - versionName: 0.2.0
+    versionCode: 4003
+    commit: 4923ff827c43d692022a2eb9e437f3998ea7be33
+    output: build/app/outputs/flutter-apk/app-x86_64-release.apk
+    srclibs:
+      - flutter@3.44.2
+    prebuild:
+      - printf '\nhooks:\n  user_defines:\n    sqlite3:\n      source: system\n' >> pubspec.yaml
+      - sed -i -e '/signingConfig = signingConfigs.getByName("debug")/d' android/app/build.gradle.kts
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get
+    scandelete:
+      - .pub-cache
+    build:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform=android-x64
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
+VercodeOperation:
+  - 1000 + %c
+  - 2000 + %c
+  - 4000 + %c
 UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
 CurrentVersion: 0.2.0
-CurrentVersionCode: 3
+CurrentVersionCode: 4003
