@@ -344,11 +344,12 @@ class _ExpandableWrapState extends State<_ExpandableWrap> {
                 children: [
                   Text(widget.label, style: theme.textTheme.labelLarge),
                   const SizedBox(width: 4),
+                  // Points right when closed, down when open.
                   AnimatedRotation(
-                    turns: _open ? 0.5 : 0,
+                    turns: _open ? 0.25 : 0,
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
-                      Icons.expand_more,
+                      Icons.chevron_right,
                       size: 20,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

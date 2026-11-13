@@ -709,6 +709,8 @@ name, the database file `time_tracker.db`, the backup `format` tag
 - Both show only their first row until their label is tapped; tapping again
   closes them. Closed by default every time the editor opens, so the
   description field, colours and Save fit without scrolling.
+- The arrow beside each label points right when closed and turns to point
+  down when open (0.4.1; it pointed down when closed before).
 - The row length follows the sheet width. If the current choice is not in
   the first row, it takes that row's last place, so the current colour or
   icon is always visible when closed.

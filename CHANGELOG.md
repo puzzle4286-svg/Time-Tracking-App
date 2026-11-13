@@ -10,6 +10,8 @@ explicitly under **Database**.
 ### Fixed
 - Settings → App icon lists the icons as Flat, Neon, Grayscale, the same
   order as the Style setting.
+- Activity editor: the Colour and Icon arrows point right when closed and
+  down when open.
 
 ## [0.4.0] – 2026-11-13
 
