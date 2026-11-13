@@ -5,6 +5,31 @@ explicitly under **Database**.
 
 ## [Unreleased]
 
+## [0.3.0] – 2026-11-13
+
+### Added
+- Activity descriptions: an optional "What it covers" text (up to 300
+  characters) in the activity editor. Swiping up on the grid opens "Which
+  activity?", listing every activity with its description; tapping one
+  switches to it, long-pressing opens its editor. A one-time hint explains
+  the gesture.
+- Debug builds install as a separate app, "Lifestring Dev".
+
+### Changed
+- Activity editor: Colour and Icon show one row and open fully when their
+  label is tapped (tap again to close). The current choice always stays
+  visible.
+
+### Fixed
+- Main screen no longer overflows with the phone held sideways: the
+  current activity and goals sit on the left, the grid on the right.
+
+### Database
+- Schema v6: `activities.description` (nullable text; blank is stored as
+  NULL). Older backups are upgraded on restore.
+
+## [0.2.0] – 2026-11-13 and earlier
+
 ### Added
 - Flutter project scaffold (Android primary, Linux for local checks).
 - Strict analyzer and lint configuration.
@@ -97,10 +122,6 @@ explicitly under **Database**.
   loads the days in between with one query instead of one per day.
 - Android: dark launch splash and startup window (no white flash); unused
   SQLite library no longer packaged.
-- Activity descriptions: an optional "What it covers" text (up to 300
-  characters) in the activity editor. Swiping up on the grid opens "Which
-  activity?", listing every activity with its description; tapping one
-  switches to it. A one-time hint explains the gesture.
 
 ### Changed
 - Time is never left empty: freed time and deleted entries always go to an
@@ -143,5 +164,3 @@ explicitly under **Database**.
   existing installs.
 - Schema v4: `goals` table.
 - Schema v5: `activities.icon` (nullable text key of the tile icon).
-- Schema v6: `activities.description` (nullable text; blank is stored as
-  NULL). Older backups are upgraded on restore.

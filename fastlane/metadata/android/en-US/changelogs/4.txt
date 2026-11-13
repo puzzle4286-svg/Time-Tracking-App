@@ -1,0 +1,4 @@
+- Describe what each activity covers, in the activity editor
+- Swipe up on the grid for "Which activity?": every activity with its description; tap to switch, long-press to edit
+- Colour and icon choices fold to one row in the editor; tap the label to see all
+- Main screen fits when the phone is held sideways
